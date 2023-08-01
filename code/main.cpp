@@ -1,7 +1,11 @@
-#include "spdlog/spdlog.h"
+#include "Application.h"
 
 int main(int, char**)
 {
-    spdlog::info("Hello world");
+    Application::GetInstance()->StartUp();
+
+    Application::GetInstance()->Run();
+
+    Application::GetInstance()->ShutDown();
     return 0;
 }
