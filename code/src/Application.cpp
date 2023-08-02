@@ -1,5 +1,7 @@
 #include "Application.h"
-
+#include "Managers/ResourceManager.h"
+#include "Core/Object.h"
+#include "Components/Component.h"
 
 Application::Application() = default;
 
@@ -14,6 +16,8 @@ Application *Application::GetInstance() {
 
 void Application::StartUp() {
     CreateApplicationWindow();
+
+    scene = Object::Instantiate("Scene", nullptr);
 }
 
 void Application::Run() {
@@ -21,6 +25,39 @@ void Application::Run() {
         frameTime = (float)glfwGetTime();
         glfwPollEvents();
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+        for (int i = 0; i < destroyComponentBufferIterator; ++i) {
+            int componentID = destroyComponentBuffer[i];
+            components[componentID]->OnDestroy();
+            delete components[componentID];
+            components.erase(componentID);
+        }
+        destroyComponentBufferIterator = 0;
+
+        for (int i = 0; i < destroyObjectBufferIterator; ++i) {
+            int objectID = destroyObjectBuffer[i];
+            objects[objectID]->Destroy();
+            delete objects[objectID];
+            objects.erase(objectID);
+        }
+        destroyObjectBufferIterator = 0;
+
+        scene->UpdateSelfAndChildren();
+
+        for (const auto& component: components) {
+            if (component.second->callOnAwake) {
+                component.second->Awake();
+                component.second->parent->UpdateSelfAndChildren();
+            }
+        }
+
+        for (const auto& component: components) {
+            if (component.second->callOnStart && component.second->enabled) {
+                component.second->Start();
+                component.second->parent->UpdateSelfAndChildren();
+            }
+        }
+
 
         glfwSwapBuffers(window);
         shouldRun = glfwWindowShouldClose(window);
@@ -86,4 +123,14 @@ void Application::CreateApplicationWindow() {
 
 void Application::glfwErrorCallback(int error, const char *description) {
     spdlog::error("Glfw Error" + std::to_string(error) + ": " + description);
+}
+
+void Application::AddObjectToDestroyBuffer(int objectID) {
+    destroyObjectBuffer[destroyObjectBufferIterator] = objectID;
+    ++destroyObjectBufferIterator;
+}
+
+void Application::AddComponentToDestroyBuffer(int componentID) {
+    destroyComponentBuffer[destroyComponentBufferIterator] = componentID;
+    ++destroyComponentBufferIterator;
 }

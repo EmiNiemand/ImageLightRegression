@@ -15,3 +15,7 @@ Resource::~Resource() {
 void Resource::Unload() {
     ResourceManager::GetInstance()->UnloadResource(path);
 }
+
+const std::string &Resource::GetPath() {
+    return path;
+}

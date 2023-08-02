@@ -4,7 +4,7 @@ ResourceManager::ResourceManager() = default;
 
 ResourceManager::~ResourceManager() = default;
 
-ResourceManager *ResourceManager::GetInstance() {
+ResourceManager* ResourceManager::GetInstance() {
     if (resourceManager == nullptr) {
         resourceManager = new ResourceManager();
     }
@@ -16,6 +16,9 @@ void ResourceManager::StartUp() {
 }
 
 void ResourceManager::ShutDown() {
+    for (const auto& resource : resources) {
+        delete resource.second.resource;
+    }
     resources.clear();
     delete resourceManager;
 }

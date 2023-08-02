@@ -38,13 +38,15 @@ CPMAddPackage("gh:assimp/assimp@5.2.5")
 CPMAddPackage("gh:glfw/glfw#3.3.8")
 CPMAddPackage("gh:g-truc/glm#0.9.9.8")
 CPMAddPackage("gh:gabime/spdlog@1.10.0")
+CPMAddPackage("gh:nlohmann/json@3.11.2")
 
 set_target_properties(glad
                       stb_image 
                       assimp 
                       glfw 
                       glm
-                      spdlog PROPERTIES FOLDER "thirdparty")
+                      spdlog
+					  nlohmann_json PROPERTIES FOLDER "thirdparty")
 
 if (TARGET zlibstatic)
     set_target_properties(zlibstatic PROPERTIES FOLDER "thirdparty")

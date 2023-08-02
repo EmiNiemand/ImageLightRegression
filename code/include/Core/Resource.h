@@ -5,13 +5,19 @@
 #include <filesystem>
 
 class Resource {
-private:
+protected:
     std::string path;
 
 public:
     explicit Resource(std::string inPath);
     virtual ~Resource();
+
+    const std::string& GetPath();
+
+protected:
     virtual void Load() = 0;
+
+private:
     void Unload();
 };
 

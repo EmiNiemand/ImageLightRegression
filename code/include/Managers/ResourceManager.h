@@ -16,7 +16,7 @@ struct SResource {
 class ResourceManager {
 private:
     inline static ResourceManager* resourceManager;
-    std::unordered_map<std::string, SResource> resources;
+    inline static std::unordered_map<std::string, SResource> resources;
 
 public:
     ResourceManager(ResourceManager &other) = delete;
@@ -28,8 +28,8 @@ public:
     void StartUp();
     void ShutDown();
 
-    template<class T>
-    Resource* LoadResource(const std::string& path) {
+    template<typename T>
+    static T* LoadResource(const std::string& path) {
         ILR_ASSERT_MSG((std::is_base_of<Resource, T>::value), "Resource of given path does not derived from Resource Class");
 
         if (!resources.contains(path)) {
@@ -40,7 +40,7 @@ public:
             return resource;
         }
 
-        return resources.find(path)->second.resource;
+        return (T*)resources.find(path)->second.resource;
     };
 
     void UnloadResource(const std::string& path);

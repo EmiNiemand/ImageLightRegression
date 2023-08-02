@@ -21,13 +21,26 @@
 #pragma endregion
 #include "ApplicationTypes.h"
 
+class Object;
+class Component;
+
 class Application {
 public:
+    std::unordered_map<int, Object*> objects;
+    std::unordered_map<int, Component*> components;
+
+    Object* scene = nullptr;
     float frameTime = 0;
 
 private:
     std::pair<int, int> resolution = std::make_pair(800, 600);
     inline static Application* application;
+
+    unsigned int destroyObjectBufferIterator = 0;
+    int destroyObjectBuffer[200];
+    unsigned int destroyComponentBufferIterator = 0;
+    int destroyComponentBuffer[200];
+
     bool shouldRun = false;
 
 public:
@@ -41,6 +54,9 @@ public:
     void StartUp();
     void Run();
     void ShutDown();
+
+    void AddObjectToDestroyBuffer(int objectID);
+    void AddComponentToDestroyBuffer(int componentID);
 
 private:
     Application();
