@@ -4,7 +4,7 @@
 
 Resource::Resource(std::string inPath) : path(std::move(inPath)){
     if (!exists(std::filesystem::path(path))) {
-        ILR_ASSERT_MSG(exists(std::filesystem::path(path)), "Path does not exist.");
+        ILR_ASSERT_MSG(exists(std::filesystem::path(path)), "Path does not exist: " + path);
     }
 }
 

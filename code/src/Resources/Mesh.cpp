@@ -21,13 +21,13 @@ Mesh::~Mesh() = default;
 void Mesh::Draw(Shader* shader) {
     // bind appropriate textures
     for (unsigned int i = 0; i < textures.size(); i++) {
-        glActiveTexture(GL_TEXTURE1 + i); // active proper texture unit before binding
+        glActiveTexture(GL_TEXTURE0 + i); // active proper texture unit before binding
         // retrieve texture number (the N in diffuse_textureN)
         std::string name = textures[i]->type;
         // now set the sampler to the correct texture unit
         glUniform1i(glGetUniformLocation(
                 shader->GetShader(),
-                name.c_str()), i+1);
+                name.c_str()), i);
         // and finally bind the texture
         glBindTexture(GL_TEXTURE_2D, textures[i]->GetID());
     }

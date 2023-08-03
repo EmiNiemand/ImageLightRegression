@@ -2,6 +2,11 @@
 #include "Managers/ResourceManager.h"
 #include "Core/Object.h"
 #include "Components/Component.h"
+#include "Components/Rendering/Camera.h"
+#include "Components/Transform.h"
+#include "Components/Rendering/Renderer.h"
+#include "Managers/RenderingManager.h"
+#include "Components/Rendering/Lights/PointLight.h"
 
 Application::Application() = default;
 
@@ -18,13 +23,26 @@ void Application::StartUp() {
     CreateApplicationWindow();
 
     scene = Object::Instantiate("Scene", nullptr);
+
+    Object* mainCamera = Object::Instantiate("Main Camera", scene);
+    mainCamera->AddComponent<Camera>();
+    Camera::SetActiveCamera(mainCamera);
+    mainCamera->transform->SetLocalPosition({0, 0, 10});
+
+    Object* loadedObject = Object::Instantiate("Something", scene);
+    loadedObject->AddComponent<Renderer>()->LoadModel("resources/models/Cube/Cube.obj");
+    loadedObject->transform->SetLocalRotation({0, 65, 0});
+
+    Object* pointLight = Object::Instantiate("Point Light", scene);
+    pointLight->AddComponent<PointLight>();
+    pointLight->transform->SetLocalPosition({10, 1, 0});
 }
 
 void Application::Run() {
     while(!shouldRun) {
         frameTime = (float)glfwGetTime();
-        glfwPollEvents();
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         for (int i = 0; i < destroyComponentBufferIterator; ++i) {
             int componentID = destroyComponentBuffer[i];
@@ -36,7 +54,6 @@ void Application::Run() {
 
         for (int i = 0; i < destroyObjectBufferIterator; ++i) {
             int objectID = destroyObjectBuffer[i];
-            objects[objectID]->Destroy();
             delete objects[objectID];
             objects.erase(objectID);
         }
@@ -58,8 +75,16 @@ void Application::Run() {
             }
         }
 
+        for (const auto& component: components) {
+            if (component.second->enabled) {
+                component.second->Update();
+            }
+        }
+
+        RenderingManager::GetInstance()->Draw(RenderingManager::GetInstance()->shader);
 
         glfwSwapBuffers(window);
+        glfwPollEvents();
         shouldRun = glfwWindowShouldClose(window);
     }
 }
@@ -113,11 +138,7 @@ void Application::CreateApplicationWindow() {
 
 
     // DebugManager::GetInstance()->Initialize(window, glsl_version);
-
-    glEnable(GL_MULTISAMPLE);
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     stbi_set_flip_vertically_on_load(true);
 }
 

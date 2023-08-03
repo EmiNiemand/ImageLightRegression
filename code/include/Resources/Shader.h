@@ -9,7 +9,7 @@
 
 class Shader : public Resource {
 private:
-    GLuint shader = -1;
+    GLuint shaderID = -1;
 public:
     explicit Shader(const std::string &inPath);
     ~Shader() override;

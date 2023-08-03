@@ -13,6 +13,8 @@ uniform mat4 view;
 uniform mat4 model;
 uniform mat4 lightSpaceMatrix = mat4(0.0f);
 
+uniform vec2 texStrech;
+
 void main() {
     FragPos = vec3(model * vec4(aPos, 1.0));
     TexCoords = vec2(aTexCoords.x * texStrech.x, aTexCoords.y * texStrech.y);

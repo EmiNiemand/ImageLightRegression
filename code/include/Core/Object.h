@@ -37,15 +37,15 @@ public:
     template<class T>
     T* AddComponent() {
         T* component = ComponentFactory::GetInstance()->CreateComponent<T>(this);
-        components.insert({component->GetId(), component});
+        components.insert({component->id, component});
         component->OnCreate();
         return component;
     };
 
     template<class T>
     T* GetComponentByClass() {
-        for (auto&& component : components) {
-            if (dynamic_cast<T>(component.second) != nullptr) {
+        for (auto& component : components) {
+            if (dynamic_cast<T*>(component.second) != nullptr) {
                 return (T*)(component.second);
             }
         }
@@ -55,8 +55,8 @@ public:
     template<class T>
     std::vector<T*> GetComponentsByClass() {
         std::vector<T*> componentsOfClass;
-        for (auto&& component : components) {
-            if (dynamic_cast<T>(component.second) != nullptr) {
+        for (auto& component : components) {
+            if (dynamic_cast<T*>(component.second) != nullptr) {
                 componentsOfClass.push_back((T*)(component.second));
             }
         }
@@ -76,10 +76,8 @@ public:
     void RecalculateGlobalRotation();
 
 private:
-    friend class Application;
     friend class ObjectFactory;
     Object(std::string name, Object *parent, int id);
-    void Destroy();
     void DestroyAllComponents();
     void DestroyAllChildren();
     void ForceUpdateSelfAndChildren();

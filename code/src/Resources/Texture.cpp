@@ -32,12 +32,10 @@ void Texture::Load() {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        stbi_image_free(data);
     } else {
         ILR_ERROR_MSG("Texture failed to load at path: " + (std::string)path);
-        stbi_image_free(data);
     }
+    stbi_image_free(data);
     id = textureID;
 }
 

@@ -34,8 +34,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DRELEASE")
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 				   COMMAND ${CMAKE_COMMAND} -E create_symlink
-				   ${CMAKE_SOURCE_DIR}/assets
-				   ${CMAKE_CURRENT_BINARY_DIR}/assets)
+				   ${CMAKE_SOURCE_DIR}/resources
+				   ${CMAKE_CURRENT_BINARY_DIR}/resources)
 
 if(MSVC)
     target_compile_definitions(${PROJECT_NAME} PUBLIC NOMINMAX)

@@ -4,6 +4,9 @@
 #include "Application.h"
 
 class Object;
+class Camera;
+class Spotlight;
+class Pointlight;
 
 class ComponentFactory {
 private:
@@ -19,7 +22,7 @@ public:
     static ComponentFactory* GetInstance();
 
     template<class T>
-    T* CreateComponent(Object* &parent) {
+    T* CreateComponent(Object* parent) {
 
         id++;
         T* component = new T(parent, id);

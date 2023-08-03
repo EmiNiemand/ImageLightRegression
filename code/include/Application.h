@@ -29,11 +29,12 @@ public:
     std::unordered_map<int, Object*> objects;
     std::unordered_map<int, Component*> components;
 
+    std::pair<int, int> resolution = std::make_pair(800, 600);
+
     Object* scene = nullptr;
     float frameTime = 0;
 
 private:
-    std::pair<int, int> resolution = std::make_pair(800, 600);
     inline static Application* application;
 
     unsigned int destroyObjectBufferIterator = 0;
@@ -61,6 +62,7 @@ public:
 private:
     Application();
     void CreateApplicationWindow();
+    void Update();
     static void glfwErrorCallback(int error, const char* description);
 };
 

@@ -16,6 +16,8 @@ Object *Object::Instantiate(const std::string& name, Object *parent) {
 }
 
 void Object::Destroy(Object* object) {
+    object->DestroyAllComponents();
+    object->DestroyAllChildren();
     Application::GetInstance()->AddObjectToDestroyBuffer(object->id);
 }
 
@@ -103,21 +105,10 @@ void Object::RecalculateGlobalRotation() {
     }
 }
 
-void Object::Destroy() {
-    DestroyAllChildren();
-    DestroyAllComponents();
-    parent->children.erase(id);
-    children.clear();
-    components.clear();
-    delete transform;
-}
-
 void Object::DestroyAllComponents() {
     if (components.empty()) return;
     for (const auto& component : components) {
-        component.second->OnDestroy();
-        Application::GetInstance()->components.erase(component.second->id);
-        delete component.second;
+        Component::Destroy(component.second);
     }
     components.clear();
 }
@@ -125,28 +116,8 @@ void Object::DestroyAllComponents() {
 void Object::DestroyAllChildren() {
     if (children.empty()) return;
 
-    std::vector<Object*> toDestroy;
-
-    toDestroy.reserve(20);
-
     for (const auto& child : children) {
-        toDestroy.push_back(child.second);
-    }
-
-    for (int i = 0; i < toDestroy.size(); ++i) {
-        auto ch = toDestroy[i];
-        if (ch->children.empty()) continue;
-        for (const auto& child : ch->children) {
-            toDestroy.push_back(child.second);
-        }
-    }
-
-    for (int i = 0; i < toDestroy.size(); ++i) {
-        toDestroy[i]->DestroyAllComponents();
-        toDestroy[i]->children.clear();
-        delete toDestroy[i]->transform;
-        Application::GetInstance()->objects.erase(toDestroy[i]->id);
-        delete toDestroy[i];
+        Object::Destroy(child.second);
     }
 }
 

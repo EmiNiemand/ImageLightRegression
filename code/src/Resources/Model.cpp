@@ -136,9 +136,10 @@ std::vector<Texture*> Model::LoadMaterialTextures(aiMaterial *mat, aiTextureType
     {
         aiString str;
         mat->GetTexture(type, i, &str);
-        std::string path = std::filesystem::path(str.C_Str()).generic_string();
+        std::string texturePath = path.substr(0, path.find_last_of('/') + 1);
+        texturePath += std::filesystem::path(str.C_Str()).generic_string();
 
-        Texture* texture = ResourceManager::LoadResource<Texture>(path);
+        Texture* texture = ResourceManager::LoadResource<Texture>(texturePath);
         texture->type = typeName;
         textures.push_back(texture);
     }
