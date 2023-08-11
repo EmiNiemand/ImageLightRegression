@@ -23,10 +23,12 @@ void ResourceManager::ShutDown() {
     delete resourceManager;
 }
 
-void ResourceManager::UnloadResource(const std::string &path) {
+void ResourceManager::UnloadResource(std::string path) {
 #ifdef DEBUG
     if (!resources.contains(path))ILR_ERROR_MSG("Given resource does no longer exist");
 #endif
+
+    auto& man = resources;
 
     if (resources.contains(path)) {
         SResource* resource = &resources.find(path)->second;

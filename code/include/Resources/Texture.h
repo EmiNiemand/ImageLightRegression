@@ -15,7 +15,8 @@ public:
     ~Texture() override;
 
     void Load() override;
-    unsigned int GetID() const;
+
+    [[nodiscard]] unsigned int GetID() const;
 };
 
 

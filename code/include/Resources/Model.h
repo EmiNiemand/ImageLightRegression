@@ -16,11 +16,12 @@ public:
 
     void Load() override;
 
-    void Draw(Shader* shader);
+    void Draw(Shader* inShader);
+
 
 private:
     void ProcessNode(aiNode *node, const aiScene *scene);
-    Mesh ProcessMesh(aiMesh *mesh, const aiScene *scene);
+    void ProcessMesh(aiMesh *mesh, const aiScene *scene);
     std::vector<Texture*> LoadMaterialTextures(aiMaterial *mat, aiTextureType type, const std::string& typeName);
 };
 

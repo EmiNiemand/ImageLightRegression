@@ -6,20 +6,12 @@
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
+#include "Structures.h"
+
 #include <string>
 
 class Shader;
 class Model;
-
-struct Material {
-    glm::vec3 color;
-    float shininess;
-    // Values: <0, 1>
-    float reflection;
-    // Values: <0, 1>
-    float refraction;
-};
-
 
 class Renderer : public Component {
 public:
@@ -32,6 +24,8 @@ public:
 public:
     Renderer(Object *parent, int id);
     ~Renderer() override;
+
+    void OnDestroy() override;
 
     void Update() override;
     void Draw(Shader* shader);

@@ -1,8 +1,8 @@
 #ifndef IMAGELIGHTREGRESSION_RESOURCEMANAGER_H
 #define IMAGELIGHTREGRESSION_RESOURCEMANAGER_H
 
-#include "ApplicationTypes.h"
 #include "Core/Resource.h"
+#include "ApplicationTypes.h"
 #include "Macros.h"
 
 #include <unordered_map>
@@ -40,10 +40,13 @@ public:
             return resource;
         }
 
-        return (T*)resources.find(path)->second.resource;
+        SResource& resource = resources.find(path)->second;
+        ++resource.resourceCounter;
+
+        return (T*)resource.resource;
     };
 
-    void UnloadResource(const std::string& path);
+    static void UnloadResource(std::string path);
 
 private:
     ResourceManager();

@@ -1,0 +1,4 @@
+{
+  "vertex": "resources/Shaders/Basic.vert",
+  "fragment": "resources/Shaders/Basic.frag"
+}

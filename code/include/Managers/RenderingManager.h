@@ -17,7 +17,7 @@ public:
     std::map<int, SpotLight*> spotLights;
 
     Shader* shader;
-    //Shader* cubeMapShader;
+    Shader* cubeMapShader;
 
 private:
     inline static RenderingManager* renderingManager;
@@ -31,7 +31,7 @@ public:
 
     static RenderingManager* GetInstance();
 
-    void Free() const;
+    void Shutdown() const;
 
     void Draw(Shader* inShader);
     void AddToDrawBuffer(Renderer* renderer);

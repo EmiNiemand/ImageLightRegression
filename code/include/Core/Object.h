@@ -12,6 +12,9 @@ class Component;
 class Transform;
 
 class Object {
+    friend class Application;
+    friend class ObjectFactory;
+    friend class EditorCamera;
 public:
     std::unordered_map<int, Component*> components;
     std::unordered_map<int, Object*> children;
@@ -24,6 +27,7 @@ public:
     int id;
     bool dirtyFlag = true;
     bool enabled = true;
+    bool showInEditor = true;
 
 private:
     Object* parent;
@@ -76,7 +80,6 @@ public:
     void RecalculateGlobalRotation();
 
 private:
-    friend class ObjectFactory;
     Object(std::string name, Object *parent, int id);
     void DestroyAllComponents();
     void DestroyAllChildren();

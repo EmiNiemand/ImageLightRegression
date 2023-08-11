@@ -1,0 +1,8 @@
+{
+  "textureRight": "resources/Textures/CubeMap/0.jpg",
+  "textureLeft": "resources/Textures/CubeMap/1.jpg",
+  "textureTop": "resources/Textures/CubeMap/2.jpg",
+  "textureBottom": "resources/Textures/CubeMap/3.jpg",
+  "textureFront": "resources/Textures/CubeMap/4.jpg",
+  "textureBack": "resources/Textures/CubeMap/5.jpg"
+}

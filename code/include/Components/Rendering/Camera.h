@@ -7,9 +7,7 @@
 #include "glm/gtc/matrix_transform.hpp"
 
 class Camera : public Component {
-private:
-    glm::mat4 projection{};
-
+protected:
     inline static Object* activeCamera;
 
     float fov = 45.0f;
@@ -28,8 +26,8 @@ public:
     static void SetActiveCamera(Object* inCameraObject);
 
     static Object* GetActiveCamera();
-    glm::mat4 GetViewMatrix();
-    glm::mat4 GetProjectionMatrix();
+    [[nodiscard]] glm::mat4 GetViewMatrix() const;
+    [[nodiscard]] glm::mat4 GetProjectionMatrix() const;
 };
 
 

@@ -17,8 +17,6 @@ public:
 protected:
     virtual void Load() = 0;
 
-private:
-    void Unload();
 };
 
 

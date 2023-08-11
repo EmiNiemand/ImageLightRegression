@@ -1,6 +1,8 @@
 #include "Resources/Mesh.h"
+#include "Managers/ResourceManager.h"
 #include "Resources/Shader.h"
 #include "Resources/Texture.h"
+#include "Macros.h"
 
 Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture*> textures) {
     this->vertices = std::move(vertices);
@@ -13,12 +15,20 @@ Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std:
     glGenBuffers(1, &ebo);
 
     // now that we have all the required data, set the vertex buffers and its attribute pointers.
-    setupMesh();
+    InitializeBuffers();
 }
 
-Mesh::~Mesh() = default;
+Mesh::~Mesh() {
+    for (int i = 0; i < textures.size(); ++i) {
+        ResourceManager::UnloadResource(textures[i]->GetPath());
+    }
 
-void Mesh::Draw(Shader* shader) {
+    glDeleteVertexArrays(1, &vao);
+    glDeleteBuffers(1, &vbo);
+    glDeleteBuffers(1, &ebo);
+}
+
+void Mesh::Draw(Shader* inShader) {
     // bind appropriate textures
     for (unsigned int i = 0; i < textures.size(); i++) {
         glActiveTexture(GL_TEXTURE0 + i); // active proper texture unit before binding
@@ -26,7 +36,7 @@ void Mesh::Draw(Shader* shader) {
         std::string name = textures[i]->type;
         // now set the sampler to the correct texture unit
         glUniform1i(glGetUniformLocation(
-                shader->GetShader(),
+                inShader->GetShader(),
                 name.c_str()), i);
         // and finally bind the texture
         glBindTexture(GL_TEXTURE_2D, textures[i]->GetID());
@@ -42,7 +52,7 @@ void Mesh::Draw(Shader* shader) {
 
         // now set the sampler to the correct texture unit
         glUniform1i(glGetUniformLocation(
-                shader->GetShader(),
+                inShader->GetShader(),
                 name.c_str()), GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS);
     }
     if (!textures.empty()) glBindTexture(GL_TEXTURE_2D, 0);
@@ -51,7 +61,7 @@ void Mesh::Draw(Shader* shader) {
     glActiveTexture(GL_TEXTURE0);
 }
 
-void Mesh::setupMesh()
+void Mesh::InitializeBuffers()
 {
     glBindVertexArray(vao);
     // load data into vertex buffers

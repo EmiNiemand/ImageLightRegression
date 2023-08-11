@@ -10,8 +10,8 @@
 #include "Components/Rendering/Lights/Spotlight.h"
 
 RenderingManager::RenderingManager() {
-    shader = ResourceManager::LoadResource<Shader>("resources/shaderResources/basicShader.json");
-    //cubeMapShader = std::make_shared<Shader>("cubeMap.vert", "cubeMap.frag");
+    shader = ResourceManager::LoadResource<Shader>("resources/Resources/ShaderResources/BasicShader.json");
+    cubeMapShader = ResourceManager::LoadResource<Shader>("resources/Resources/ShaderResources/CubeMapShader.json");
 }
 
 RenderingManager::~RenderingManager() {
@@ -25,9 +25,9 @@ RenderingManager* RenderingManager::GetInstance() {
     return renderingManager;
 }
 
-void RenderingManager::Free() const {
+void RenderingManager::Shutdown() const {
     shader->Delete();
-    //cubeMapShader->Delete();
+    cubeMapShader->Delete();
 }
 
 void RenderingManager::Draw(Shader* inShader) {
@@ -43,22 +43,24 @@ void RenderingManager::AddToDrawBuffer(Renderer* renderer) {
 }
 
 void RenderingManager::UpdateProjection() const {
-    shader->Activate();
-    glm::mat4 mat = Camera::GetActiveCamera()->GetComponentByClass<Camera>()->GetProjectionMatrix();
-    shader->SetMat4("projection", Camera::GetActiveCamera()->GetComponentByClass<Camera>()->GetProjectionMatrix());
+    glm::mat4 projection = Camera::GetActiveCamera()->GetComponentByClass<Camera>()->GetProjectionMatrix();
 
-    //cubeMapShader->Activate();
-    //cubeMapShader->SetMat4("projection", projection);
+    shader->Activate();
+    shader->SetMat4("projection", projection);
+
+    cubeMapShader->Activate();
+    cubeMapShader->SetMat4("projection", projection);
 }
 
 void RenderingManager::UpdateView() const {
+    glm::mat4 view = Camera::GetActiveCamera()->GetComponentByClass<Camera>()->GetViewMatrix();
+
     shader->Activate();
-    glm::mat4 mat = Camera::GetActiveCamera()->GetComponentByClass<Camera>()->GetViewMatrix();
-    shader->SetMat4("view", Camera::GetActiveCamera()->GetComponentByClass<Camera>()->GetViewMatrix());
+    shader->SetMat4("view", view);
     shader->SetVec3("viewPos", Camera::GetActiveCamera()->transform->GetGlobalPosition());
 
-    //cubeMapShader->Activate();
-    //cubeMapShader->SetMat4("view", glm::mat4(glm::mat3(Camera::activeCamera->GetComponent<Camera>()->GetViewMatrix())));
+    cubeMapShader->Activate();
+    cubeMapShader->SetMat4("view", view);
 }
 
 void RenderingManager::UpdateLight(int componentId) {

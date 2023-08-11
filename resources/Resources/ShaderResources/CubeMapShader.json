@@ -1,0 +1,4 @@
+{
+  "vertex": "resources/Shaders/CubeMap/CubeMap.vert",
+  "fragment": "resources/Shaders/CubeMap/CubeMap.frag"
+}

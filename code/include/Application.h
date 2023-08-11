@@ -19,7 +19,9 @@
 #include <spdlog/spdlog.h>
 #include <stb_image.h>
 #pragma endregion
+
 #include "ApplicationTypes.h"
+#include "Structures.h"
 
 class Object;
 class Component;
@@ -29,7 +31,8 @@ public:
     std::unordered_map<int, Object*> objects;
     std::unordered_map<int, Component*> components;
 
-    std::pair<int, int> resolution = std::make_pair(800, 600);
+    inline static glm::ivec2 resolution = glm::ivec2(1920, 1000);
+    inline static Viewport viewports[4];
 
     Object* scene = nullptr;
     float frameTime = 0;
@@ -38,11 +41,12 @@ private:
     inline static Application* application;
 
     unsigned int destroyObjectBufferIterator = 0;
-    int destroyObjectBuffer[200];
+    int destroyObjectBuffer[200]{};
     unsigned int destroyComponentBufferIterator = 0;
-    int destroyComponentBuffer[200];
+    int destroyComponentBuffer[200]{};
 
     bool shouldRun = false;
+    bool isStarted = false;
 
 public:
     GLFWwindow* window = nullptr;
@@ -62,8 +66,8 @@ public:
 private:
     Application();
     void CreateApplicationWindow();
-    void Update();
     static void glfwErrorCallback(int error, const char* description);
+    static void glfwFramebufferSizeCallback(GLFWwindow* window, int width, int height);
 };
 
 

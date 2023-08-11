@@ -26,8 +26,8 @@ void Model::Load() {
     ProcessNode(scene->mRootNode, scene);
 }
 
-void Model::Draw(Shader *shader) {
-    for(auto& mesh : meshes) mesh.Draw(shader);
+void Model::Draw(Shader* inShader) {
+    for(auto& mesh : meshes) mesh.Draw(inShader);
 }
 
 void Model::ProcessNode(aiNode *node, const aiScene *scene) {
@@ -37,7 +37,7 @@ void Model::ProcessNode(aiNode *node, const aiScene *scene) {
         // the node object only contains indices to index the actual objects in the activeScene.
         // the activeScene contains all the data, node is just to keep stuff organized (like relations between nodes).
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        meshes.push_back(ProcessMesh(mesh, scene));
+        ProcessMesh(mesh, scene);
     }
     // after we've processed all of the meshes (if any) we then recursively process each of the children nodes
     for(unsigned int i = 0; i < node->mNumChildren; i++)
@@ -46,7 +46,7 @@ void Model::ProcessNode(aiNode *node, const aiScene *scene) {
     }
 }
 
-Mesh Model::ProcessMesh(aiMesh *mesh, const aiScene *scene) {
+void Model::ProcessMesh(aiMesh *mesh, const aiScene *scene) {
     // data to fill
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
@@ -124,9 +124,7 @@ Mesh Model::ProcessMesh(aiMesh *mesh, const aiScene *scene) {
     // 4. height maps
     std::vector<Texture*> heightMaps = LoadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
     textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
-
-    // return a mesh object created from the extracted mesh data
-    return {vertices, indices, textures};
+    meshes.emplace_back(vertices, indices, textures);
 }
 
 std::vector<Texture*> Model::LoadMaterialTextures(aiMaterial *mat, aiTextureType type, const std::string& typeName) {

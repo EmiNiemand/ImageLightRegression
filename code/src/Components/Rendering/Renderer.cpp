@@ -10,6 +10,11 @@ Renderer::Renderer(Object *parent, int id) : Component(parent, id) {}
 
 Renderer::~Renderer() = default;
 
+void Renderer::OnDestroy() {
+    Component::OnDestroy();
+    ResourceManager::UnloadResource(model->GetPath());
+}
+
 void Renderer::Update() {
     if (!enabled) return;
     Component::Update();

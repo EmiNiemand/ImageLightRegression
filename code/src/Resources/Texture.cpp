@@ -1,11 +1,14 @@
 #include "Resources/Texture.h"
 #include "Macros.h"
+
 #include "stb_image.h"
 #include "glad/glad.h"
 
 Texture::Texture(const std::string &inPath) : Resource(inPath) {}
 
-Texture::~Texture() = default;
+Texture::~Texture() {
+    glDeleteTextures(1, &id);
+}
 
 void Texture::Load() {
     std::string filename = std::string(path);

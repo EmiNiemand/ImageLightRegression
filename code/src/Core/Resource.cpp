@@ -8,13 +8,7 @@ Resource::Resource(std::string inPath) : path(std::move(inPath)){
     }
 }
 
-Resource::~Resource() {
-    Unload();
-}
-
-void Resource::Unload() {
-    ResourceManager::GetInstance()->UnloadResource(path);
-}
+Resource::~Resource() = default;
 
 const std::string &Resource::GetPath() {
     return path;
