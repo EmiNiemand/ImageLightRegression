@@ -54,6 +54,8 @@ public:
 
     static InputManager* GetInstance();
 
+    void Startup();
+    void Shutdown();
     /// Should be called after glfwPollEvents
     void ManageInput();
 

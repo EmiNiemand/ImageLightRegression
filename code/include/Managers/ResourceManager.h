@@ -25,8 +25,8 @@ public:
 
     static ResourceManager* GetInstance();
 
-    void StartUp();
-    void ShutDown();
+    void Startup();
+    void Shutdown();
 
     template<typename T>
     static T* LoadResource(const std::string& path) {

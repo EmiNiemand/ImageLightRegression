@@ -19,7 +19,6 @@ public:
 
     Shader* shader;
     Shader* cubeMapShader;
-    Shader* imageShader;
 private:
     inline static RenderingManager* renderingManager;
     uint16 bufferIterator = 0;
@@ -32,7 +31,8 @@ public:
 
     static RenderingManager* GetInstance();
 
-    void Shutdown() const;
+    void Startup();
+    void Shutdown();
 
     void Draw(Shader* inShader);
     void ClearBuffer();

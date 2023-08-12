@@ -1,15 +1,24 @@
 #include "Managers/InputManager.h"
 #include "Application.h"
 
-InputManager::InputManager() {
+InputManager::InputManager() = default;
+
+InputManager::~InputManager() = default;
+
+void InputManager::Startup() {
     glfwSetKeyCallback(Application::GetInstance()->window, InputManager::KeyActionCallback);
     glfwSetMouseButtonCallback(Application::GetInstance()->window, InputManager::MouseActionCallback);
+
+    keysDown.reserve(10);
+    keysUp.reserve(10);
+    keysPressed.reserve(10);
 }
 
-InputManager::~InputManager() {
+void InputManager::Shutdown() {
+    glfwSetKeyCallback(Application::GetInstance()->window, nullptr);
+    glfwSetMouseButtonCallback(Application::GetInstance()->window, nullptr);
     delete inputManager;
 }
-
 
 InputManager* InputManager::GetInstance() {
     if (inputManager == nullptr) {

@@ -17,9 +17,6 @@ public:
 private:
     Texture* texture = nullptr;
 
-    inline static unsigned int vao = 0;
-    inline static unsigned int vbo = 0;
-
 public:
     Image(Object *parent, int id);
     ~Image() override;
@@ -29,10 +26,6 @@ public:
     void Draw(Shader* inShader);
 
     void SetTexture(const std::string& inPath);
-
-    //TODO: maybe move it to UIManager with UI shader from rendering manager
-    static void InitializeBuffers();
-    static void DeleteBuffers();
 };
 
 

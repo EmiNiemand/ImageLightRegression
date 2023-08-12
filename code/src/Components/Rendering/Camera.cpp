@@ -1,6 +1,6 @@
 #include "Components/Rendering/Camera.h"
-#include "Application.h"
 #include "Managers/RenderingManager.h"
+#include "Managers/UIManager.h"
 #include "Core/Object.h"
 #include "Components/Transform.h"
 
@@ -13,6 +13,7 @@ void Camera::OnUpdate() {
 
     RenderingManager::GetInstance()->UpdateView();
     RenderingManager::GetInstance()->UpdateProjection();
+    UIManager::GetInstance()->UpdateProjection();
 }
 
 void Camera::SetFOV(float inFOV) {

@@ -1,4 +1,4 @@
-#include "Editor/Components/EditorCamera.h"
+#include "Components/Rendering/Editor/EditorCamera.h"
 #include "Application.h"
 #include "Managers/InputManager.h"
 #include "Core/Object.h"

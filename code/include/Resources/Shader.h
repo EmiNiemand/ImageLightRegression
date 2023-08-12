@@ -2,9 +2,11 @@
 #define IMAGELIGHTREGRESSION_SHADER_H
 
 #include "Core/Resource.h"
+
 #include "glad/glad.h"
 #include "glm/matrix.hpp"
 #include "glm/gtc/matrix_transform.hpp"
+
 #include <string>
 
 class Shader : public Resource {

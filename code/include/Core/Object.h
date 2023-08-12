@@ -27,7 +27,7 @@ public:
     int id;
     bool dirtyFlag = true;
     bool enabled = true;
-    bool showInEditor = true;
+    bool visibleInEditor = true;
 
 private:
     Object* parent;

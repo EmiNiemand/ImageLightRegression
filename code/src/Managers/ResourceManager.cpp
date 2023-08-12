@@ -11,11 +11,10 @@ ResourceManager* ResourceManager::GetInstance() {
     return resourceManager;
 }
 
-void ResourceManager::StartUp() {
-
+void ResourceManager::Startup() {
 }
 
-void ResourceManager::ShutDown() {
+void ResourceManager::Shutdown() {
     for (const auto& resource : resources) {
         delete resource.second.resource;
     }

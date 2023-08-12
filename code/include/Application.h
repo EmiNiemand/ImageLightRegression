@@ -1,27 +1,11 @@
 #ifndef IMAGELIGHTREGRESSION_APPLICATION_H
 #define IMAGELIGHTREGRESSION_APPLICATION_H
 
-#pragma region "Library includes"
-#include "imgui.h"
-#include "backends/imgui_impl_glfw.h"
-#include "backends/imgui_impl_opengl3.h"
-#include <cstdio>
-
-#define IMGUI_IMPL_OPENGL_LOADER_GLAD
-
-#if defined(IMGUI_IMPL_OPENGL_LOADER_GLAD)
-#include <glad/glad.h>  // Initialize with gladLoadGL()
-#else
-#include IMGUI_IMPL_OPENGL_LOADER_CUSTOM
-#endif
-
-#include <GLFW/glfw3.h> // Include glfw3.h after our OpenGL definitions
-#include <spdlog/spdlog.h>
-#include <stb_image.h>
-#pragma endregion
-
 #include "ApplicationTypes.h"
 #include "Structures.h"
+
+#include <GLFW/glfw3.h> // Include glfw3.h after our OpenGL definitions
+#include <unordered_map>
 
 class Object;
 class Component;
@@ -48,9 +32,9 @@ private:
     bool shouldRun = false;
     bool isStarted = false;
 
-    Object* image1;
-    Object* image2;
-    Object* image3;
+    Object* loadedImage = nullptr;
+    Object* renderedImage = nullptr;
+    Object* differenceImage = nullptr;
 
 public:
     GLFWwindow* window = nullptr;
@@ -60,9 +44,9 @@ public:
 
     static Application* GetInstance();
 
-    void StartUp();
+    void Startup();
     void Run();
-    void ShutDown();
+    void Shutdown();
 
     void AddObjectToDestroyBuffer(int objectID);
     void AddComponentToDestroyBuffer(int componentID);

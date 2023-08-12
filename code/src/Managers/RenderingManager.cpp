@@ -4,20 +4,15 @@
 #include "Core/Object.h"
 #include "Components/Transform.h"
 #include "Components/Rendering/Renderer.h"
+#include "Components/Rendering/Skybox.h"
 #include "Components/Rendering/Camera.h"
 #include "Components/Rendering/Lights/DirectionalLight.h"
 #include "Components/Rendering/Lights/PointLight.h"
 #include "Components/Rendering/Lights/Spotlight.h"
 
-RenderingManager::RenderingManager() {
-    shader = ResourceManager::LoadResource<Shader>("resources/Resources/ShaderResources/BasicShader.json");
-    cubeMapShader = ResourceManager::LoadResource<Shader>("resources/Resources/ShaderResources/CubeMapShader.json");
-    imageShader = ResourceManager::LoadResource<Shader>("resources/Resources/ShaderResources/ImageShader.json");
-}
+RenderingManager::RenderingManager() = default;
 
-RenderingManager::~RenderingManager() {
-    delete renderingManager;
-}
+RenderingManager::~RenderingManager() = default;
 
 RenderingManager* RenderingManager::GetInstance() {
     if (renderingManager == nullptr) {
@@ -26,9 +21,21 @@ RenderingManager* RenderingManager::GetInstance() {
     return renderingManager;
 }
 
-void RenderingManager::Shutdown() const {
+void RenderingManager::Startup() {
+    Skybox::InitializeBuffers();
+    shader = ResourceManager::LoadResource<Shader>("resources/Resources/ShaderResources/BasicShader.json");
+    cubeMapShader = ResourceManager::LoadResource<Shader>("resources/Resources/ShaderResources/CubeMapShader.json");
+}
+
+void RenderingManager::Shutdown() {
+    Skybox::DeleteBuffers();
     shader->Delete();
     cubeMapShader->Delete();
+
+    ResourceManager::UnloadResource(shader->GetPath());
+    ResourceManager::UnloadResource(cubeMapShader->GetPath());
+
+    delete renderingManager;
 }
 
 void RenderingManager::Draw(Shader* inShader) {
@@ -50,9 +57,6 @@ void RenderingManager::UpdateProjection() const {
 
     cubeMapShader->Activate();
     cubeMapShader->SetMat4("projection", projection);
-
-    imageShader->Activate();
-    imageShader->SetMat4("projection", projection);
 }
 
 void RenderingManager::UpdateView() const {

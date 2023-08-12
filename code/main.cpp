@@ -2,10 +2,10 @@
 
 int main(int, char**)
 {
-    Application::GetInstance()->StartUp();
+    Application::GetInstance()->Startup();
 
     Application::GetInstance()->Run();
 
-    Application::GetInstance()->ShutDown();
+    Application::GetInstance()->Shutdown();
     return 0;
 }

@@ -1,14 +1,19 @@
 #include "Application.h"
 #include "Managers/ResourceManager.h"
 #include "Managers/InputManager.h"
+#include "Managers/RenderingManager.h"
+#include "Managers/UIManager.h"
+#include "Managers/EditorManager.h"
 #include "Core/Object.h"
-#include "Editor/Components/EditorCamera.h"
+#include "Components/Rendering/Editor/EditorCamera.h"
 #include "Components/Transform.h"
 #include "Components/Rendering/Renderer.h"
-#include "Managers/RenderingManager.h"
 #include "Components/Rendering/Lights/PointLight.h"
 #include "Components/Rendering/Skybox.h"
 #include "Components/Rendering/UI/Image.h"
+
+#include <glad/glad.h>  // Initialize with gladLoadGL()
+#include <stb_image.h>
 
 Application::Application() = default;
 
@@ -21,11 +26,14 @@ Application *Application::GetInstance() {
     return application;
 }
 
-void Application::StartUp() {
+void Application::Startup() {
     CreateApplicationWindow();
 
-    Skybox::InitializeBuffers();
-    Image::InitializeBuffers();
+    ResourceManager::GetInstance()->Startup();
+    InputManager::GetInstance()->Startup();
+    RenderingManager::GetInstance()->Startup();
+    UIManager::GetInstance()->Startup();
+    EditorManager::GetInstance()->Startup();
 
     scene = Object::Instantiate("Scene", nullptr);
 
@@ -42,6 +50,7 @@ void Application::StartUp() {
     mainCamera->AddComponent<EditorCamera>();
     Camera::SetActiveCamera(mainCamera);
     mainCamera->transform->SetLocalPosition({0, 0, 10});
+    mainCamera->visibleInEditor = false;
 
     Object* skybox = Object::Instantiate("Skybox", scene);
     skybox->AddComponent<Skybox>();
@@ -51,14 +60,17 @@ void Application::StartUp() {
     loadedObject->AddComponent<Renderer>()->LoadModel("resources/models/Cube/Cube.obj");
     loadedObject->GetComponentByClass<Renderer>()->material = {glm::vec3(1.0f, 1.0f, 1.0f), 32.0f, 0.0f, 0.0f};
 
-    image1 = Object::Instantiate("Image1", scene);
-    image1->AddComponent<Image>();
+    loadedImage = Object::Instantiate("Loaded Image", scene);
+    loadedImage->AddComponent<Image>();
+    loadedImage->visibleInEditor = false;
 
-    image2 = Object::Instantiate("Image2", scene);
-    image2->AddComponent<Image>();
+    renderedImage = Object::Instantiate("Rendered Image", scene);
+    renderedImage->AddComponent<Image>();
+    renderedImage->visibleInEditor = false;
 
-    image3 = Object::Instantiate("Image3", scene);
-    image3->AddComponent<Image>();
+    differenceImage = Object::Instantiate("Difference Image", scene);
+    differenceImage->AddComponent<Image>();
+    differenceImage->visibleInEditor = false;
 
     Object* pointLight = Object::Instantiate("Point Light", scene);
     pointLight->AddComponent<PointLight>();
@@ -119,16 +131,14 @@ void Application::Run() {
         Skybox::Draw(RenderingManager::GetInstance()->cubeMapShader);
 
         glViewport(viewports[1].position.x, viewports[1].position.y, viewports[1].resolution.x, viewports[1].resolution.y);
-        // show
-        image1->GetComponentByClass<Image>()->Draw(RenderingManager::GetInstance()->imageShader);
+        loadedImage->GetComponentByClass<Image>()->Draw(UIManager::GetInstance()->imageShader);
 
         if (isStarted) {
             glViewport(viewports[2].position.x, viewports[2].position.y, viewports[2].resolution.x, viewports[2].resolution.y);
-            // show
-            image2->GetComponentByClass<Image>()->Draw(RenderingManager::GetInstance()->imageShader);
+            renderedImage->GetComponentByClass<Image>()->Draw(UIManager::GetInstance()->imageShader);
+
             glViewport(viewports[3].position.x, viewports[3].position.y, viewports[3].resolution.x, viewports[3].resolution.y);
-            // show
-            image3->GetComponentByClass<Image>()->Draw(RenderingManager::GetInstance()->imageShader);
+            differenceImage->GetComponentByClass<Image>()->Draw(UIManager::GetInstance()->imageShader);
         }
 
 
@@ -141,10 +151,25 @@ void Application::Run() {
     }
 }
 
-void Application::ShutDown() {
-    Skybox::DeleteBuffers();
-    Image::DeleteBuffers();
+void Application::Shutdown() {
+    for (const auto& component : components) {
+        delete component.second;
+    }
+
+    components.clear();
+
+    for (const auto& object : objects) {
+        delete object.second;
+    }
+
+    objects.clear();
+
+    EditorManager::GetInstance()->Shutdown();
+    UIManager::GetInstance()->Shutdown();
     RenderingManager::GetInstance()->Shutdown();
+    InputManager::GetInstance()->Shutdown();
+    ResourceManager::GetInstance()->Shutdown();
+
     glfwDestroyWindow(window);
     glfwTerminate();
 
@@ -167,9 +192,6 @@ void Application::CreateApplicationWindow() {
     if (!glfwInit())
         throw;
 
-    // Decide GL+GLSL versions
-    // GL 4.3 + GLSL 430
-    const char* glsl_version = "#version 430";
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
