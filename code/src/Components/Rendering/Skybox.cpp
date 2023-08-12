@@ -9,12 +9,21 @@
 Skybox::Skybox(Object *parent, int id) : Component(parent, id) {
     cubeMap = ResourceManager::LoadResource<CubeMap>("resources/Resources/CubeMap.json");
 
-    Shader* shader = RenderingManager::GetInstance()->cubeMapShader;
+    Shader* shader = RenderingManager::GetInstance()->shader;
+    shader->Activate();
+    shader->SetInt("cubeMapTexture", 4);
+
+    shader = RenderingManager::GetInstance()->cubeMapShader;
     shader->Activate();
     shader->SetInt("cubeMapTexture", 4);
 }
 
 Skybox::~Skybox() = default;
+
+void Skybox::OnDestroy() {
+    Component::OnDestroy();
+    ResourceManager::UnloadResource(cubeMap->GetPath());
+}
 
 void Skybox::Draw(Shader* inShader) {
     if (activeSkybox && !activeSkybox->GetComponentByClass<Skybox>()->enabled) return;
@@ -23,12 +32,16 @@ void Skybox::Draw(Shader* inShader) {
     glDepthFunc(GL_LEQUAL);
     inShader->Activate();
 
+    auto& v = vao;
+
     glBindVertexArray(vao);
     glActiveTexture(GL_TEXTURE4);
     glBindTexture(GL_TEXTURE_CUBE_MAP, activeSkybox->GetComponentByClass<Skybox>()->cubeMap->GetID());
 
     glDrawArrays(GL_TRIANGLES, 0, 36);
     glBindVertexArray(0);
+
+    glActiveTexture(GL_TEXTURE0);
 
     glDepthFunc(GL_LESS); // set depth function back to default
 }
@@ -50,9 +63,4 @@ void Skybox::InitializeBuffers() {
 void Skybox::DeleteBuffers() {
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &vbo);
-}
-
-void Skybox::OnDestroy() {
-    Component::OnDestroy();
-    ResourceManager::UnloadResource(cubeMap->GetPath());
 }

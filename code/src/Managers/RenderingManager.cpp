@@ -12,6 +12,7 @@
 RenderingManager::RenderingManager() {
     shader = ResourceManager::LoadResource<Shader>("resources/Resources/ShaderResources/BasicShader.json");
     cubeMapShader = ResourceManager::LoadResource<Shader>("resources/Resources/ShaderResources/CubeMapShader.json");
+    imageShader = ResourceManager::LoadResource<Shader>("resources/Resources/ShaderResources/ImageShader.json");
 }
 
 RenderingManager::~RenderingManager() {
@@ -34,7 +35,6 @@ void RenderingManager::Draw(Shader* inShader) {
     for (int i = 0; i < bufferIterator; ++i) {
         drawBuffer[i]->Draw(inShader);
     }
-    ClearBuffer();
 }
 
 void RenderingManager::AddToDrawBuffer(Renderer* renderer) {
@@ -50,6 +50,9 @@ void RenderingManager::UpdateProjection() const {
 
     cubeMapShader->Activate();
     cubeMapShader->SetMat4("projection", projection);
+
+    imageShader->Activate();
+    imageShader->SetMat4("projection", projection);
 }
 
 void RenderingManager::UpdateView() const {
@@ -57,7 +60,7 @@ void RenderingManager::UpdateView() const {
 
     shader->Activate();
     shader->SetMat4("view", view);
-    shader->SetVec3("viewPos", Camera::GetActiveCamera()->transform->GetGlobalPosition());
+    shader->SetVec3("viewPosition", Camera::GetActiveCamera()->transform->GetGlobalPosition());
 
     cubeMapShader->Activate();
     cubeMapShader->SetMat4("view", view);

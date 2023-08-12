@@ -48,6 +48,10 @@ private:
     bool shouldRun = false;
     bool isStarted = false;
 
+    Object* image1;
+    Object* image2;
+    Object* image3;
+
 public:
     GLFWwindow* window = nullptr;
     Application(Application &other) = delete;

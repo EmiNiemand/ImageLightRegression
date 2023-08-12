@@ -8,6 +8,7 @@
 #include "Managers/RenderingManager.h"
 #include "Components/Rendering/Lights/PointLight.h"
 #include "Components/Rendering/Skybox.h"
+#include "Components/Rendering/UI/Image.h"
 
 Application::Application() = default;
 
@@ -24,6 +25,7 @@ void Application::StartUp() {
     CreateApplicationWindow();
 
     Skybox::InitializeBuffers();
+    Image::InitializeBuffers();
 
     scene = Object::Instantiate("Scene", nullptr);
 
@@ -47,6 +49,16 @@ void Application::StartUp() {
 
     Object* loadedObject = Object::Instantiate("Something", scene);
     loadedObject->AddComponent<Renderer>()->LoadModel("resources/models/Cube/Cube.obj");
+    loadedObject->GetComponentByClass<Renderer>()->material = {glm::vec3(1.0f, 1.0f, 1.0f), 32.0f, 0.0f, 0.0f};
+
+    image1 = Object::Instantiate("Image1", scene);
+    image1->AddComponent<Image>();
+
+    image2 = Object::Instantiate("Image2", scene);
+    image2->AddComponent<Image>();
+
+    image3 = Object::Instantiate("Image3", scene);
+    image3->AddComponent<Image>();
 
     Object* pointLight = Object::Instantiate("Point Light", scene);
     pointLight->AddComponent<PointLight>();
@@ -108,17 +120,22 @@ void Application::Run() {
 
         glViewport(viewports[1].position.x, viewports[1].position.y, viewports[1].resolution.x, viewports[1].resolution.y);
         // show
+        image1->GetComponentByClass<Image>()->Draw(RenderingManager::GetInstance()->imageShader);
 
         if (isStarted) {
             glViewport(viewports[2].position.x, viewports[2].position.y, viewports[2].resolution.x, viewports[2].resolution.y);
             // show
+            image2->GetComponentByClass<Image>()->Draw(RenderingManager::GetInstance()->imageShader);
             glViewport(viewports[3].position.x, viewports[3].position.y, viewports[3].resolution.x, viewports[3].resolution.y);
             // show
+            image3->GetComponentByClass<Image>()->Draw(RenderingManager::GetInstance()->imageShader);
         }
 
 
         glfwSwapBuffers(window);
         glfwPollEvents();
+
+        RenderingManager::GetInstance()->ClearBuffer();
 
         shouldRun = glfwWindowShouldClose(window);
     }
@@ -126,6 +143,7 @@ void Application::Run() {
 
 void Application::ShutDown() {
     Skybox::DeleteBuffers();
+    Image::DeleteBuffers();
     RenderingManager::GetInstance()->Shutdown();
     glfwDestroyWindow(window);
     glfwTerminate();
@@ -184,9 +202,8 @@ void Application::CreateApplicationWindow() {
     }
     spdlog::info("Successfully initialized OpenGL loader!");
 
-
-    // DebugManager::GetInstance()->Initialize(window, glsl_version);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
     stbi_set_flip_vertically_on_load(true);
 }
 

@@ -1,6 +1,7 @@
 #ifndef IMAGELIGHTREGRESSION_RENDERINGMANAGER_H
 #define IMAGELIGHTREGRESSION_RENDERINGMANAGER_H
 
+#include "ApplicationTypes.h"
 #include <map>
 
 class Shader;
@@ -12,16 +13,16 @@ class SpotLight;
 class RenderingManager {
 public:
     // pair of id and ptr to light
-    std::map<int, PointLight*> pointLights;
-    std::map<int, DirectionalLight*> directionalLights;
-    std::map<int, SpotLight*> spotLights;
+    std::map<uint8, PointLight*> pointLights;
+    std::map<uint8, DirectionalLight*> directionalLights;
+    std::map<uint8, SpotLight*> spotLights;
 
     Shader* shader;
     Shader* cubeMapShader;
-
+    Shader* imageShader;
 private:
     inline static RenderingManager* renderingManager;
-    unsigned int bufferIterator = 0;
+    uint16 bufferIterator = 0;
     Renderer* drawBuffer[1000] = {};
 
 public:
@@ -34,6 +35,8 @@ public:
     void Shutdown() const;
 
     void Draw(Shader* inShader);
+    void ClearBuffer();
+
     void AddToDrawBuffer(Renderer* renderer);
 
     void UpdateProjection() const;
@@ -51,8 +54,6 @@ private:
     void RemovePointLight(int id, Shader* lightShader);
     void RemoveDirectionalLight(int id, Shader* lightShader);
     void RemoveSpotLight(int id, Shader* lightShader);
-
-    void ClearBuffer();
 };
 
 
