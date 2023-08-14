@@ -4,6 +4,9 @@
 #define ILR_ERROR_MSG(message)        \
     spdlog::error(message)
 
+#define ILR_INFO_MSG(message)        \
+    spdlog::info(message)
+
 #define ILR_ASSERT_MSG(condition, message)                                     \
     do {                                                                       \
         if (!(condition)) {                                                    \

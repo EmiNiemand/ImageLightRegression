@@ -58,7 +58,10 @@ void Application::Startup() {
 
     Object* loadedObject = Object::Instantiate("Something", scene);
     loadedObject->AddComponent<Renderer>()->LoadModel("resources/models/Cube/Cube.obj");
-    loadedObject->GetComponentByClass<Renderer>()->material = {glm::vec3(1.0f, 1.0f, 1.0f), 32.0f, 0.0f, 0.0f};
+
+    Object* loadedObject1 = Object::Instantiate("Something1", loadedObject);
+    loadedObject1->AddComponent<Renderer>()->LoadModel("resources/models/Cube/Cube.obj");
+    loadedObject1->transform->SetLocalPosition({10.0f, 0.0f, 0.0f});
 
     loadedImage = Object::Instantiate("Loaded Image", scene);
     loadedImage->AddComponent<Image>();
@@ -141,6 +144,7 @@ void Application::Run() {
             differenceImage->GetComponentByClass<Image>()->Draw(UIManager::GetInstance()->imageShader);
         }
 
+        EditorManager::GetInstance()->Show();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
