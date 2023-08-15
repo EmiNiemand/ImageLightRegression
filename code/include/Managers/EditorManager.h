@@ -8,6 +8,9 @@
 class Object;
 
 class EditorManager {
+public:
+    Object* selectedNode = nullptr;
+
 private:
     inline static EditorManager* editorManager;
 
@@ -15,9 +18,8 @@ private:
     // GL 4.3 + GLSL 430
     const char* glsl_version = "#version 430";
 
-    Object* selectedNode = nullptr;
-
-    bool showSceneTree = true;
+    int windowFlags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoScrollbar;
 
 public:
     EditorManager(EditorManager &other) = delete;
@@ -36,8 +38,7 @@ private:
 
     void ShowToolBar();
     void ShowSceneTree();
-    void ShowTreeChild(Object* parent);
-    void ShowProperties();
+    void ShowInspector();
     void ShowFileExplorer();
 };
 

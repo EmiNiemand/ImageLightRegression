@@ -10,8 +10,8 @@ private:
     double cursorPreviousY = -1.0f;
 
 public:
-    float speed = 0.01f;
-    float rotationSpeed = 0.05f;
+    float speed = 0.05f;
+    float rotationSpeed = 0.5f;
 
 public:
     EditorCamera(Object *parent, int id);

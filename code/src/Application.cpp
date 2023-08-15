@@ -5,7 +5,7 @@
 #include "Managers/UIManager.h"
 #include "Managers/EditorManager.h"
 #include "Core/Object.h"
-#include "Components/Rendering/Editor/EditorCamera.h"
+#include "Components/Rendering/EditorCamera.h"
 #include "Components/Transform.h"
 #include "Components/Rendering/Renderer.h"
 #include "Components/Rendering/Lights/PointLight.h"

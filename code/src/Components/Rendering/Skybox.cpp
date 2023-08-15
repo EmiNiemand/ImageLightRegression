@@ -22,17 +22,15 @@ Skybox::~Skybox() = default;
 
 void Skybox::OnDestroy() {
     Component::OnDestroy();
+    if (parent == activeSkybox) activeSkybox = nullptr;
     ResourceManager::UnloadResource(cubeMap->GetPath());
 }
 
 void Skybox::Draw(Shader* inShader) {
-    if (activeSkybox && !activeSkybox->GetComponentByClass<Skybox>()->enabled) return;
-    // change depth function so depth test passes
-    // when values are equal to depth buffer's content
+    if (!activeSkybox || !activeSkybox->GetComponentByClass<Skybox>()->enabled) return;
+
     glDepthFunc(GL_LEQUAL);
     inShader->Activate();
-
-    auto& v = vao;
 
     glBindVertexArray(vao);
     glActiveTexture(GL_TEXTURE4);
@@ -43,7 +41,7 @@ void Skybox::Draw(Shader* inShader) {
 
     glActiveTexture(GL_TEXTURE0);
 
-    glDepthFunc(GL_LESS); // set depth function back to default
+    glDepthFunc(GL_LESS);
 }
 
 void Skybox::SetActiveSkybox(Object* inSkybox) {

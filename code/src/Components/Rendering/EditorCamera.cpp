@@ -1,8 +1,9 @@
-#include "Components/Rendering/Editor/EditorCamera.h"
+#include "Components/Rendering/EditorCamera.h"
 #include "Application.h"
 #include "Managers/InputManager.h"
 #include "Core/Object.h"
 #include "Components/Transform.h"
+#include "Macros.h"
 
 EditorCamera::EditorCamera(Object *parent, int id) : Camera(parent, id) {}
 
@@ -14,31 +15,36 @@ void EditorCamera::Update() {
     InputManager* inputManager = InputManager::GetInstance();
     Transform* transform = parent->transform;
 
-    if (inputManager->IsKeyPressed(Key::MOUSE_RIGHT_BUTTON)) {
-        Application* application = Application::GetInstance();
+    Application* application = Application::GetInstance();
+    Viewport* viewport = &Application::viewports[0];
+    double cursorX, cursorY;
+    glfwGetCursorPos(application->window, &cursorX, &cursorY);
+
+    if (inputManager->IsKeyDown(Key::MOUSE_RIGHT_BUTTON) &&
+    cursorX >= viewport->position.x && cursorX <= viewport->position.x + viewport->resolution.x &&
+    cursorY <= Application::resolution. y - viewport->position.y &&
+    cursorY >= Application::resolution. y - (viewport->position.y + viewport->resolution.y)) {
+        cursorPreviousX = cursorX;
+        cursorPreviousY = cursorY;
+    }
+
+    if (inputManager->IsKeyPressed(Key::MOUSE_RIGHT_BUTTON) && cursorPreviousX > 0 && cursorPreviousY > 0) {
         glfwSetInputMode(application->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-        double cursorX, cursorY;
-        glfwGetCursorPos(application->window, &cursorX, &cursorY);
-
-        if (inputManager->IsKeyDown(Key::MOUSE_RIGHT_BUTTON)) {
-            cursorPreviousX = cursorX;
-            cursorPreviousY = cursorY;
-        }
 
         double mouseX = cursorX - cursorPreviousX;
         double mouseY = cursorY - cursorPreviousY;
 
         float yaw;
         float pitch;
-        if (abs(mouseX) >= 200.0 && mouseX != 0.0) {
+
+        if (mouseX != 0.0) {
             int direction = (int)mouseX/abs((int)mouseX);
             yaw = (float)(direction);
         }
         else {
             yaw = 0.0f;
         }
-        if (abs(mouseY) >= 200.0 && mouseY != 0.0) {
+        if (mouseY != 0.0) {
             int direction = (int)mouseY/abs((int)mouseY);
             pitch = (float)(direction);
         }
@@ -61,8 +67,12 @@ void EditorCamera::Update() {
         else if (inputManager->IsKeyPressed(Key::KEY_A)) {
             transform->SetLocalPosition(transform->GetLocalPosition() - transform->GetRight() * speed);
         }
+
+        glfwSetCursorPos(application->window, cursorPreviousX, cursorPreviousY);
     }
     else if (inputManager->IsKeyReleased(Key::MOUSE_RIGHT_BUTTON)) {
         glfwSetInputMode(Application::GetInstance()->window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        cursorPreviousX = -1.0f;
+        cursorPreviousY = -1.0f;
     }
 }

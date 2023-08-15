@@ -6,7 +6,7 @@
 #include "Components/Transform.h"
 
 Object::Object(std::string name, Object *parent, int id) : name(std::move(name)), parent(parent), id(id) {
-    transform = new Transform(this, id);
+    transform = this->AddComponent<Transform>();
 }
 
 Object::~Object() = default;
