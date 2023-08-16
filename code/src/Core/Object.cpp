@@ -75,7 +75,7 @@ void Object::EnableSelfAndChildren() {
     if (enabled) return;
 
     for (auto&& component : components){
-        component.second->enabled = true;
+        component.second->SetEnabled(true);
     }
     for (auto&& child : children)
     {
@@ -92,7 +92,7 @@ void Object::DisableSelfAndChildren() {
         child.second->DisableSelfAndChildren();
     }
     for (auto&& component : components){
-        component.second->enabled = false;
+        component.second->SetEnabled(false);
     }
     enabled = false;
 }
@@ -135,4 +135,8 @@ void Object::OnTransformUpdateComponents() {
     for (auto& component : components) {
         component.second->OnUpdate();
     }
+}
+
+bool Object::GetEnabled() const {
+    return enabled;
 }

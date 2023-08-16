@@ -17,6 +17,7 @@ public:
     EditorCamera(Object *parent, int id);
     ~EditorCamera() override;
 
+    void OnCreate() override;
     void Update() override;
 };
 

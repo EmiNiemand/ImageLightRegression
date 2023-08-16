@@ -26,6 +26,10 @@ void Skybox::OnDestroy() {
     ResourceManager::UnloadResource(cubeMap->GetPath());
 }
 
+CubeMap *Skybox::GetCubeMap() const {
+    return cubeMap;
+}
+
 void Skybox::Draw(Shader* inShader) {
     if (!activeSkybox || !activeSkybox->GetComponentByClass<Skybox>()->enabled) return;
 

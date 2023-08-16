@@ -26,11 +26,12 @@ public:
 
     int id;
     bool dirtyFlag = true;
-    bool enabled = true;
     bool visibleInEditor = true;
 
 private:
     Object* parent;
+
+    bool enabled = true;
 
 public:
     virtual ~Object();
@@ -76,6 +77,7 @@ public:
     void UpdateSelfAndChildren();
     void EnableSelfAndChildren();
     void DisableSelfAndChildren();
+    [[nodiscard]] bool GetEnabled() const;
 
     void RecalculateGlobalRotation();
 

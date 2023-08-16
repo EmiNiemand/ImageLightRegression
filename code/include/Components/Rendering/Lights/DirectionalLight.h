@@ -22,15 +22,15 @@ public:
 
     void OnUpdate() override;
 
-    [[nodiscard]] const glm::vec3 &GetAmbient() const;
-    [[nodiscard]] const glm::vec3 &GetDiffuse() const;
-    [[nodiscard]] const glm::vec3 &GetSpecular() const;
-    [[nodiscard]] const glm::vec3 &GetColor() const;
+    [[nodiscard]] const glm::vec3& GetAmbient() const;
+    [[nodiscard]] const glm::vec3& GetDiffuse() const;
+    [[nodiscard]] const glm::vec3& GetSpecular() const;
+    [[nodiscard]] const glm::vec3& GetColor() const;
 
-    void SetAmbient(const glm::vec3 &inAmbient);
-    void SetDiffuse(const glm::vec3 &inDiffuse);
-    void SetSpecular(const glm::vec3 &inSpecular);
-    void SetColor(const glm::vec3 &inColor);
+    void SetAmbient(const glm::vec3& inAmbient);
+    void SetDiffuse(const glm::vec3& inDiffuse);
+    void SetSpecular(const glm::vec3& inSpecular);
+    void SetColor(const glm::vec3& inColor);
 };
 
 

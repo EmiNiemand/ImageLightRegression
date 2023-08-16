@@ -28,18 +28,18 @@ public:
     [[nodiscard]] float GetConstant() const;
     [[nodiscard]] float GetLinear() const;
     [[nodiscard]] float GetQuadratic() const;
-    [[nodiscard]] const glm::vec3 &GetAmbient() const;
-    [[nodiscard]] const glm::vec3 &GetDiffuse() const;
-    [[nodiscard]] const glm::vec3 &GetSpecular() const;
-    [[nodiscard]] const glm::vec3 &GetColor() const;
+    [[nodiscard]] const glm::vec3& GetAmbient() const;
+    [[nodiscard]] const glm::vec3& GetDiffuse() const;
+    [[nodiscard]] const glm::vec3& GetSpecular() const;
+    [[nodiscard]] const glm::vec3& GetColor() const;
 
     void SetConstant(float inConstant);
     void SetLinear(float inLinear);
     void SetQuadratic(float inQuadratic);
-    void SetAmbient(const glm::vec3 &inAmbient);
-    void SetDiffuse(const glm::vec3 &inDiffuse);
-    void SetSpecular(const glm::vec3 &inSpecular);
-    void SetColor(const glm::vec3 &inColor);
+    void SetAmbient(const glm::vec3& inAmbient);
+    void SetDiffuse(const glm::vec3& inDiffuse);
+    void SetSpecular(const glm::vec3& inSpecular);
+    void SetColor(const glm::vec3& inColor);
 };
 
 

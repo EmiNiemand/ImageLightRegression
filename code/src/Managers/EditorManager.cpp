@@ -1,5 +1,6 @@
 #include "Managers/EditorManager.h"
 #include "Editor/SceneTree.h"
+#include "Editor/Inspector.h"
 #include "Application.h"
 #include "Core/Object.h"
 #include "Macros.h"
@@ -55,33 +56,41 @@ void EditorManager::Show() {
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-void EditorManager::ShowToolBar() {
+void EditorManager::ShowToolBar() const {
     ImGui::Begin("ToolBar", nullptr, windowFlags);
     ImGui::SetWindowSize("ToolBar", ImVec2((float)Application::resolution.x, (float)Application::resolution.y / 9));
     ImGui::SetWindowPos("ToolBar", ImVec2(0.0f, 0.0f));
     ImGui::End();
 }
 
-void EditorManager::ShowSceneTree() {
+void EditorManager::ShowSceneTree() const {
     ImGui::Begin("SceneTree", nullptr, windowFlags);
     ImGui::SetWindowSize("SceneTree", ImVec2((float)Application::resolution.x / 16 * 3, (float)Application::resolution.y / 9 * 4));
     ImGui::SetWindowPos("SceneTree", ImVec2(0.0f, (float)Application::resolution.y / 9));
 
-
-    SceneTree::GetInstance()->ShowTreeNode(Application::GetInstance()->scene);
-    SceneTree::GetInstance()->ShowPopUp();
+    SceneTree::ShowTreeNode(Application::GetInstance()->scene);
+    SceneTree::ShowPopUp();
 
     ImGui::End();
 }
 
-void EditorManager::ShowInspector() {
+void EditorManager::ShowInspector() const {
     ImGui::Begin("Properties", nullptr, windowFlags);
     ImGui::SetWindowSize("Properties", ImVec2((float)Application::resolution.x / 16 * 3, (float)Application::resolution.y / 9 * 6));
     ImGui::SetWindowPos("Properties", ImVec2((float)Application::resolution.x / 16 * 13, (float)Application::resolution.y / 9));
+
+    if (selectedNode != nullptr) {
+        Inspector::ShowName();
+        for (auto& component : selectedNode->components) {
+            Inspector::ShowComponentProperties(component.second);
+        }
+    }
+    Inspector::ShowPopUp();
+
     ImGui::End();
 }
 
-void EditorManager::ShowFileExplorer() {
+void EditorManager::ShowFileExplorer() const {
     ImGui::Begin("File Explorer", nullptr, windowFlags);
     ImGui::SetWindowSize("File Explorer", ImVec2((float)Application::resolution.x, (float)Application::resolution.y / 9 * 2));
     ImGui::SetWindowPos("File Explorer", ImVec2(0.0f, (float)Application::resolution.y / 9 * 7));

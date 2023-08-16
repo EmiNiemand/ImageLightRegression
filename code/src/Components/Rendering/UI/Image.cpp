@@ -25,7 +25,7 @@ void Image::OnDestroy() {
 }
 
 void Image::Draw(Shader *inShader) {
-    if (!parent->enabled) return;
+    if (!parent->GetEnabled()) return;
 
     inShader->Activate();
     inShader->SetVec2("size", size);

@@ -48,9 +48,12 @@ void Application::Startup() {
 
     Object* mainCamera = Object::Instantiate("Main Camera", scene);
     mainCamera->AddComponent<EditorCamera>();
-    Camera::SetActiveCamera(mainCamera);
     mainCamera->transform->SetLocalPosition({0, 0, 10});
     mainCamera->visibleInEditor = false;
+
+    Object* camera = Object::Instantiate("Camera", scene);
+    camera->AddComponent<Camera>();
+    camera->transform->SetLocalPosition({10, 0, 10});
 
     Object* skybox = Object::Instantiate("Skybox", scene);
     skybox->AddComponent<Skybox>();
@@ -78,14 +81,13 @@ void Application::Startup() {
     Object* pointLight = Object::Instantiate("Point Light", scene);
     pointLight->AddComponent<PointLight>();
     pointLight->transform->SetLocalPosition({10, 1, 0});
-
-    //Object::Destroy(loadedObject);
 }
 
 void Application::Run() {
     while(!shouldRun) {
         frameTime = (float)glfwGetTime();
 
+        glfwPollEvents();
         InputManager::GetInstance()->ManageInput();
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -117,16 +119,23 @@ void Application::Run() {
         }
 
         for (const auto& component: components) {
-            if (component.second->callOnStart && component.second->enabled) {
+            if (component.second->callOnStart && component.second->GetEnabled()) {
                 component.second->Start();
                 component.second->parent->UpdateSelfAndChildren();
             }
         }
 
         for (const auto& component: components) {
-            if (component.second->enabled) {
+            if (component.second->GetEnabled()) {
                 component.second->Update();
             }
+        }
+
+        if ((InputManager::GetInstance()->IsKeyPressed(Key::KEY_LEFT_CONTROL) &&
+             InputManager::GetInstance()->IsKeyDown(Key::KEY_KP_0)) ||
+            (InputManager::GetInstance()->IsKeyDown(Key::KEY_LEFT_CONTROL) &&
+             InputManager::GetInstance()->IsKeyPressed(Key::KEY_KP_0))) {
+            Camera::ChangeActiveCamera();
         }
 
         glViewport(viewports[0].position.x, viewports[0].position.y, viewports[0].resolution.x, viewports[0].resolution.y);
@@ -144,12 +153,10 @@ void Application::Run() {
             differenceImage->GetComponentByClass<Image>()->Draw(UIManager::GetInstance()->imageShader);
         }
 
+        RenderingManager::GetInstance()->ClearBuffer();
         EditorManager::GetInstance()->Show();
 
         glfwSwapBuffers(window);
-        glfwPollEvents();
-
-        RenderingManager::GetInstance()->ClearBuffer();
 
         shouldRun = glfwWindowShouldClose(window);
     }

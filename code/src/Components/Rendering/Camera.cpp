@@ -3,13 +3,51 @@
 #include "Managers/UIManager.h"
 #include "Core/Object.h"
 #include "Components/Transform.h"
+#include "Macros.h"
 
-Camera::Camera(Object *parent, int id) : Component(parent, id) {}
+Camera::Camera(Object* parent, int id) : Component(parent, id) {}
 
 Camera::~Camera() = default;
 
+void Camera::OnCreate() {
+    Component::OnCreate();
+
+    if (!renderingCamera && parent != editorCamera) {
+        renderingCamera = parent;
+    }
+}
+
+void Camera::OnDestroy() {
+    Component::OnDestroy();
+
+    if (parent == renderingCamera) {
+        for (auto& component : Application::GetInstance()->components) {
+            if (dynamic_cast<Camera*>(component.second) != nullptr && component.second->parent != editorCamera) {
+                renderingCamera = component.second->parent;
+                break;
+            }
+        }
+    }
+
+    if (parent == renderingCamera) renderingCamera = nullptr;
+
+    if (renderingCamera) {
+        activeCamera = renderingCamera;
+    }
+    else if (editorCamera) {
+        activeCamera = editorCamera;
+    }
+    else {
+        activeCamera = nullptr;
+    }
+}
+
 void Camera::OnUpdate() {
     Component::OnUpdate();
+
+    if (parent == activeCamera && parent == renderingCamera && !parent->GetEnabled() || !enabled) {
+        activeCamera = editorCamera;
+    }
 
     RenderingManager::GetInstance()->UpdateView();
     RenderingManager::GetInstance()->UpdateProjection();
@@ -27,15 +65,41 @@ void Camera::SetZNear(float inZNear) {
 }
 
 void Camera::SetZFar(float inZFar) {
+    if (inZFar < zNear) return;
     zFar = inZFar;
     OnUpdate();
 }
 
-void Camera::SetActiveCamera(Object* inCameraObject) {
-    if (inCameraObject->GetComponentByClass<Camera>() == nullptr) return;
-    activeCamera = inCameraObject;
-    RenderingManager::GetInstance()->UpdateView();
-    RenderingManager::GetInstance()->UpdateProjection();
+float Camera::GetFOV() {
+    return fov;
+}
+
+float Camera::GetZNear() {
+    return zNear;
+}
+
+float Camera::GetZFar() {
+    return zFar;
+}
+
+void Camera::ChangeActiveCamera() {
+    if (!(renderingCamera && editorCamera)) return;
+
+    if (activeCamera == editorCamera && renderingCamera->GetEnabled() &&
+        renderingCamera->GetComponentByClass<Camera>()->enabled) {
+        activeCamera = renderingCamera;
+    }
+    else {
+        activeCamera = editorCamera;
+    }
+
+    activeCamera->GetComponentByClass<Camera>()->OnUpdate();
+}
+
+void Camera::SetRenderingCamera(Object *inCameraObject) {
+    if (inCameraObject == editorCamera) return;
+    if (activeCamera == renderingCamera) activeCamera = inCameraObject;
+    renderingCamera = inCameraObject;
 }
 
 Object *Camera::GetActiveCamera() {

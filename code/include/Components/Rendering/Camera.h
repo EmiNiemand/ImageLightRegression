@@ -9,21 +9,32 @@
 class Camera : public Component {
 protected:
     inline static Object* activeCamera;
+    inline static Object* renderingCamera;
+    inline static Object* editorCamera;
 
     float fov = 45.0f;
     float zNear = 0.1f;
     float zFar = 100.0f;
 
 public:
-    Camera(Object *parent, int id);
+    Camera(Object* parent, int id);
     ~Camera() override;
+
+    void OnCreate() override;
+    void OnDestroy() override;
 
     void OnUpdate() override;
 
     void SetFOV(float inFOV);
     void SetZNear(float inZNear);
     void SetZFar(float inZFar);
-    static void SetActiveCamera(Object* inCameraObject);
+
+    float GetFOV();
+    float GetZNear();
+    float GetZFar();
+
+    static void ChangeActiveCamera();
+    static void SetRenderingCamera(Object* inCameraObject);
 
     static Object* GetActiveCamera();
     [[nodiscard]] glm::mat4 GetViewMatrix() const;

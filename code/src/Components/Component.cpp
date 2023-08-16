@@ -13,3 +13,12 @@ void Component::Destroy(Component* component) {
 void Component::OnDestroy() {
     parent->components.erase(id);
 }
+
+bool Component::GetEnabled() const {
+    return enabled;
+}
+
+void Component::SetEnabled(bool inEnabled) {
+    enabled = inEnabled;
+    OnUpdate();
+}

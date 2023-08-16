@@ -4,23 +4,12 @@
 class Object;
 
 class SceneTree {
-private:
-    inline static SceneTree* sceneTree;
-
 public:
-    SceneTree(SceneTree &other) = delete;
-    void operator=(const SceneTree&) = delete;
-    virtual ~SceneTree();
-
-    static SceneTree* GetInstance();
-
-    void ShowTreeNode(Object* parent);
-    void ShowPopUp();
+    static void ShowTreeNode(Object* parent);
+    static void ShowPopUp();
 
 private:
-    explicit SceneTree();
-
-    void ManageNodeInput(Object* hoveredObject);
+    static void ManageNodeInput(Object* hoveredObject);
 };
 
 

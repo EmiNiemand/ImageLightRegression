@@ -16,6 +16,7 @@ public:
 
     void Load() override;
 
+    void Reload();
     [[nodiscard]] unsigned int GetID() const;
 };
 

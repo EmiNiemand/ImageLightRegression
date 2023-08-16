@@ -22,6 +22,8 @@ public:
 
     void OnDestroy() override;
 
+    [[nodiscard]] CubeMap* GetCubeMap() const;
+
     static void Draw(Shader* inShader);
 
     static void SetActiveSkybox(Object* inSkybox);

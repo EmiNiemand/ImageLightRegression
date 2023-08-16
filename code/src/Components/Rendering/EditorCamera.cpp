@@ -9,8 +9,21 @@ EditorCamera::EditorCamera(Object *parent, int id) : Camera(parent, id) {}
 
 EditorCamera::~EditorCamera() = default;
 
+void EditorCamera::OnCreate() {
+    Camera::OnCreate();
+
+    if (!editorCamera) {
+        editorCamera = parent;
+        activeCamera = parent;
+    }
+}
+
 void EditorCamera::Update() {
-    Component::Update();
+    if (!enabled) return;
+
+    Camera::Update();
+
+    if (activeCamera != editorCamera) return;
 
     InputManager* inputManager = InputManager::GetInstance();
     Transform* transform = parent->transform;

@@ -36,10 +36,10 @@ public:
 private:
     explicit EditorManager();
 
-    void ShowToolBar();
-    void ShowSceneTree();
-    void ShowInspector();
-    void ShowFileExplorer();
+    void ShowToolBar() const;
+    void ShowSceneTree() const;
+    void ShowInspector() const;
+    void ShowFileExplorer() const;
 };
 
 

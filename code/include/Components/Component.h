@@ -10,6 +10,8 @@ public:
 
     bool callOnAwake = true;
     bool callOnStart = true;
+
+protected:
     bool enabled = true;
 
 public:
@@ -18,11 +20,14 @@ public:
 
     static void Destroy(Component* component);
 
+    [[nodiscard]] bool GetEnabled() const;
+    void SetEnabled(bool inEnabled);
+
     /// OnCreate called when Component is created, mainly use to subscribe component to managers
     inline virtual void OnCreate() {};
     /// OnDestroy called when Component is destroyed, mainly use to unsubscribe component from managers
     virtual void OnDestroy();
-    /// Called if parent transform was changed
+    /// Called if parent transform was changed or object was disabled
     inline virtual void OnUpdate() {};
 
     inline virtual void Awake() {};

@@ -7,15 +7,15 @@ Transform::Transform(Object *parent, int id) : Component(parent, id) {}
 Transform::~Transform() = default;
 
 glm::mat4 Transform::GetLocalModelMatrix() const {
-    const glm::mat4 transformX = glm::rotate(glm::mat4(1.0f), glm::radians(mEulerRot.x), glm::vec3(1.0f, 0.0f, 0.0f));
-    const glm::mat4 transformY = glm::rotate(glm::mat4(1.0f), glm::radians(mEulerRot.y), glm::vec3(0.0f, 1.0f, 0.0f));
-    const glm::mat4 transformZ = glm::rotate(glm::mat4(1.0f), glm::radians(mEulerRot.z), glm::vec3(0.0f, 0.0f, 1.0f));
+    const glm::mat4 transformX = glm::rotate(glm::mat4(1.0f), glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+    const glm::mat4 transformY = glm::rotate(glm::mat4(1.0f), glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+    const glm::mat4 transformZ = glm::rotate(glm::mat4(1.0f), glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
 
     // Y * X * Z
     const glm::mat4 rotationMatrix = transformY * transformX * transformZ;
 
     // translation * rotation * scale (also known as TRS matrix)
-    return glm::translate(glm::mat4(1.0f), mPos) * rotationMatrix * glm::scale(glm::mat4(1.0f), mScale);
+    return glm::translate(glm::mat4(1.0f), position) * rotationMatrix * glm::scale(glm::mat4(1.0f), scale);
 }
 
 void Transform::ComputeModelMatrix() {
@@ -29,14 +29,14 @@ void Transform::ComputeModelMatrix(const glm::mat4& parentGlobalModelMatrix) {
 }
 
 void Transform::SetLocalPosition(const glm::vec3& newPosition) {
-    mPos = newPosition;
+    position = newPosition;
     if (!parent) return;
     if (parent->dirtyFlag) return;
     SetDirtyFlag();
 }
 
 void Transform::SetLocalRotation(const glm::vec3& newRotation) {
-    mEulerRot = newRotation;
+    rotation = newRotation;
     if (!parent) return;
     parent->RecalculateGlobalRotation();
     if (parent->dirtyFlag) return;
@@ -44,7 +44,7 @@ void Transform::SetLocalRotation(const glm::vec3& newRotation) {
 }
 
 void Transform::SetLocalScale(const glm::vec3& newScale) {
-    mScale = newScale;
+    scale = newScale;
     if (!parent) return;
     if (parent->dirtyFlag) return;
     SetDirtyFlag();
@@ -55,11 +55,11 @@ glm::vec3 Transform::GetGlobalPosition() const {
 }
 
 glm::vec3 Transform::GetLocalPosition() const {
-    return mPos;
+    return position;
 }
 
 glm::vec3 Transform::GetLocalRotation() const {
-    return mEulerRot;
+    return rotation;
 }
 
 glm::vec3 Transform::GetGlobalScale() const {
@@ -67,7 +67,7 @@ glm::vec3 Transform::GetGlobalScale() const {
 }
 
 glm::vec3 Transform::GetLocalScale() const {
-    return mScale;
+    return scale;
 }
 
 glm::mat4 Transform::GetModelMatrix() const {

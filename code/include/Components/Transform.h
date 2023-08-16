@@ -9,9 +9,9 @@
 class Transform : public Component {
 private:
     //Local space information
-    glm::vec3 mPos = {0.0f, 0.0f, 0.0f };
-    glm::vec3 mEulerRot = {0.0f, 0.0f, 0.0f }; //In degrees
-    glm::vec3 mScale = {1.0f, 1.0f, 1.0f };
+    glm::vec3 position = {0.0f, 0.0f, 0.0f };
+    glm::vec3 rotation = {0.0f, 0.0f, 0.0f }; //In degrees
+    glm::vec3 scale = {1.0f, 1.0f, 1.0f };
 
     //Global space information concatenate in matrix
     glm::mat4 mModelMatrix = glm::mat4(1.0f);
@@ -29,6 +29,7 @@ public:
 
     [[nodiscard]] glm::vec3 GetGlobalPosition() const;
     [[nodiscard]] glm::vec3 GetLocalPosition() const;
+    /// Return vec3 of rotation values in degrees
     [[nodiscard]] glm::vec3 GetLocalRotation() const;
     [[nodiscard]] glm::vec3 GetLocalScale() const;
     [[nodiscard]] glm::mat4 GetModelMatrix() const;

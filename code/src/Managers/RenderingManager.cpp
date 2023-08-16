@@ -117,7 +117,7 @@ void RenderingManager::UpdatePointLight(int lightNumber, Shader* lightShader) {
     lightShader->Activate();
     PointLight* pointLight = pointLights.find(lightNumber)->second;
     std::string light = "pointLights[" + std::to_string(lightNumber) + "]";
-    lightShader->SetBool(light + ".isActive", pointLight->enabled);
+    lightShader->SetBool(light + ".isActive", pointLight->GetEnabled());
     lightShader->SetVec3(light + ".position", pointLight->parent->transform->GetLocalPosition());
     lightShader->SetFloat(light + ".constant", pointLight->GetConstant());
     lightShader->SetFloat(light + ".linear", pointLight->GetLinear());
@@ -132,7 +132,7 @@ void RenderingManager::UpdateDirectionalLight(int lightNumber, Shader* lightShad
     lightShader->Activate();
     DirectionalLight* directionalLight = directionalLights.find(lightNumber)->second;
     std::string light = "directionalLights[" + std::to_string(lightNumber) + "]";
-    lightShader->SetBool(light + ".isActive", directionalLight->enabled);
+    lightShader->SetBool(light + ".isActive", directionalLight->GetEnabled());
     lightShader->SetVec3(light + ".direction", directionalLight->parent->transform->GetForward());
     lightShader->SetVec3(light + ".ambient", directionalLight->GetAmbient());
     lightShader->SetVec3(light + ".diffuse", directionalLight->GetDiffuse());
@@ -144,7 +144,7 @@ void RenderingManager::UpdateSpotLight(int lightNumber, Shader* lightShader) {
     lightShader->Activate();
     SpotLight* spotLight = spotLights.find(lightNumber)->second;
     std::string light = "spotLights[" + std::to_string(lightNumber) + "]";
-    lightShader->SetBool(light + ".isActive", spotLight->enabled);
+    lightShader->SetBool(light + ".isActive", spotLight->GetEnabled());
     lightShader->SetVec3(light + ".position", spotLight->parent->transform->GetLocalPosition());
     lightShader->SetVec3(light + ".direction", spotLight->parent->transform->GetForward());
     lightShader->SetFloat(light + ".cutOff", spotLight->GetCutOff());

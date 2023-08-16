@@ -12,7 +12,9 @@ Renderer::~Renderer() = default;
 
 void Renderer::OnDestroy() {
     Component::OnDestroy();
-    ResourceManager::UnloadResource(model->GetPath());
+    if (model) {
+        ResourceManager::UnloadResource(model->GetPath());
+    }
 }
 
 void Renderer::Update() {
@@ -37,6 +39,7 @@ void Renderer::Draw(Shader* shader) {
 }
 
 void Renderer::LoadModel(const std::string& path) {
+    if (model) ResourceManager::UnloadResource(model->GetPath());
     model = ResourceManager::LoadResource<Model>(path);
 }
 
