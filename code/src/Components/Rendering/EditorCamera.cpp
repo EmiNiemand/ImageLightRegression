@@ -23,7 +23,7 @@ void EditorCamera::Update() {
 
     Camera::Update();
 
-    if (activeCamera != editorCamera) return;
+    if (activeCamera != parent) return;
 
     InputManager* inputManager = InputManager::GetInstance();
     Transform* transform = parent->transform;
@@ -87,5 +87,11 @@ void EditorCamera::Update() {
         glfwSetInputMode(Application::GetInstance()->window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         cursorPreviousX = -1.0f;
         cursorPreviousY = -1.0f;
+    }
+
+    if (inputManager->IsKeyPressed(Key::KEY_LEFT_CONTROL) && inputManager->IsKeyDown(Key::KEY_KP_5) ||
+        inputManager->IsKeyDown(Key::KEY_LEFT_CONTROL) && inputManager->IsKeyPressed(Key::KEY_KP_5)) {
+        renderingCamera->transform->SetLocalPosition(parent->transform->GetGlobalPosition());
+        renderingCamera->transform->SetLocalRotation(parent->transform->GetGlobalRotation());
     }
 }

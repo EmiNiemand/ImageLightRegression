@@ -20,8 +20,6 @@ public:
     std::unordered_map<int, Object*> children;
     std::string name;
 
-    glm::vec3 globalRotation = {0, 0, 0};
-
     Transform* transform;
 
     int id;
@@ -70,6 +68,9 @@ public:
 
 
     void SetParent(Object* newParent);
+    [[nodiscard]] Object* GetParent() const;
+    [[nodiscard]] bool GetEnabled() const;
+
     void AddChild(Object* child);
     void RemoveChild(int childId);
     void RemoveAllChildren();
@@ -77,9 +78,6 @@ public:
     void UpdateSelfAndChildren();
     void EnableSelfAndChildren();
     void DisableSelfAndChildren();
-    [[nodiscard]] bool GetEnabled() const;
-
-    void RecalculateGlobalRotation();
 
 private:
     Object(std::string name, Object *parent, int id);

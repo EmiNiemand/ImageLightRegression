@@ -12,7 +12,7 @@ Camera::~Camera() = default;
 void Camera::OnCreate() {
     Component::OnCreate();
 
-    if (!renderingCamera && parent != editorCamera) {
+    if ((!renderingCamera && parent != editorCamera) || editorCamera == renderingCamera) {
         renderingCamera = parent;
     }
 }
@@ -36,6 +36,7 @@ void Camera::OnDestroy() {
     }
     else if (editorCamera) {
         activeCamera = editorCamera;
+        renderingCamera = editorCamera;
     }
     else {
         activeCamera = nullptr;
@@ -70,15 +71,15 @@ void Camera::SetZFar(float inZFar) {
     OnUpdate();
 }
 
-float Camera::GetFOV() {
+float Camera::GetFOV() const {
     return fov;
 }
 
-float Camera::GetZNear() {
+float Camera::GetZNear() const {
     return zNear;
 }
 
-float Camera::GetZFar() {
+float Camera::GetZFar() const {
     return zFar;
 }
 

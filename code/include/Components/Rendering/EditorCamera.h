@@ -18,6 +18,7 @@ public:
     ~EditorCamera() override;
 
     void OnCreate() override;
+
     void Update() override;
 };
 

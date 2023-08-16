@@ -22,16 +22,15 @@ public:
 
     void OnCreate() override;
     void OnDestroy() override;
-
     void OnUpdate() override;
 
     void SetFOV(float inFOV);
     void SetZNear(float inZNear);
     void SetZFar(float inZFar);
 
-    float GetFOV();
-    float GetZNear();
-    float GetZFar();
+    [[nodiscard]] float GetFOV() const;
+    [[nodiscard]] float GetZNear() const;
+    [[nodiscard]] float GetZFar() const;
 
     static void ChangeActiveCamera();
     static void SetRenderingCamera(Object* inCameraObject);

@@ -38,7 +38,7 @@ void Transform::SetLocalPosition(const glm::vec3& newPosition) {
 void Transform::SetLocalRotation(const glm::vec3& newRotation) {
     rotation = newRotation;
     if (!parent) return;
-    parent->RecalculateGlobalRotation();
+    CalculateGlobalRotation();
     if (parent->dirtyFlag) return;
     SetDirtyFlag();
 }
@@ -61,13 +61,16 @@ glm::vec3 Transform::GetLocalPosition() const {
 glm::vec3 Transform::GetLocalRotation() const {
     return rotation;
 }
-
-glm::vec3 Transform::GetGlobalScale() const {
-    return {glm::length(GetRight()), glm::length(GetUp()), glm::length(GetBackward()) };
+glm::vec3 Transform::GetGlobalRotation() const {
+    return globalRotation;
 }
 
 glm::vec3 Transform::GetLocalScale() const {
     return scale;
+}
+
+glm::vec3 Transform::GetGlobalScale() const {
+    return {glm::length(GetRight()), glm::length(GetUp()), glm::length(GetBackward()) };
 }
 
 glm::mat4 Transform::GetModelMatrix() const {
@@ -107,4 +110,12 @@ void Transform::SetDirtyFlag() {
     }
 
     delete[] toSet;
+}
+
+void Transform::CalculateGlobalRotation() {
+    globalRotation = parent->GetParent()->transform->globalRotation + rotation;
+
+    for (auto&& child : parent->children) {
+        child.second->transform->CalculateGlobalRotation();
+    }
 }

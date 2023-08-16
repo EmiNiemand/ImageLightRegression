@@ -13,6 +13,8 @@ private:
     glm::vec3 rotation = {0.0f, 0.0f, 0.0f }; //In degrees
     glm::vec3 scale = {1.0f, 1.0f, 1.0f };
 
+    glm::vec3 globalRotation = {0, 0, 0};
+
     //Global space information concatenate in matrix
     glm::mat4 mModelMatrix = glm::mat4(1.0f);
 
@@ -31,17 +33,19 @@ public:
     [[nodiscard]] glm::vec3 GetLocalPosition() const;
     /// Return vec3 of rotation values in degrees
     [[nodiscard]] glm::vec3 GetLocalRotation() const;
+    [[nodiscard]] glm::vec3 GetGlobalRotation() const;
     [[nodiscard]] glm::vec3 GetLocalScale() const;
+    [[nodiscard]] glm::vec3 GetGlobalScale() const;
     [[nodiscard]] glm::mat4 GetModelMatrix() const;
     [[nodiscard]] glm::vec3 GetRight() const;
     [[nodiscard]] glm::vec3 GetUp() const;
     [[nodiscard]] glm::vec3 GetBackward() const;
     [[nodiscard]] glm::vec3 GetForward() const;
-    [[nodiscard]] glm::vec3 GetGlobalScale() const;
     [[nodiscard]] glm::mat4 GetLocalModelMatrix() const;
 
 private:
     void SetDirtyFlag();
+    void CalculateGlobalRotation();
 };
 
 

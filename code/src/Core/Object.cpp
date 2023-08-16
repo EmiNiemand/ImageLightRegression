@@ -97,14 +97,6 @@ void Object::DisableSelfAndChildren() {
     enabled = false;
 }
 
-void Object::RecalculateGlobalRotation() {
-    globalRotation = parent->globalRotation + transform->GetLocalRotation();
-
-    for (auto&& child : children) {
-        child.second->RecalculateGlobalRotation();
-    }
-}
-
 void Object::DestroyAllComponents() {
     if (components.empty()) return;
     for (const auto& component : components) {
@@ -139,4 +131,8 @@ void Object::OnTransformUpdateComponents() {
 
 bool Object::GetEnabled() const {
     return enabled;
+}
+
+Object *Object::GetParent() const {
+    return parent;
 }
