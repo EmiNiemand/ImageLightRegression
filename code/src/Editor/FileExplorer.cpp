@@ -34,7 +34,7 @@ void FileExplorer::ShowFiles() {
 
     ImGui::BeginChild("##ScrollingRegion", ImVec2(0, 0), false);
 
-    if (ImGui::Button(ICON_MD_ARROW_CIRCLE_LEFT)) {
+    if (ImGui::Button(ICON_MD_ARROW_LEFT)) {
         if (fileExplorerCurrentPath != "resources") {
             fileExplorerCurrentPath = std::filesystem::path(fileExplorerCurrentPath).parent_path().string();
         }

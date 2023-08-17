@@ -95,13 +95,13 @@ void EditorManager::ShowInspector() const {
     ImGui::SetWindowSize("Properties", ImVec2((float)Application::resolution.x / 16 * 3, (float)Application::resolution.y / 9 * 6));
     ImGui::SetWindowPos("Properties", ImVec2((float)Application::resolution.x / 16 * 13, (float)Application::resolution.y / 9));
 
-    if (selectedNode != nullptr) {
+    if (selectedNode != nullptr && selectedNode != Application::GetInstance()->scene) {
         Inspector::ShowName();
         for (auto& component : selectedNode->components) {
             Inspector::ShowComponentProperties(component.second);
         }
+        Inspector::ShowPopUp();
     }
-    Inspector::ShowPopUp();
 
     ImGui::End();
 }
