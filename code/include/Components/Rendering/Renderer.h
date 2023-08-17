@@ -16,7 +16,7 @@ class Model;
 class Renderer : public Component {
 public:
     Material material = {{1.0f, 1.0f, 1.0f}, 32.0f, 0, 0};
-    glm::vec2 textScale = glm::vec2(1.0f, 1.0f);
+    glm::vec2 texScale = glm::vec2(1.0f, 1.0f);
 
     Model* model = nullptr;
     bool drawShadows = true;

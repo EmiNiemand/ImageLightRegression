@@ -29,7 +29,7 @@ void Renderer::Draw(Shader* shader) {
 
     shader->Activate();
     shader->SetMat4("model", parent->transform->GetModelMatrix());
-    shader->SetVec2("texStrech", textScale);
+    shader->SetVec2("texStrech", texScale);
     shader->SetVec3("material.color", material.color);
     shader->SetFloat("material.shininess", material.shininess);
     shader->SetFloat("material.reflection", material.reflection);

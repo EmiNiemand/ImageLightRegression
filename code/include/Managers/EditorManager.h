@@ -5,11 +5,19 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
 
+#include <string>
+
 class Object;
+class Texture;
 
 class EditorManager {
 public:
     Object* selectedNode = nullptr;
+
+    std::string dndPath = {};
+    std::string fileExplorerCurrentPath = "resources";
+    Texture* fileTexture = nullptr;
+    Texture* directoryTexture = nullptr;
 
 private:
     inline static EditorManager* editorManager;
@@ -17,9 +25,6 @@ private:
     // Decide GL+GLSL versions
     // GL 4.3 + GLSL 430
     const char* glsl_version = "#version 430";
-
-    int windowFlags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
-            ImGuiWindowFlags_NoScrollbar;
 
 public:
     EditorManager(EditorManager &other) = delete;
@@ -40,6 +45,9 @@ private:
     void ShowSceneTree() const;
     void ShowInspector() const;
     void ShowFileExplorer() const;
+    void ShowLoadedImage() const;
+
+    static void SetUnityTheme();
 };
 
 

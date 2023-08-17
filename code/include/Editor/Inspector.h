@@ -12,8 +12,6 @@ class Inspector {
 private:
     inline static glm::vec3 copiedVec3 = glm::vec3(0.0f);
     inline static glm::vec2 copiedVec2 = glm::vec3(0.0f);
-    inline static int headerFlags = ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen |
-            ImGuiTreeNodeFlags_SpanFullWidth;
 
 public:
     static void ShowPopUp();

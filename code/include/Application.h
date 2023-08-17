@@ -19,6 +19,10 @@ public:
     inline static Viewport viewports[4];
 
     Object* scene = nullptr;
+    Object* loadedImage = nullptr;
+    Object* renderedImage = nullptr;
+    Object* differenceImage = nullptr;
+
     float frameTime = 0;
 
 private:
@@ -31,10 +35,6 @@ private:
 
     bool shouldRun = false;
     bool isStarted = false;
-
-    Object* loadedImage = nullptr;
-    Object* renderedImage = nullptr;
-    Object* differenceImage = nullptr;
 
 public:
     GLFWwindow* window = nullptr;

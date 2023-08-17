@@ -131,6 +131,7 @@ void Application::Run() {
             }
         }
 
+        //TODO: move it somewhere else
         if ((InputManager::GetInstance()->IsKeyPressed(Key::KEY_LEFT_CONTROL) &&
              InputManager::GetInstance()->IsKeyDown(Key::KEY_KP_0)) ||
             (InputManager::GetInstance()->IsKeyDown(Key::KEY_LEFT_CONTROL) &&

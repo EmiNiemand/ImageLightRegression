@@ -15,6 +15,9 @@
 #include "Resources/CubeMap.h"
 #pragma endregion
 
+#define HEADER_FLAGS (ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen | \
+                      ImGuiTreeNodeFlags_SpanFullWidth)
+
 void Inspector::ShowPopUp() {
     if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
         ImGui::OpenPopup("InspectorPopUpContextMenu", ImGuiPopupFlags_NoOpenOverExistingPopup);
@@ -102,7 +105,7 @@ void Inspector::ShowComponentProperties(Component* component) {
 void Inspector::ShowTransform() {
     Transform* transform = EditorManager::GetInstance()->selectedNode->transform;
 
-    if (ImGui::CollapsingHeader("Transform", headerFlags)) {
+    if (ImGui::CollapsingHeader("Transform", HEADER_FLAGS)) {
         if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
             ImGui::OpenPopup("TransformContextMenu");
         }
@@ -130,7 +133,7 @@ void Inspector::ShowTransform() {
             transform->SetLocalPosition(position);
         }
         if (ShowVec3("Rotation", rotation, 1.0f)) {
-            transform->SetLocalRotation({rotation.y, rotation.x, rotation.z});
+            transform->SetLocalRotation(rotation);
         }
         if (ShowVec3("Scale", scale, 0.02f, 1.0f)) {
             transform->SetLocalScale(scale);
@@ -206,7 +209,7 @@ void Inspector::ShowRenderer() {
     if (ImGui::BeginPopup("RendererContextMenu", ImGuiPopupFlags_NoOpenOverExistingPopup)) {
         if (ImGui::MenuItem("Reset")) {
             renderer->material = {{1.0f, 1.0f, 1.0f}, 32.0f, 0, 0};
-            renderer->textScale = glm::vec2(1.0f, 1.0f);
+            renderer->texScale = glm::vec2(1.0f, 1.0f);
             renderer->model = nullptr;
             renderer->drawShadows = true;
 
@@ -229,7 +232,7 @@ void Inspector::ShowRenderer() {
     ImGui::Text("%s", "Material");
     ImGui::TableSetColumnIndex(1);
     ImGui::SetNextItemWidth(-FLT_MIN);
-    if (ImGui::CollapsingHeader("Material", headerFlags)) {
+    if (ImGui::CollapsingHeader("Material", HEADER_FLAGS)) {
         ImGui::BeginTable("Material", 2);
         ShowVec3("Color", renderer->material.color, 0.01f, 0.0f, 0.0f, 1.0f);
         ShowFloat("Shininess", &renderer->material.shininess, 1.0f, 0.0f, 0.0f);
@@ -238,7 +241,7 @@ void Inspector::ShowRenderer() {
         ImGui::EndTable();
     }
 
-    ShowVec2("Texture scale", renderer->textScale);
+    ShowVec2("Texture scale", renderer->texScale);
 
     ImGui::TableNextRow();
     ImGui::TableSetColumnIndex(0);
@@ -550,7 +553,7 @@ bool Inspector::ShowComponentHeader(Component *component, const std::string& hea
 
     ImGui::TableNextRow();
     ImGui::TableSetColumnIndex(0);
-    bool isOpen = ImGui::CollapsingHeader(headerText.c_str(), headerFlags);
+    bool isOpen = ImGui::CollapsingHeader(headerText.c_str(), HEADER_FLAGS);
 
     ImGui::TableSetColumnIndex(1);
     ImGui::SetNextItemWidth(-FLT_MIN);
