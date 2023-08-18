@@ -1,5 +1,6 @@
 #include "Components/Rendering/Lights/DirectionalLight.h"
 #include "Managers/RenderingManager.h"
+#include "Rendering/ObjectRenderer.h"
 
 DirectionalLight::DirectionalLight(Object* parent, int id) : Component(parent, id) {}
 
@@ -8,28 +9,26 @@ DirectionalLight::~DirectionalLight() = default;
 void DirectionalLight::OnCreate() {
     Component::OnCreate();
 
-    bool isAdded = false;
-    int number = 0;
+    auto& lights = RenderingManager::GetInstance()->objectRenderer->directionalLights;
 
-    for (auto&& directionalLight : RenderingManager::GetInstance()->directionalLights) {
-        if (directionalLight.second == nullptr) {
-            RenderingManager::GetInstance()->directionalLights.find(number)->second = this;
-            isAdded = true;
+    for (int i = 0; i < NUMBER_OF_LIGHTS; ++i) {
+        if (lights[i] == nullptr) {
+            lights[i] = this;
+            RenderingManager::GetInstance()->objectRenderer->UpdateLight(id);
+            break;
         }
-        number++;
     }
-    if (!isAdded) RenderingManager::GetInstance()->directionalLights.insert({number, this});
-    RenderingManager::GetInstance()->UpdateLight(id);
+
 }
 
 void DirectionalLight::OnDestroy() {
     Component::OnDestroy();
-    RenderingManager::GetInstance()->RemoveLight(id);
+    RenderingManager::GetInstance()->objectRenderer->RemoveLight(id);
 }
 
 void DirectionalLight::OnUpdate() {
     Component::OnUpdate();
-    RenderingManager::GetInstance()->UpdateLight(id);
+    RenderingManager::GetInstance()->objectRenderer->UpdateLight(id);
 }
 
 #pragma region Getters

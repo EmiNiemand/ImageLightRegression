@@ -15,6 +15,7 @@ Shader::~Shader() = default;
 void Shader::Load() {
     std::string vertexShaderSource;
     std::string fragmentShaderSource;
+    std::string geometryShaderSource;
 
 #ifdef RELEASE
     std::ifstream input(path);
@@ -23,6 +24,7 @@ void Shader::Load() {
     input >> json;
     json.at("vertex").get_to(vertexShaderSource);
     json.at("fragment").get_to(fragmentShaderSource);
+    json.at("geometry").get_to(geometryShaderSource);
 #endif
 #ifdef DEBUG
     try {
@@ -32,6 +34,7 @@ void Shader::Load() {
         input >> json;
         json.at("vertex").get_to(vertexShaderSource);
         json.at("fragment").get_to(fragmentShaderSource);
+        json.at("geometry").get_to(geometryShaderSource);
     }
     catch (std::ifstream::failure& e) {
         ILR_ERROR_MSG("Shader file path does not exist" + path);
@@ -61,17 +64,31 @@ void Shader::Load() {
     // Compile the Vertex Shader into machine code
     glCompileShader(fragmentShader);
 
+    GLuint geometryShader;
+    if (!geometryShaderSource.empty()) {
+        std::string gCode;
+        LoadShader(fragmentShaderSource, gCode);
+        const GLchar* cgCode = gCode.c_str();
+        // Create Fragment Shader Object and get its reference
+        geometryShader = glCreateShader(GL_FRAGMENT_SHADER);
+        // Attach Fragment Shader source to the Fragment Shader Object
+        glShaderSource(geometryShader, 1, &cgCode, nullptr);
+        // Compile the Vertex Shader into machine code
+        glCompileShader(geometryShader);
+    }
+
     shaderID = glCreateProgram();
     // Attach the Vertex and Fragment Shaders to the Shader Program
     glAttachShader(shaderID, vertexShader);
     glAttachShader(shaderID, fragmentShader);
-
+    if (!geometryShaderSource.empty()) glAttachShader(shaderID, geometryShader);
     // Wrap-up/Link all the shaders together into the Shader Program
     glLinkProgram(shaderID);
 
     // Delete the now useless Vertex and Fragment Shader objects
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
+    if (!geometryShaderSource.empty()) glDeleteShader(geometryShader);
 }
 
 void Shader::LoadShader(std::string& shaderPath, std::string& shaderCode) {

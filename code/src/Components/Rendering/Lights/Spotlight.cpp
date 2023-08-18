@@ -1,5 +1,6 @@
 #include "Components/Rendering/Lights/Spotlight.h"
 #include "Managers/RenderingManager.h"
+#include "Rendering/ObjectRenderer.h"
 
 SpotLight::SpotLight(Object* parent, int id) : Component(parent, id) {}
 
@@ -8,28 +9,26 @@ SpotLight::~SpotLight() = default;
 void SpotLight::OnCreate() {
     Component::OnCreate();
 
-    bool isAdded = false;
-    int number = 0;
+    auto& lights = RenderingManager::GetInstance()->objectRenderer->spotLights;
 
-    for (auto&& spotLight : RenderingManager::GetInstance()->spotLights) {
-        if (spotLight.second == nullptr) {
-            RenderingManager::GetInstance()->spotLights.find(number)->second = this;
-            isAdded = true;
+    for (int i = 0; i < NUMBER_OF_LIGHTS; ++i) {
+        if (lights[i] == nullptr) {
+            lights[i] = this;
+            RenderingManager::GetInstance()->objectRenderer->UpdateLight(id);
+            break;
         }
-        number++;
     }
-    if (!isAdded) RenderingManager::GetInstance()->spotLights.insert({number, this});
-    RenderingManager::GetInstance()->UpdateLight(id);
+
 }
 
 void SpotLight::OnDestroy() {
     Component::OnDestroy();
-    RenderingManager::GetInstance()->RemoveLight(id);
+    RenderingManager::GetInstance()->objectRenderer->RemoveLight(id);
 }
 
 void SpotLight::OnUpdate() {
     Component::OnUpdate();
-    RenderingManager::GetInstance()->UpdateLight(id);
+    RenderingManager::GetInstance()->objectRenderer->UpdateLight(id);
 }
 
 #pragma region Getters

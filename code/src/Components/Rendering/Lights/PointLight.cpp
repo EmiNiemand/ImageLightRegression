@@ -1,5 +1,6 @@
 #include "Components/Rendering/Lights/PointLight.h"
 #include "Managers/RenderingManager.h"
+#include "Rendering/ObjectRenderer.h"
 
 PointLight::PointLight(Object* parent, int id) : Component(parent, id) {}
 
@@ -8,28 +9,26 @@ PointLight::~PointLight() = default;
 void PointLight::OnCreate() {
     Component::OnCreate();
 
-    bool isAdded = false;
-    int number = 0;
+    auto& lights = RenderingManager::GetInstance()->objectRenderer->pointLights;
 
-    for (auto& pointLight : RenderingManager::GetInstance()->pointLights) {
-        if (pointLight.second == nullptr) {
-            RenderingManager::GetInstance()->pointLights.find(number)->second = this;
-            isAdded = true;
+    for (int i = 0; i < NUMBER_OF_LIGHTS; ++i) {
+        if (lights[i] == nullptr) {
+            lights[i] = this;
+            RenderingManager::GetInstance()->objectRenderer->UpdateLight(id);
+            break;
         }
-        number++;
     }
-    if (!isAdded) RenderingManager::GetInstance()->pointLights.insert({number, this});
-    RenderingManager::GetInstance()->UpdateLight(id);
+
 }
 
 void PointLight::OnDestroy() {
     Component::OnDestroy();
-    RenderingManager::GetInstance()->RemoveLight(id);
+    RenderingManager::GetInstance()->objectRenderer->RemoveLight(id);
 }
 
 void PointLight::OnUpdate() {
     Component::OnUpdate();
-    RenderingManager::GetInstance()->UpdateLight(id);
+    RenderingManager::GetInstance()->objectRenderer->UpdateLight(id);
 }
 
 #pragma region Getters

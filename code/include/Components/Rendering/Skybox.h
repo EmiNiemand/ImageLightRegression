@@ -10,11 +10,7 @@ class Shader;
 
 class Skybox : public Component {
 private:
-    inline static Object* activeSkybox = nullptr;
     CubeMap* cubeMap = nullptr;
-
-    inline static unsigned int vao = 0;
-    inline static unsigned int vbo = 0;
 
 public:
     Skybox(Object *parent, int id);
@@ -24,14 +20,7 @@ public:
 
     [[nodiscard]] CubeMap* GetCubeMap() const;
 
-    static void Draw(Shader* inShader);
-
-    static void SetActiveSkybox(Object* inSkybox);
-
-    /// Call after window creation and opengl init, somewhere at application start up
-    static void InitializeBuffers();
-    /// Call during application shutdown
-    static void DeleteBuffers();
+    void SetActive();
 };
 
 

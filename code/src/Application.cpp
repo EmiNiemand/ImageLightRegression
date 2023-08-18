@@ -4,6 +4,9 @@
 #include "Managers/RenderingManager.h"
 #include "Managers/UIManager.h"
 #include "Managers/EditorManager.h"
+#include "Rendering/ShadowRenderer.h"
+#include "Rendering/ObjectRenderer.h"
+#include "Rendering/SkyboxRenderer.h"
 #include "Core/Object.h"
 #include "Components/Rendering/EditorCamera.h"
 #include "Components/Transform.h"
@@ -11,6 +14,7 @@
 #include "Components/Rendering/Lights/PointLight.h"
 #include "Components/Rendering/Skybox.h"
 #include "Components/Rendering/UI/Image.h"
+#include "Resources/Shader.h"
 
 #include <glad/glad.h>  // Initialize with gladLoadGL()
 #include <stb_image.h>
@@ -35,6 +39,9 @@ void Application::Startup() {
     UIManager::GetInstance()->Startup();
     EditorManager::GetInstance()->Startup();
 
+    destroyObjectBuffer.reserve(200);
+    destroyComponentBuffer.reserve(200);
+
     scene = Object::Instantiate("Scene", nullptr);
 
     // World viewport - tool
@@ -57,7 +64,6 @@ void Application::Startup() {
 
     Object* skybox = Object::Instantiate("Skybox", scene);
     skybox->AddComponent<Skybox>();
-    Skybox::SetActiveSkybox(skybox);
 
     Object* loadedObject = Object::Instantiate("Something", scene);
     loadedObject->AddComponent<Renderer>()->LoadModel("resources/models/Cube/Cube.obj");
@@ -93,21 +99,21 @@ void Application::Run() {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        for (int i = 0; i < destroyComponentBufferIterator; ++i) {
+        for (int i = 0; i < destroyComponentBuffer.size(); ++i) {
             int componentID = destroyComponentBuffer[i];
             components[componentID]->OnDestroy();
             delete components[componentID];
             components.erase(componentID);
         }
-        destroyComponentBufferIterator = 0;
+        destroyComponentBuffer.clear();
 
-        for (int i = 0; i < destroyObjectBufferIterator; ++i) {
+        for (int i = 0; i < destroyObjectBuffer.size(); ++i) {
             int objectID = destroyObjectBuffer[i];
             objects[objectID]->parent->children.erase(objectID);
             delete objects[objectID];
             objects.erase(objectID);
         }
-        destroyObjectBufferIterator = 0;
+        destroyObjectBuffer.clear();
 
         scene->UpdateSelfAndChildren();
 
@@ -139,9 +145,15 @@ void Application::Run() {
             Camera::ChangeActiveCamera();
         }
 
+        RenderingManager::GetInstance()->shadowRenderer->PrepareShadowMap();
+
         glViewport(viewports[0].position.x, viewports[0].position.y, viewports[0].resolution.x, viewports[0].resolution.y);
-        RenderingManager::GetInstance()->Draw(RenderingManager::GetInstance()->shader);
-        Skybox::Draw(RenderingManager::GetInstance()->cubeMapShader);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glActiveTexture(GL_TEXTURE5);
+        glBindTexture(GL_TEXTURE_2D, RenderingManager::GetInstance()->shadowRenderer->depthMap);
+        RenderingManager::GetInstance()->Draw(RenderingManager::GetInstance()->objectRenderer->shader);
+        RenderingManager::GetInstance()->skyboxRenderer->Draw();
 
         glViewport(viewports[1].position.x, viewports[1].position.y, viewports[1].resolution.x, viewports[1].resolution.y);
         loadedImage->GetComponentByClass<Image>()->Draw(UIManager::GetInstance()->imageShader);
@@ -189,13 +201,11 @@ void Application::Shutdown() {
 }
 
 void Application::AddObjectToDestroyBuffer(int objectID) {
-    destroyObjectBuffer[destroyObjectBufferIterator] = objectID;
-    ++destroyObjectBufferIterator;
+    destroyObjectBuffer.push_back(objectID);
 }
 
 void Application::AddComponentToDestroyBuffer(int componentID) {
-    destroyComponentBuffer[destroyComponentBufferIterator] = componentID;
-    ++destroyComponentBufferIterator;
+    destroyComponentBuffer.push_back(componentID);
 }
 
 void Application::CreateApplicationWindow() {
@@ -210,7 +220,7 @@ void Application::CreateApplicationWindow() {
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
     glfwWindowHint(GLFW_SAMPLES, 4);
     // Create window with graphics context
-    window = glfwCreateWindow(resolution.x, resolution.y, "ILR", NULL, NULL);
+    window = glfwCreateWindow(resolution.x, resolution.y, "ILR", nullptr, nullptr);
     if (window == nullptr)
         throw;
     glfwMakeContextCurrent(window);

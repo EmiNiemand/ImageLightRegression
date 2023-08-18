@@ -28,10 +28,8 @@ public:
 private:
     inline static Application* application;
 
-    unsigned int destroyObjectBufferIterator = 0;
-    int destroyObjectBuffer[200]{};
-    unsigned int destroyComponentBufferIterator = 0;
-    int destroyComponentBuffer[200]{};
+    std::vector<int> destroyObjectBuffer{};
+    std::vector<int> destroyComponentBuffer{};
 
     bool shouldRun = false;
     bool isStarted = false;

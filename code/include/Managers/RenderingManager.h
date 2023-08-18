@@ -2,28 +2,25 @@
 #define IMAGELIGHTREGRESSION_RENDERINGMANAGER_H
 
 #include "ApplicationTypes.h"
-#include <map>
+
+#include <vector>
 
 class Shader;
 class Renderer;
-class PointLight;
-class DirectionalLight;
-class SpotLight;
+class ShadowRenderer;
+class ObjectRenderer;
+class SkyboxRenderer;
 
 class RenderingManager {
 public:
-    // pair of id and ptr to light
-    std::map<uint8, PointLight*> pointLights;
-    std::map<uint8, DirectionalLight*> directionalLights;
-    std::map<uint8, SpotLight*> spotLights;
+    ShadowRenderer* shadowRenderer = nullptr;
+    ObjectRenderer* objectRenderer = nullptr;
+    SkyboxRenderer* skyboxRenderer = nullptr;
 
-    Shader* shader;
-    Shader* cubeMapShader;
 private:
     inline static RenderingManager* renderingManager;
-    uint16 bufferIterator = 0;
-    Renderer* drawBuffer[1000] = {};
 
+    std::vector<Renderer*> drawBuffer{};
 public:
     RenderingManager(RenderingManager &other) = delete;
     void operator=(const RenderingManager&) = delete;
@@ -38,22 +35,13 @@ public:
     void ClearBuffer();
 
     void AddToDrawBuffer(Renderer* renderer);
+    [[nodiscard]] const std::vector<Renderer*>& GetDrawBuffer() const;
 
     void UpdateProjection() const;
     void UpdateView() const;
 
-    void UpdateLight(int componentId);
-    void RemoveLight(int componentId);
-
 private:
     explicit RenderingManager();
-
-    void UpdatePointLight(int id, Shader* lightShader);
-    void UpdateDirectionalLight(int id, Shader* lightShader);
-    void UpdateSpotLight(int id, Shader* lightShader);
-    void RemovePointLight(int id, Shader* lightShader);
-    void RemoveDirectionalLight(int id, Shader* lightShader);
-    void RemoveSpotLight(int id, Shader* lightShader);
 };
 
 

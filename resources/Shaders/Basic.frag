@@ -72,8 +72,9 @@ uniform sampler2D textureSpecular;
 uniform sampler2D textureNormal;
 uniform sampler2D textureHeight;
 
-uniform sampler2D shadowMapTexture;
 uniform samplerCube cubeMapTexture;
+uniform sampler2D shadowMapTexture;
+
 // EXTERNALLY SET VARIABLES
 // ------------------------
 
@@ -90,7 +91,7 @@ uniform Material material = Material(vec3(1, 1, 1), 32.0f, 0.0f, 0.0f);
 vec3[3] CalculateDirectionalLight(DirectionalLight light, vec3 inNormal, vec3 inViewDirection);
 vec3[3] CalculatePointLight(PointLight light, vec3 inNormal, vec3 inFragPosition, vec3 inViewDirection);
 vec3[3] CalculateSpotLight(SpotLight light, vec3 inNormal, vec3 inFragPosition, vec3 inViewDirection);
-//float ShadowCalculation(vec4 inFragPositionLightSpace);
+float ShadowCalculation(vec4 inFragPositionLightSpace);
 
 float shadow;
 // MAIN
@@ -104,9 +105,8 @@ void main() {
 
     vec3[3] lightSettings;
 
-//    shadow = ShadowCalculation(FragPosLightSpace);
+    shadow = ShadowCalculation(fragPositionLightSpace);
 
-    shadow = 0.0f;
     // phase 1: directional lights
     for(int i = 0; i < NR_DIRECTIONAL_LIGHTS; i++){
         if(directionalLights[i].isActive) {
@@ -220,34 +220,34 @@ vec3[3] CalculateSpotLight(SpotLight light, vec3 inNormal, vec3 inFragPosition, 
     return lightSettings;
 }
 
-//float ShadowCalculation(vec4 inFragPositionLightSpace)
-//{
-//    // perform perspective divide
-//    vec3 projectionUV = inFragPositionLightSpace.xyz / inFragPositionLightSpace.w;
-//    // transform to [0,1] range
-//    projectionUV = projectionUV * 0.5 + 0.5;
-//    // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
-//    float closestDepth = texture(shadowMapTexture, projectionUV.xy).r;
-//    // get depth of current fragment from light's perspective
-//    float currentDepth = projectionUV.z;
-//
-//    // PCF
-//    float shadow = 0.0;
-//    vec2 texelSize = 1.0 / textureSize(shadowMapTexture, 0);
-//    for(int x = -1; x <= 1; ++x)
-//    {
-//        for(int y = -1; y <= 1; ++y)
-//        {
-//            float pcfDepth = texture(shadowMapTexture, projectionUV.xy + vec2(x, y) * texelSize).r;
-//            shadow += currentDepth > pcfDepth  ? 1.0 : 0.0;
-//        }
-//    }
-//    shadow /= 9.0;
-//
-//    // keep the shadow at 0.0 when outside the far_plane region of the light's frustum.
-//    if(projectionUV.z > 1.0) shadow = 0.0;
-//    // keep shadow scale if material is transparent
-//    if(material.refract > 0.0f) shadow *= (1 - material.refract);
-//
-//    return shadow;
-//}
+float ShadowCalculation(vec4 inFragPositionLightSpace)
+{
+    // perform perspective divide
+    vec3 projectionUV = inFragPositionLightSpace.xyz / inFragPositionLightSpace.w;
+    // transform to [0,1] range
+    projectionUV = projectionUV * 0.5 + 0.5;
+    // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
+    float closestDepth = texture(shadowMapTexture, projectionUV.xy).r;
+    // get depth of current fragment from light's perspective
+    float currentDepth = projectionUV.z;
+
+    // PCF
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(shadowMapTexture, 0);
+    for(int x = -1; x <= 1; ++x)
+    {
+        for(int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = texture(shadowMapTexture, projectionUV.xy + vec2(x, y) * texelSize).r;
+            shadow += currentDepth > pcfDepth  ? 1.0 : 0.0;
+        }
+    }
+    shadow /= 9.0;
+
+    // keep the shadow at 0.0 when outside the far_plane region of the light's frustum.
+    if(projectionUV.z > 1.0) shadow = 0.0;
+    // keep shadow scale if material is transparent
+    if(material.refraction > 0.0f) shadow *= (1 - material.refraction);
+
+    return shadow;
+}

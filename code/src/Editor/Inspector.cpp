@@ -490,7 +490,7 @@ void Inspector::ShowSkybox() {
     }
     if (ImGui::BeginPopup("SkyboxContextMenu", ImGuiPopupFlags_NoOpenOverExistingPopup)) {
         if (ImGui::MenuItem("Set Active")) {
-            Skybox::SetActiveSkybox(EditorManager::GetInstance()->selectedNode);
+            skybox->SetActive();
 
             ImGui::CloseCurrentPopup();
         }
