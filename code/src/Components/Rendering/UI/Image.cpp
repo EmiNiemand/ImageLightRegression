@@ -1,6 +1,7 @@
 #include "Components/Rendering/UI/Image.h"
 #include "Managers/ResourceManager.h"
-#include "Managers/UIManager.h"
+#include "Managers/RenderingManager.h"
+#include "Rendering/UIRenderer.h"
 #include "Core/Object.h"
 #include "Components/Transform.h"
 #include "Resources/Texture.h"
@@ -11,7 +12,7 @@
 Image::Image(Object *parent, int id) : Component(parent, id) {
     texture = ResourceManager::LoadResource<Texture>("resources/Textures/DefaultImage.png");
 
-    Shader* shader = UIManager::GetInstance()->imageShader;
+    Shader* shader = RenderingManager::GetInstance()->uiRenderer->imageShader;
     shader->Activate();
     shader->SetInt("imageTexture", 0);
 }
@@ -32,7 +33,7 @@ void Image::Draw(Shader *inShader) {
     inShader->SetVec2("screenPosition", glm::vec2(parent->transform->GetGlobalPosition()));
     inShader->SetVec2("pivot", glm::vec2(0.5f, 0.5f));
 
-    glBindVertexArray(UIManager::GetInstance()->GetVAO());
+    glBindVertexArray(RenderingManager::GetInstance()->uiRenderer->GetVAO());
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture->GetID());
 

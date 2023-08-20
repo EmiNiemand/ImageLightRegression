@@ -2,7 +2,7 @@
 #include "Managers/ResourceManager.h"
 #include "Managers/InputManager.h"
 #include "Managers/RenderingManager.h"
-#include "Managers/UIManager.h"
+#include "Rendering/UIRenderer.h"
 #include "Managers/EditorManager.h"
 #include "Rendering/ShadowRenderer.h"
 #include "Rendering/ObjectRenderer.h"
@@ -36,7 +36,6 @@ void Application::Startup() {
     ResourceManager::GetInstance()->Startup();
     InputManager::GetInstance()->Startup();
     RenderingManager::GetInstance()->Startup();
-    UIManager::GetInstance()->Startup();
     EditorManager::GetInstance()->Startup();
 
     destroyObjectBuffer.reserve(200);
@@ -68,9 +67,10 @@ void Application::Startup() {
     Object* loadedObject = Object::Instantiate("Something", scene);
     loadedObject->AddComponent<Renderer>()->LoadModel("resources/models/Cube/Cube.obj");
 
-    Object* loadedObject1 = Object::Instantiate("Something1", loadedObject);
+    Object* loadedObject1 = Object::Instantiate("Ground", scene);
     loadedObject1->AddComponent<Renderer>()->LoadModel("resources/models/Cube/Cube.obj");
-    loadedObject1->transform->SetLocalPosition({10.0f, 0.0f, 0.0f});
+    loadedObject1->transform->SetLocalPosition({0, -2, 0});
+    loadedObject1->transform->SetLocalScale({10, 1, 10});
 
     loadedImage = Object::Instantiate("Loaded Image", scene);
     loadedImage->AddComponent<Image>();
@@ -84,9 +84,9 @@ void Application::Startup() {
     differenceImage->AddComponent<Image>();
     differenceImage->visibleInEditor = false;
 
-    Object* pointLight = Object::Instantiate("Point Light", scene);
+    Object* pointLight = Object::Instantiate("Light", scene);
     pointLight->AddComponent<PointLight>();
-    pointLight->transform->SetLocalPosition({10, 1, 0});
+    pointLight->transform->SetLocalPosition({0, 5, 0});
 }
 
 void Application::Run() {
@@ -156,14 +156,14 @@ void Application::Run() {
         RenderingManager::GetInstance()->skyboxRenderer->Draw();
 
         glViewport(viewports[1].position.x, viewports[1].position.y, viewports[1].resolution.x, viewports[1].resolution.y);
-        loadedImage->GetComponentByClass<Image>()->Draw(UIManager::GetInstance()->imageShader);
+        loadedImage->GetComponentByClass<Image>()->Draw(RenderingManager::GetInstance()->uiRenderer->imageShader);
 
         if (isStarted) {
             glViewport(viewports[2].position.x, viewports[2].position.y, viewports[2].resolution.x, viewports[2].resolution.y);
-            renderedImage->GetComponentByClass<Image>()->Draw(UIManager::GetInstance()->imageShader);
+            renderedImage->GetComponentByClass<Image>()->Draw(RenderingManager::GetInstance()->uiRenderer->imageShader);
 
             glViewport(viewports[3].position.x, viewports[3].position.y, viewports[3].resolution.x, viewports[3].resolution.y);
-            differenceImage->GetComponentByClass<Image>()->Draw(UIManager::GetInstance()->imageShader);
+            differenceImage->GetComponentByClass<Image>()->Draw(RenderingManager::GetInstance()->uiRenderer->imageShader);
         }
 
         RenderingManager::GetInstance()->ClearBuffer();
@@ -189,7 +189,6 @@ void Application::Shutdown() {
     objects.clear();
 
     EditorManager::GetInstance()->Shutdown();
-    UIManager::GetInstance()->Shutdown();
     RenderingManager::GetInstance()->Shutdown();
     InputManager::GetInstance()->Shutdown();
     ResourceManager::GetInstance()->Shutdown();

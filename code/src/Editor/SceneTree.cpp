@@ -40,11 +40,11 @@ void SceneTree::ManageNodeInput(Object* hoveredObject) {
         EditorManager::GetInstance()->selectedNode = hoveredObject;
     }
     if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-        ImGui::OpenPopup((hoveredObject->name + "ContextMenu").c_str(), ImGuiPopupFlags_NoOpenOverExistingPopup);
+        ImGui::OpenPopup((std::to_string(hoveredObject->id) + "ContextMenu").c_str(), ImGuiPopupFlags_NoOpenOverExistingPopup);
     }
-    if (ImGui::BeginPopup((hoveredObject->name + "ContextMenu").c_str())) {
+    if (ImGui::BeginPopup((std::to_string(hoveredObject->id) + "ContextMenu").c_str())) {
         if (ImGui::MenuItem("Add Object")) {
-            Object::Instantiate("Object");
+            EditorManager::GetInstance()->selectedNode = Object::Instantiate("Object");
             ImGui::CloseCurrentPopup();
         }
 
@@ -54,7 +54,7 @@ void SceneTree::ManageNodeInput(Object* hoveredObject) {
         }
 
         if (ImGui::MenuItem("Add Child Object")) {
-            Object::Instantiate("Object", hoveredObject);
+            EditorManager::GetInstance()->selectedNode = Object::Instantiate("Object", hoveredObject);
             ImGui::CloseCurrentPopup();
         }
         if (ImGui::MenuItem("Remove Object")) {
@@ -73,7 +73,7 @@ void SceneTree::ShowPopUp() {
     }
     if (ImGui::BeginPopup("SceneTreePopUpContextMenu")) {
         if (ImGui::MenuItem("Add Object")) {
-            Object::Instantiate("Object");
+            EditorManager::GetInstance()->selectedNode = Object::Instantiate("Object");
             ImGui::CloseCurrentPopup();
         }
 

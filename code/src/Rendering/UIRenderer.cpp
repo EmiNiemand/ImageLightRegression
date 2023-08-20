@@ -1,28 +1,10 @@
-#include "Managers/UIManager.h"
+#include "Rendering/UIRenderer.h"
 #include "Managers/ResourceManager.h"
 #include "Resources/Shader.h"
 #include "Core/Object.h"
 #include "Components/Rendering/Camera.h"
 
-UIManager::UIManager() = default;
-
-UIManager::~UIManager() = default;
-
-UIManager *UIManager::GetInstance() {
-    if (uiManager == nullptr) {
-        uiManager = new UIManager();
-    }
-    return uiManager;
-}
-
-void UIManager::UpdateProjection() const {
-    glm::mat4 projection = Camera::GetActiveCamera()->GetComponentByClass<Camera>()->GetProjectionMatrix();
-
-    imageShader->Activate();
-    imageShader->SetMat4("projection", projection);
-}
-
-void UIManager::Startup() {
+UIRenderer::UIRenderer() {
     imageShader = ResourceManager::LoadResource<Shader>("resources/Resources/ShaderResources/ImageShader.json");
 
     glGenVertexArrays(1, &vao);
@@ -32,19 +14,16 @@ void UIManager::Startup() {
     glBufferData(GL_ARRAY_BUFFER, sizeof(Rectangle::vertices), &Rectangle::vertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
-
 }
 
-void UIManager::Shutdown() {
+UIRenderer::~UIRenderer() {
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &vbo);
 
     imageShader->Delete();
     ResourceManager::UnloadResource(imageShader->GetPath());
-
-    delete uiManager;
 }
 
-unsigned int UIManager::GetVAO() const {
+unsigned int UIRenderer::GetVAO() const {
     return vao;
 }

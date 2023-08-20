@@ -3,6 +3,7 @@
 #include "Rendering/ShadowRenderer.h"
 #include "Rendering/ObjectRenderer.h"
 #include "Rendering/SkyboxRenderer.h"
+#include "Rendering/UIRenderer.h"
 #include "Resources/Shader.h"
 #include "Core/Object.h"
 #include "Components/Transform.h"
@@ -24,12 +25,14 @@ void RenderingManager::Startup() {
     shadowRenderer = new ShadowRenderer();
     objectRenderer = new ObjectRenderer();
     skyboxRenderer = new SkyboxRenderer();
+    uiRenderer = new UIRenderer();
 }
 
 void RenderingManager::Shutdown() {
     delete shadowRenderer;
     delete objectRenderer;
     delete skyboxRenderer;
+    delete uiRenderer;
     delete renderingManager;
 }
 
@@ -62,6 +65,9 @@ void RenderingManager::UpdateProjection() const {
 
     skyboxRenderer->cubeMapShader->Activate();
     skyboxRenderer->cubeMapShader->SetMat4("projection", projection);
+
+    uiRenderer->imageShader->Activate();
+    uiRenderer->imageShader->SetMat4("projection", projection);
 }
 
 void RenderingManager::UpdateView() const {

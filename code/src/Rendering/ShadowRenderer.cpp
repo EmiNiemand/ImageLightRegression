@@ -18,7 +18,7 @@ ShadowRenderer::ShadowRenderer() {
     // create depth texture
     glGenTextures(1, &depthMap);
     glBindTexture(GL_TEXTURE_2D, depthMap);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadowResolution, shadowResolution, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadowResolution, shadowResolution, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
@@ -92,9 +92,10 @@ void ShadowRenderer::PrepareShadowMap() {
         if (!light) continue;
 
         Transform* lightTransform = light->parent->transform;
-        lightProjection = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, nearPlane, farPlane);
+        Camera* camera = Camera::GetActiveCamera()->GetComponentByClass<Camera>();
+        lightProjection = glm::perspective(std::acos(light->GetOuterCutOff()), 1.0f, camera->GetZNear(), camera->GetZFar());
 
-        lightView = glm::lookAt(lightTransform->GetGlobalPosition(), lightTransform->GetForward(), lightTransform->GetUp());
+        lightView = glm::lookAt(lightTransform->GetGlobalPosition(), lightTransform->GetGlobalPosition() + lightTransform->GetForward(), lightTransform->GetUp());
         lightSpaceMatrix = lightProjection * lightView;
 
         shadowShader->SetMat4("lightSpaceMatrix", lightSpaceMatrix);

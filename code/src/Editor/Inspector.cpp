@@ -454,7 +454,7 @@ void Inspector::ShowSpotLight() {
         spotLight->SetDiffuse(diffuse);
     }
     if (ShowVec3("Specular", specular, 0.1f, 0.0f, 0.0f)) {
-        spotLight->SetAmbient(specular);
+        spotLight->SetSpecular(specular);
     }
     if (ShowVec3("Color", color, 0.01f, 0.0f, 0.0f, 1.0f)) {
         spotLight->SetColor(color);
@@ -469,7 +469,7 @@ void Inspector::ShowSpotLight() {
         spotLight->SetQuadratic(quadratic);
     }
     if (ShowFloat("Cut Off", &cutOff, 0.01f, 0.0f, 0.0f, 360.0f)) {
-        spotLight->SetAmbient(color);
+        spotLight->SetCutOff(cutOff);
     }
     if (ShowFloat("Outer Cut Off", &outerCutOff, 0.01f, 0.0f, 0.0f, 360.0f)) {
         spotLight->SetOuterCutOff(outerCutOff);

@@ -10,12 +10,14 @@ class Renderer;
 class ShadowRenderer;
 class ObjectRenderer;
 class SkyboxRenderer;
+class UIRenderer;
 
 class RenderingManager {
 public:
     ShadowRenderer* shadowRenderer = nullptr;
     ObjectRenderer* objectRenderer = nullptr;
     SkyboxRenderer* skyboxRenderer = nullptr;
+    UIRenderer* uiRenderer = nullptr;
 
 private:
     inline static RenderingManager* renderingManager;
