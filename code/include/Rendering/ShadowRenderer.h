@@ -7,14 +7,15 @@ class Shader;
 
 class ShadowRenderer {
 public:
-    Shader* shadowShader = nullptr;
+    Shader* dnslShadowShader = nullptr;
+    Shader* plShadowShader = nullptr;
 
-    unsigned int depthMapFBO = 0;
-    unsigned int depthMap = 0;
+    unsigned int depthMapFBOs[12];
+    unsigned int depthMaps[12];
 
-    int shadowResolution = 4096;
-
-    glm::mat4 lightSpaceMatrix;
+    glm::mat4 directionalLightSpaceMatrices[4];
+    glm::mat4 spotLightSpaceMatrices[4];
+    glm::vec3 pointLightPositions[4];
 
 public:
     ShadowRenderer();

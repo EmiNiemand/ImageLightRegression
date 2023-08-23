@@ -38,7 +38,28 @@ void RenderingManager::Shutdown() {
 
 void RenderingManager::Draw(Shader* inShader) {
     inShader->Activate();
-    inShader->SetMat4("lightSpaceMatrix", RenderingManager::GetInstance()->shadowRenderer->lightSpaceMatrix);
+    for (int i = 0; i < 4; ++i) {
+        glActiveTexture(GL_TEXTURE5 + i);
+        glBindTexture(GL_TEXTURE_2D, RenderingManager::GetInstance()->shadowRenderer->depthMaps[i]);
+        inShader->SetMat4("directionalLightSpaceMatrices[" + std::to_string(i) + "]",
+                          RenderingManager::GetInstance()->shadowRenderer->directionalLightSpaceMatrices[i]);
+
+
+    }
+    for (int i = 4; i < 8; ++i) {
+        glActiveTexture(GL_TEXTURE5 + i);
+        glBindTexture(GL_TEXTURE_2D, RenderingManager::GetInstance()->shadowRenderer->depthMaps[i]);
+        inShader->SetMat4("spotLightSpaceMatrices[" + std::to_string(i - 4) + "]",
+                          RenderingManager::GetInstance()->shadowRenderer->spotLightSpaceMatrices[i - 4]);
+
+
+    }
+    for (int i = 8; i < 12; ++i) {
+        glActiveTexture(GL_TEXTURE5 + i);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, RenderingManager::GetInstance()->shadowRenderer->depthMaps[i]);
+        inShader->SetVec3("pointLightPositions[" + std::to_string(i - 8) + "]",
+                          RenderingManager::GetInstance()->shadowRenderer->pointLightPositions[i - 8]);
+    }
 
     for (int i = 0; i < drawBuffer.size(); ++i) {
         drawBuffer[i]->Draw(inShader);
@@ -62,6 +83,7 @@ void RenderingManager::UpdateProjection() const {
 
     objectRenderer->shader->Activate();
     objectRenderer->shader->SetMat4("projection", projection);
+    objectRenderer->shader->SetFloat("farPlane", Camera::GetActiveCamera()->GetComponentByClass<Camera>()->GetZFar());
 
     skyboxRenderer->cubeMapShader->Activate();
     skyboxRenderer->cubeMapShader->SetMat4("projection", projection);

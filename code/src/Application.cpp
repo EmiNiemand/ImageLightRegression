@@ -150,8 +150,6 @@ void Application::Run() {
         glViewport(viewports[0].position.x, viewports[0].position.y, viewports[0].resolution.x, viewports[0].resolution.y);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glActiveTexture(GL_TEXTURE5);
-        glBindTexture(GL_TEXTURE_2D, RenderingManager::GetInstance()->shadowRenderer->depthMap);
         RenderingManager::GetInstance()->Draw(RenderingManager::GetInstance()->objectRenderer->shader);
         RenderingManager::GetInstance()->skyboxRenderer->Draw();
 

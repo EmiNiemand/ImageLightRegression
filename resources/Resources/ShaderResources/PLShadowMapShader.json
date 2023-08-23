@@ -1,0 +1,5 @@
+{
+  "vertex": "resources/Shaders/ShadowMap/PLShadowMap.vert",
+  "fragment": "resources/Shaders/ShadowMap/PLShadowMap.frag",
+  "geometry": "resources/Shaders/ShadowMap/PLShadowMap.geom"
+}

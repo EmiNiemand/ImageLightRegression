@@ -67,10 +67,10 @@ void Shader::Load() {
     GLuint geometryShader;
     if (!geometryShaderSource.empty()) {
         std::string gCode;
-        LoadShader(fragmentShaderSource, gCode);
+        LoadShader(geometryShaderSource, gCode);
         const GLchar* cgCode = gCode.c_str();
         // Create Fragment Shader Object and get its reference
-        geometryShader = glCreateShader(GL_FRAGMENT_SHADER);
+        geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
         // Attach Fragment Shader source to the Fragment Shader Object
         glShaderSource(geometryShader, 1, &cgCode, nullptr);
         // Compile the Vertex Shader into machine code

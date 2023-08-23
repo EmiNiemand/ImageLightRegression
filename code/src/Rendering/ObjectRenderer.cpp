@@ -15,7 +15,15 @@ ObjectRenderer::ObjectRenderer() {
     shader->SetInt("cubeMapTexture", 4);
 
     shader->Activate();
-    shader->SetInt("shadowMapTexture", 5);
+    for (int i = 0; i < NUMBER_OF_LIGHTS; ++i) {
+        shader->SetInt("directionalLightShadowMapTexture[" + std::to_string(i) + "]", 5 + i);
+    }
+    for (int i = 0; i < NUMBER_OF_LIGHTS; ++i) {
+        shader->SetInt("spotLightShadowMapTexture[" + std::to_string(i) + "]", 9 + i);
+    }
+    for (int i = 0; i < NUMBER_OF_LIGHTS; ++i) {
+        shader->SetInt("pointLightShadowMapTexture[" + std::to_string(i) + "]", 13 + i);
+    }
 }
 
 ObjectRenderer::~ObjectRenderer() {

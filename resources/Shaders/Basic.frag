@@ -1,11 +1,20 @@
 #version 430
+// CONSTANTS
+// ---------
+
+#define NR_DIRECTIONAL_LIGHTS 4
+#define NR_SPOT_LIGHTS 4
+#define NR_POINT_LIGHTS 4
+
+
 // SHADER PASSED VALUES
 // --------------------
 
 in vec2 uv;
 in vec3 normal;
 in vec3 fragPosition;
-in vec4 fragPositionLightSpace;
+in vec4 fragPositionDirectionalLightSpaces[NR_DIRECTIONAL_LIGHTS];
+in vec4 fragPositionSpotLightSpaces[NR_SPOT_LIGHTS];
 
 out vec4 fragColor;
 
@@ -57,13 +66,6 @@ struct Material {
     float refraction;
 };
 
-// CONSTANTS
-// ---------
-
-#define NR_POINT_LIGHTS 16
-#define NR_DIRECTIONAL_LIGHTS 16
-#define NR_SPOT_LIGHTS 16
-
 // UNIFORMS
 // --------
 
@@ -73,15 +75,20 @@ uniform sampler2D textureNormal;
 uniform sampler2D textureHeight;
 
 uniform samplerCube cubeMapTexture;
-uniform sampler2D shadowMapTexture;
+uniform sampler2D directionalLightShadowMapTexture[NR_DIRECTIONAL_LIGHTS];
+uniform sampler2D spotLightShadowMapTexture[NR_SPOT_LIGHTS];
+uniform samplerCube pointLightShadowMapTexture[NR_POINT_LIGHTS];
 
 // EXTERNALLY SET VARIABLES
 // ------------------------
 
-uniform vec3 viewPosition;
 uniform DirectionalLight directionalLights[NR_DIRECTIONAL_LIGHTS];
 uniform PointLight pointLights[NR_POINT_LIGHTS];
 uniform SpotLight spotLights[NR_SPOT_LIGHTS];
+
+uniform vec3 pointLightPositions[NR_POINT_LIGHTS];
+uniform vec3 viewPosition;
+uniform float farPlane;
 
 uniform Material material = Material(vec3(1, 1, 1), 32.0f, 0.0f, 0.0f);
 
@@ -91,9 +98,23 @@ uniform Material material = Material(vec3(1, 1, 1), 32.0f, 0.0f, 0.0f);
 vec3[3] CalculateDirectionalLight(DirectionalLight light, vec3 inNormal, vec3 inViewDirection);
 vec3[3] CalculatePointLight(PointLight light, vec3 inNormal, vec3 inFragPosition, vec3 inViewDirection);
 vec3[3] CalculateSpotLight(SpotLight light, vec3 inNormal, vec3 inFragPosition, vec3 inViewDirection);
-float ShadowCalculation(vec4 inFragPositionLightSpace);
+float CalculateDirectionalAndSpotLightShadow(vec4 inFragPositionLightSpace, sampler2D shadowMapTexture);
+float CalculatePointLightShadow(vec3 lightPosition, samplerCube shadowMapTexture);
 
-float shadow;
+
+// Variables
+// --------------------
+
+// array of offset direction for sampling
+vec3 gridSamplingDisk[20] = vec3[]
+(
+vec3(1, 1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1, 1,  1),
+vec3(1, 1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1, 1, -1),
+vec3(1, 1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1, 1,  0),
+vec3(1, 0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1, 0, -1),
+vec3(0, 1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0, 1, -1)
+);
+
 // MAIN
 // ----
 
@@ -104,28 +125,38 @@ void main() {
     vec3 result = vec3(0.0f);
 
     vec3[3] lightSettings;
-
-    shadow = ShadowCalculation(fragPositionLightSpace);
+    float shadow = 0.0f;
 
     // phase 1: directional lights
-    for(int i = 0; i < NR_DIRECTIONAL_LIGHTS; i++){
+    for(int i = 0; i < NR_DIRECTIONAL_LIGHTS; i++) {
+        shadow = 0.0f;
         if(directionalLights[i].isActive) {
+            shadow = CalculateDirectionalAndSpotLightShadow(fragPositionDirectionalLightSpaces[i], directionalLightShadowMapTexture[i]);
+
             lightSettings = CalculateDirectionalLight(directionalLights[i], normalizedNormal, viewDirection);
             result += lightSettings[0] + (1 - shadow) * (lightSettings[1] + lightSettings[2]);
         }
     }
 
     // phase 2: point lights
-    for(int i = 0; i < NR_POINT_LIGHTS; i++){
-        if(pointLights[i].isActive){
+    for(int i = 0; i < NR_POINT_LIGHTS; i++) {
+        shadow = 0.0f;
+
+        if(pointLights[i].isActive) {
+            shadow = CalculatePointLightShadow(pointLightPositions[i], pointLightShadowMapTexture[i]);
+
             lightSettings = CalculatePointLight(pointLights[i], normalizedNormal, fragPosition, viewDirection);
             result += lightSettings[0] + (1 - shadow) * (lightSettings[1] + lightSettings[2]);
         }
     }
 
     // phase 3: spot lights
-    for(int i = 0; i < NR_SPOT_LIGHTS; i++){
-        if(spotLights[i].isActive){
+    for(int i = 0; i < NR_SPOT_LIGHTS; i++) {
+        shadow = 0.0f;
+
+        if(spotLights[i].isActive) {
+            shadow = CalculateDirectionalAndSpotLightShadow(fragPositionSpotLightSpaces[i], spotLightShadowMapTexture[i]);
+
             lightSettings = CalculateSpotLight(spotLights[i], normalizedNormal, fragPosition, viewDirection);
             result += lightSettings[0] + (1 - shadow) * (lightSettings[1] + lightSettings[2]);
         }
@@ -220,7 +251,7 @@ vec3[3] CalculateSpotLight(SpotLight light, vec3 inNormal, vec3 inFragPosition, 
     return lightSettings;
 }
 
-float ShadowCalculation(vec4 inFragPositionLightSpace)
+float CalculateDirectionalAndSpotLightShadow(vec4 inFragPositionLightSpace, sampler2D shadowMapTexture)
 {
     // perform perspective divide
     vec3 projectionUV = inFragPositionLightSpace.xyz / inFragPositionLightSpace.w;
@@ -248,6 +279,28 @@ float ShadowCalculation(vec4 inFragPositionLightSpace)
     if(projectionUV.z > 1.0) shadow = 0.0;
     // keep shadow scale if material is transparent
     if(material.refraction > 0.0f) shadow *= (1 - material.refraction);
+
+    return shadow;
+}
+
+float CalculatePointLightShadow(vec3 lightPosition, samplerCube shadowMapTexture)
+{
+    vec3 fragToLight = fragPosition - lightPosition;
+
+    float currentDepth = length(fragToLight);
+
+    float shadow = 0.0;
+    int samples = 20;
+    float viewDistance = length(viewPosition - fragPosition);
+    float diskRadius = (1.0 + (viewDistance / farPlane)) / 25;
+    for(int i = 0; i < samples; ++i)
+    {
+        float closestDepth = texture(shadowMapTexture, fragToLight + gridSamplingDisk[i] * diskRadius).r;
+        closestDepth *= farPlane;   // undo mapping [0;1]
+        if(currentDepth > closestDepth)
+            shadow += 1.0;
+    }
+    shadow /= float(samples);
 
     return shadow;
 }

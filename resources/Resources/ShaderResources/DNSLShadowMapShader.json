@@ -1,0 +1,5 @@
+{
+  "vertex": "resources/Shaders/ShadowMap/DNSLShadowMap.vert",
+  "fragment": "resources/Shaders/ShadowMap/DNSLShadowMap.frag",
+  "geometry": ""
+}

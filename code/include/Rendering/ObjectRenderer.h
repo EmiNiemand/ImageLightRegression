@@ -3,7 +3,7 @@
 
 #include "ApplicationTypes.h"
 
-#define NUMBER_OF_LIGHTS 16
+#define NUMBER_OF_LIGHTS 4
 
 class Shader;
 class PointLight;
