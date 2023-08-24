@@ -33,6 +33,8 @@ ObjectRenderer::~ObjectRenderer() {
 
     glDeleteRenderbuffers(1, &rbo);
     glDeleteFramebuffers(1, &fbo);
+    glDeleteRenderbuffers(1, &rbo2);
+    glDeleteFramebuffers(1, &fbo2);
     ResourceManager::UnloadResource(shader->GetPath());
 }
 
@@ -49,22 +51,34 @@ void ObjectRenderer::PrepareBuffers() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screenTexture, 0);
-    // create a selected object texture
-    glGenTextures(1, &selectedObjectTexture);
-    glBindTexture(GL_TEXTURE_2D, selectedObjectTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, selectedObjectTexture, 0);
 
-    attachment[0] = GL_COLOR_ATTACHMENT0;
-    attachment[1] = GL_COLOR_ATTACHMENT1;
-    glDrawBuffers(2, attachment);
+    glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
     glGenRenderbuffers(1, &rbo);
     glBindRenderbuffer(GL_RENDERBUFFER, rbo);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        spdlog::error("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    glGenFramebuffers(1, &fbo2);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo2);
+    // create a color attachment texture
+    glGenTextures(1, &selectedObjectTexture);
+    glBindTexture(GL_TEXTURE_2D, selectedObjectTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, selectedObjectTexture, 0);
+
+    glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+    glGenRenderbuffers(1, &rbo2);
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo2);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo2);
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         spdlog::error("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");

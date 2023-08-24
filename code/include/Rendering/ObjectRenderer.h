@@ -19,12 +19,11 @@ public:
 
     Shader* shader = nullptr;
 
-    unsigned int fbo;
+    unsigned int fbo, fbo2;
     unsigned int screenTexture, selectedObjectTexture;
 
 private:
-    unsigned int rbo;
-    unsigned int attachment[2];
+    unsigned int rbo, rbo2;
 
 public:
     ObjectRenderer();

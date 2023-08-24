@@ -1,0 +1,5 @@
+{
+  "vertex": "resources/Shaders/SelectedObject.vert",
+  "fragment": "resources/Shaders/SelectedObject.frag",
+  "geometry": ""
+}

@@ -44,8 +44,6 @@ void SkyboxRenderer::Draw() {
     glDepthFunc(GL_LEQUAL);
     cubeMapShader->Activate();
 
-    cubeMapShader->SetBool("isSelected", EditorManager::GetInstance()->selectedNode == activeSkybox);
-
     glBindVertexArray(vao);
     glActiveTexture(GL_TEXTURE4);
     glBindTexture(GL_TEXTURE_CUBE_MAP, activeSkybox->GetComponentByClass<Skybox>()->GetCubeMap()->GetID());

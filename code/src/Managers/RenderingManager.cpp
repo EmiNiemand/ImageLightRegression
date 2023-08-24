@@ -11,6 +11,7 @@
 #include "Components/Transform.h"
 #include "Components/Rendering/Renderer.h"
 #include "Components/Rendering/Camera.h"
+#include "Components/Rendering/Skybox.h"
 #include "Components/Rendering/UI/Image.h"
 
 RenderingManager::RenderingManager() = default;
@@ -25,6 +26,8 @@ RenderingManager* RenderingManager::GetInstance() {
 }
 
 void RenderingManager::Startup() {
+    selectedObjectShader = ResourceManager::LoadResource<Shader>("resources/Resources/ShaderResources/SelectedObjectShader.json");
+
     shadowRenderer = new ShadowRenderer();
     objectRenderer = new ObjectRenderer();
     skyboxRenderer = new SkyboxRenderer();
@@ -38,6 +41,9 @@ void RenderingManager::Shutdown() {
     delete skyboxRenderer;
     delete uiRenderer;
     delete postProcessRenderer;
+
+    selectedObjectShader->Delete();
+    ResourceManager::UnloadResource(selectedObjectShader->GetPath());
 
     delete renderingManager;
 }
@@ -83,6 +89,35 @@ void RenderingManager::DrawFrame() {
     }
     skyboxRenderer->Draw();
     Draw(shader);
+
+
+    glBindFramebuffer(GL_FRAMEBUFFER, objectRenderer->fbo2);
+    glViewport(0, 0, Application::viewports[0].resolution.x, Application::viewports[0].resolution.y);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    Object* selectedObject = EditorManager::GetInstance()->selectedNode;
+    if (selectedObject != nullptr) {
+        Renderer* renderer = selectedObject->GetComponentByClass<Renderer>();
+        Skybox* skybox = selectedObject->GetComponentByClass<Skybox>();
+        if (renderer != nullptr) {
+            selectedObjectShader->Activate();
+            glDisable(GL_DEPTH_TEST);
+            selectedObjectShader->SetInt("isSkybox", 0);
+            renderer->Draw(selectedObjectShader);
+            glEnable(GL_DEPTH_TEST);
+        }
+        else if (skybox != nullptr) {
+            selectedObjectShader->Activate();
+            selectedObjectShader->SetInt("isSkybox", 1);
+            glDepthFunc(GL_LEQUAL);
+
+            glBindVertexArray(skyboxRenderer->vao);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+            glBindVertexArray(0);
+
+            glDepthFunc(GL_LESS);
+        }
+    }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -146,6 +181,9 @@ void RenderingManager::UpdateProjection() const {
 
     uiRenderer->imageShader->Activate();
     uiRenderer->imageShader->SetMat4("projection", projection);
+
+    selectedObjectShader->Activate();
+    selectedObjectShader->SetMat4("projection", projection);
 }
 
 void RenderingManager::UpdateView() const {
@@ -157,6 +195,9 @@ void RenderingManager::UpdateView() const {
 
     skyboxRenderer->cubeMapShader->Activate();
     skyboxRenderer->cubeMapShader->SetMat4("view", view);
+
+    selectedObjectShader->Activate();
+    selectedObjectShader->SetMat4("view", view);
 }
 
 void RenderingManager::OnWindowResize() const {

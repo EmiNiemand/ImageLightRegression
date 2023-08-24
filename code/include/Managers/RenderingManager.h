@@ -23,6 +23,7 @@ public:
 
 private:
     inline static RenderingManager* renderingManager;
+    Shader* selectedObjectShader = nullptr;
 
     std::vector<Renderer*> drawBuffer{};
 public:

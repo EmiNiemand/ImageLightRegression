@@ -17,7 +17,6 @@ in vec4 fragPositionDirectionalLightSpaces[NR_DIRECTIONAL_LIGHTS];
 in vec4 fragPositionSpotLightSpaces[NR_SPOT_LIGHTS];
 
 layout (location = 0) out vec3 screenTexture;
-layout (location = 1) out vec4 selectedObjectTexture;
 
 // STRUCTS
 // -------
@@ -90,8 +89,6 @@ uniform vec3 viewPosition;
 uniform float farPlane;
 
 uniform Material material = Material(vec3(1, 1, 1), 32.0f, 0.0f, 0.0f);
-
-uniform bool isSelected;
 
 // FORWARD DECLARATIONS
 // --------------------
@@ -179,9 +176,6 @@ void main() {
     }
 
     screenTexture = result;
-    if (isSelected) {
-        selectedObjectTexture = vec4(1.0f);
-    }
 }
 
 
