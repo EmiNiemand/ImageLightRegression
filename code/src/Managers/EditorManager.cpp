@@ -56,7 +56,7 @@ void EditorManager::Shutdown() {
     delete editorManager;
 }
 
-void EditorManager::Show() {
+void EditorManager::Draw() {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();

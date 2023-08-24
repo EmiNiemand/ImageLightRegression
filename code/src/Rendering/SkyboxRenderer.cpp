@@ -1,5 +1,6 @@
 #include "Rendering/SkyboxRenderer.h"
 #include "Managers/ResourceManager.h"
+#include "Managers/EditorManager.h"
 #include "Components/Rendering/Skybox.h"
 #include "Core/Object.h"
 #include "Resources/CubeMap.h"
@@ -42,6 +43,8 @@ void SkyboxRenderer::Draw() {
 
     glDepthFunc(GL_LEQUAL);
     cubeMapShader->Activate();
+
+    cubeMapShader->SetBool("isSelected", EditorManager::GetInstance()->selectedNode == activeSkybox);
 
     glBindVertexArray(vao);
     glActiveTexture(GL_TEXTURE4);

@@ -19,9 +19,18 @@ public:
 
     Shader* shader = nullptr;
 
+    unsigned int fbo;
+    unsigned int screenTexture, selectedObjectTexture;
+
+private:
+    unsigned int rbo;
+    unsigned int attachment[2];
+
 public:
     ObjectRenderer();
     virtual ~ObjectRenderer();
+
+    void PrepareBuffers();
 
     void UpdateLight(int componentId);
     void RemoveLight(int componentId);

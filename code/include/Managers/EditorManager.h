@@ -36,7 +36,7 @@ public:
     void Startup();
     void Shutdown();
 
-    void Show();
+    void Draw();
 
 private:
     explicit EditorManager();

@@ -16,9 +16,8 @@ in vec3 fragPosition;
 in vec4 fragPositionDirectionalLightSpaces[NR_DIRECTIONAL_LIGHTS];
 in vec4 fragPositionSpotLightSpaces[NR_SPOT_LIGHTS];
 
-out vec4 fragColor;
-
-//layout (location = 0) out vec4 screenTexture;
+layout (location = 0) out vec3 screenTexture;
+layout (location = 1) out vec4 selectedObjectTexture;
 
 // STRUCTS
 // -------
@@ -91,6 +90,8 @@ uniform vec3 viewPosition;
 uniform float farPlane;
 
 uniform Material material = Material(vec3(1, 1, 1), 32.0f, 0.0f, 0.0f);
+
+uniform bool isSelected;
 
 // FORWARD DECLARATIONS
 // --------------------
@@ -177,8 +178,10 @@ void main() {
         result = mix(result, texture(cubeMapTexture, refractUV).rgb, material.refraction);
     }
 
-    //screenTexture = vec4(result, 1.0f);
-    fragColor = vec4(result, 1.0f);
+    screenTexture = result;
+    if (isSelected) {
+        selectedObjectTexture = vec4(1.0f);
+    }
 }
 
 

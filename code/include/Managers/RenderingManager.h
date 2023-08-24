@@ -11,6 +11,7 @@ class ShadowRenderer;
 class ObjectRenderer;
 class SkyboxRenderer;
 class UIRenderer;
+class PostProcessRenderer;
 
 class RenderingManager {
 public:
@@ -18,6 +19,7 @@ public:
     ObjectRenderer* objectRenderer = nullptr;
     SkyboxRenderer* skyboxRenderer = nullptr;
     UIRenderer* uiRenderer = nullptr;
+    PostProcessRenderer* postProcessRenderer = nullptr;
 
 private:
     inline static RenderingManager* renderingManager;
@@ -34,7 +36,7 @@ public:
     void Shutdown();
 
     void Draw(Shader* inShader);
-    void ClearBuffer();
+    void DrawFrame();
 
     void AddToDrawBuffer(Renderer* renderer);
     [[nodiscard]] const std::vector<Renderer*>& GetDrawBuffer() const;
@@ -42,8 +44,12 @@ public:
     void UpdateProjection() const;
     void UpdateView() const;
 
+    void OnWindowResize() const;
+
 private:
     explicit RenderingManager();
+
+    void ClearBuffer();
 };
 
 

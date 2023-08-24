@@ -89,7 +89,6 @@ void EditorCamera::Update() {
         cursorPreviousY = -1.0f;
     }
 
-    //TODO: move it somewhere else, add checker if rendering camera == nullptr
     if (inputManager->IsKeyPressed(Key::KEY_LEFT_CONTROL) && inputManager->IsKeyDown(Key::KEY_KP_5) ||
         inputManager->IsKeyDown(Key::KEY_LEFT_CONTROL) && inputManager->IsKeyPressed(Key::KEY_KP_5)) {
         renderingCamera->transform->SetLocalPosition(parent->transform->GetGlobalPosition());

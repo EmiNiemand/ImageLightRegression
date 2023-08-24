@@ -57,7 +57,7 @@ public:
     void Startup();
     void Shutdown();
     /// Should be called after glfwPollEvents
-    void ManageInput();
+    void PollInput();
 
     bool IsKeyDown(Key key);
     bool IsKeyPressed(Key key);

@@ -1,5 +1,6 @@
 #include "Components/Rendering/Camera.h"
 #include "Managers/RenderingManager.h"
+#include "Managers/InputManager.h"
 #include "Core/Object.h"
 #include "Components/Transform.h"
 #include "Macros.h"

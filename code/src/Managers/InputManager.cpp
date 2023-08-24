@@ -27,7 +27,7 @@ InputManager* InputManager::GetInstance() {
     return inputManager;
 }
 
-void InputManager::ManageInput() {
+void InputManager::PollInput() {
     keysDown.clear();
     keysPressed.clear();
     keysUp.clear();

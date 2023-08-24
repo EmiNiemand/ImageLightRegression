@@ -1,0 +1,5 @@
+{
+  "vertex": "resources/Shaders/PostProcess/PostProcess.vert",
+  "fragment": "resources/Shaders/PostProcess/PostProcess.frag",
+  "geometry": ""
+}

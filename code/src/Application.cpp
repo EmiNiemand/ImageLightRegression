@@ -2,11 +2,7 @@
 #include "Managers/ResourceManager.h"
 #include "Managers/InputManager.h"
 #include "Managers/RenderingManager.h"
-#include "Rendering/UIRenderer.h"
 #include "Managers/EditorManager.h"
-#include "Rendering/ShadowRenderer.h"
-#include "Rendering/ObjectRenderer.h"
-#include "Rendering/SkyboxRenderer.h"
 #include "Core/Object.h"
 #include "Components/Rendering/EditorCamera.h"
 #include "Components/Transform.h"
@@ -14,7 +10,6 @@
 #include "Components/Rendering/Lights/PointLight.h"
 #include "Components/Rendering/Skybox.h"
 #include "Components/Rendering/UI/Image.h"
-#include "Resources/Shader.h"
 
 #include <glad/glad.h>  // Initialize with gladLoadGL()
 #include <stb_image.h>
@@ -33,6 +28,16 @@ Application *Application::GetInstance() {
 void Application::Startup() {
     CreateApplicationWindow();
 
+    // World viewport - tool
+    viewports[0] = {glm::ivec2(resolution.x / 16 * 3, resolution.y / 9 * 2), glm::ivec2(resolution.x / 16 * 10, resolution.y / 9 * 6)};
+    // Loaded image viewport
+    viewports[1] = {glm::ivec2(0, resolution.y / 9 * 2), glm::ivec2(resolution.x / 16 * 3, resolution.y / 9 * 2)};
+    // Rendered image viewport
+    viewports[2] = {glm::ivec2(resolution.x / 64 * 35, resolution.y / 18 * 11), glm::ivec2(resolution.x / 16 * 4, resolution.y / 9 * 2)};
+    // Calculated difference image viewport
+    viewports[3] = {glm::ivec2(resolution.x / 64 * 35, resolution.y / 18 * 5), glm::ivec2(resolution.x / 16 * 4, resolution.y / 9 * 2)};
+
+
     ResourceManager::GetInstance()->Startup();
     InputManager::GetInstance()->Startup();
     RenderingManager::GetInstance()->Startup();
@@ -43,18 +48,9 @@ void Application::Startup() {
 
     scene = Object::Instantiate("Scene", nullptr);
 
-    // World viewport - tool
-    viewports[0] = {glm::ivec2(resolution.x / 16 * 3, resolution.y / 9 * 2), glm::ivec2(resolution.x / 16 * 10, resolution.y / 9 * 6)};
-    // Loaded image viewport
-    viewports[1] = {glm::ivec2(0, resolution.y / 9 * 2), glm::ivec2(resolution.x / 16 * 3, resolution.y / 9 * 2)};
-    // Rendered image viewport
-    viewports[2] = {glm::ivec2(resolution.x / 64 * 35, resolution.y / 18 * 11), glm::ivec2(resolution.x / 16 * 4, resolution.y / 9 * 2)};
-    // Calculated difference image viewport
-    viewports[3] = {glm::ivec2(resolution.x / 64 * 35, resolution.y / 18 * 5), glm::ivec2(resolution.x / 16 * 4, resolution.y / 9 * 2)};
-
     Object* mainCamera = Object::Instantiate("Main Camera", scene);
     mainCamera->AddComponent<EditorCamera>();
-    mainCamera->transform->SetLocalPosition({0, 0, 10});
+    mainCamera->transform->SetLocalPosition({0, 1, 10});
     mainCamera->visibleInEditor = false;
 
     Object* camera = Object::Instantiate("Camera", scene);
@@ -94,7 +90,7 @@ void Application::Run() {
         frameTime = (float)glfwGetTime();
 
         glfwPollEvents();
-        InputManager::GetInstance()->ManageInput();
+        InputManager::GetInstance()->PollInput();
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -137,35 +133,15 @@ void Application::Run() {
             }
         }
 
-        //TODO: move it somewhere else
-        if ((InputManager::GetInstance()->IsKeyPressed(Key::KEY_LEFT_CONTROL) &&
-             InputManager::GetInstance()->IsKeyDown(Key::KEY_KP_0)) ||
-            (InputManager::GetInstance()->IsKeyDown(Key::KEY_LEFT_CONTROL) &&
-             InputManager::GetInstance()->IsKeyPressed(Key::KEY_KP_0))) {
+        InputManager* inputManager = InputManager::GetInstance();
+
+        if ((inputManager->IsKeyPressed(Key::KEY_LEFT_CONTROL) && inputManager->IsKeyDown(Key::KEY_KP_0)) ||
+            (inputManager->IsKeyDown(Key::KEY_LEFT_CONTROL) && inputManager->IsKeyPressed(Key::KEY_KP_0))) {
             Camera::ChangeActiveCamera();
         }
 
-        RenderingManager::GetInstance()->shadowRenderer->PrepareShadowMap();
-
-        glViewport(viewports[0].position.x, viewports[0].position.y, viewports[0].resolution.x, viewports[0].resolution.y);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        RenderingManager::GetInstance()->Draw(RenderingManager::GetInstance()->objectRenderer->shader);
-        RenderingManager::GetInstance()->skyboxRenderer->Draw();
-
-        glViewport(viewports[1].position.x, viewports[1].position.y, viewports[1].resolution.x, viewports[1].resolution.y);
-        loadedImage->GetComponentByClass<Image>()->Draw(RenderingManager::GetInstance()->uiRenderer->imageShader);
-
-        if (isStarted) {
-            glViewport(viewports[2].position.x, viewports[2].position.y, viewports[2].resolution.x, viewports[2].resolution.y);
-            renderedImage->GetComponentByClass<Image>()->Draw(RenderingManager::GetInstance()->uiRenderer->imageShader);
-
-            glViewport(viewports[3].position.x, viewports[3].position.y, viewports[3].resolution.x, viewports[3].resolution.y);
-            differenceImage->GetComponentByClass<Image>()->Draw(RenderingManager::GetInstance()->uiRenderer->imageShader);
-        }
-
-        RenderingManager::GetInstance()->ClearBuffer();
-        EditorManager::GetInstance()->Show();
+        RenderingManager::GetInstance()->DrawFrame();
+        EditorManager::GetInstance()->Draw();
 
         glfwSwapBuffers(window);
 
@@ -265,4 +241,5 @@ void Application::glfwFramebufferSizeCallback(GLFWwindow *window, int width, int
     // Calculated difference image viewport
     viewports[3] = {glm::ivec2(resolution.x / 64 * 35, resolution.y / 18 * 5), glm::ivec2(resolution.x / 16 * 4, resolution.y / 9 * 2)};
 
+    RenderingManager::GetInstance()->OnWindowResize();
 }

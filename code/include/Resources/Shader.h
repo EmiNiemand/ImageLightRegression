@@ -27,7 +27,9 @@ public:
     void SetInt(const std::string &name, int value) const;
     void SetFloat(const std::string &name, float value) const;
     void SetVec2(const std::string &name, const glm::vec2 &value) const;
+    void SetIVec2(const std::string &name, const glm::ivec2 &value) const;
     void SetVec2(const std::string &name, float x, float y) const;
+    void SetIVec2(const std::string &name, int x, int y) const;
     void SetVec3(const std::string &name, const glm::vec3 &value) const;
     void SetVec3(const std::string &name, float x, float y, float z) const;
     void SetVec4(const std::string &name, const glm::vec4 &value) const;

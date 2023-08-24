@@ -25,14 +25,15 @@ public:
 
     float frameTime = 0;
 
+    bool isStarted = false;
+
 private:
+    bool shouldRun = false;
+    
     inline static Application* application;
 
     std::vector<int> destroyObjectBuffer{};
     std::vector<int> destroyComponentBuffer{};
-
-    bool shouldRun = false;
-    bool isStarted = false;
 
 public:
     GLFWwindow* window = nullptr;
