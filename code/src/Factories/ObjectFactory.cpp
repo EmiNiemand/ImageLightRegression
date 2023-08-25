@@ -16,6 +16,7 @@ ObjectFactory* ObjectFactory::GetInstance() {
 
 Object* ObjectFactory::CreateObject(const std::string& name, Object* parent) {
     Object* object = new Object(name, parent, id);
+    Application::GetInstance()->objects.insert({id, object});
     if (Application::GetInstance()->scene == nullptr) {
         ++id;
         return object;
@@ -26,7 +27,6 @@ Object* ObjectFactory::CreateObject(const std::string& name, Object* parent) {
     else {
         parent->AddChild(object);
     }
-    Application::GetInstance()->objects.insert({id, object});
     ++id;
     return object;
 }

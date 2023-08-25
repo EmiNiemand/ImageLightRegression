@@ -50,6 +50,10 @@ public:
 private:
     explicit RenderingManager();
 
+    void DrawScreenTexture();
+    void DrawSelectedObjectTexture();
+    void DrawPostProcesses();
+
     void ClearBuffer();
 };
 

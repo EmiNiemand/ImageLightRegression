@@ -41,7 +41,27 @@ void Image::Draw(Shader *inShader) {
     glBindVertexArray(0);
 }
 
+void Image::DrawImageByID(unsigned int id, Shader *inShader, const glm::vec2 &inSize, const glm::vec2 &inPosition,
+                          const glm::vec2 &inPivot) {
+
+    inShader->Activate();
+    inShader->SetVec2("size", inSize);
+    inShader->SetVec2("screenPosition", inPosition);
+    inShader->SetVec2("pivot", inPivot);
+
+    glBindVertexArray(RenderingManager::GetInstance()->uiRenderer->GetVAO());
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, id);
+
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0);
+}
+
 void Image::SetTexture(const std::string &inPath) {
-    ResourceManager::UnloadResource(texture->GetPath());
+    if (texture != nullptr) {
+        ResourceManager::UnloadResource(texture->GetPath());
+    }
     texture = ResourceManager::LoadResource<Texture>(inPath);
 }
+
+

@@ -36,6 +36,23 @@ void SceneTree::ShowTreeNode(Object* parent) {
 }
 
 void SceneTree::ManageNodeInput(Object* hoveredObject) {
+    if (ImGui::BeginDragDropSource()) {
+        if (hoveredObject != Application::GetInstance()->scene) {
+            ImGui::SetDragDropPayload("DNDSceneObject", &hoveredObject->id, sizeof(int));
+        }
+        ImGui::EndDragDropSource();
+    }
+    if (ImGui::BeginDragDropTarget()) {
+        if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("DNDSceneObject")) {
+            int payloadData = *(const int *)payload->Data;
+
+            Object* child = Application::GetInstance()->objects.at(payloadData);
+            hoveredObject->AddChild(child);
+        }
+
+        ImGui::EndDragDropTarget();
+    }
+
     if (ImGui::IsItemClicked() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
         EditorManager::GetInstance()->selectedNode = hoveredObject;
     }

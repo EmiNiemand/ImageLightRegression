@@ -89,9 +89,21 @@ void Camera::ChangeActiveCamera() {
         renderingCamera->GetComponentByClass<Camera>()->enabled) {
         activeCamera = renderingCamera;
     }
-    else {
+    else if (activeCamera == renderingCamera){
         activeCamera = editorCamera;
     }
+    else {
+        activeCamera = previouslyActiveCamera;
+    }
+
+    activeCamera->GetComponentByClass<Camera>()->OnUpdate();
+}
+
+void Camera::SetActiveCamera(Object* inCamera) {
+    if (!(renderingCamera && editorCamera)) return;
+
+    if (activeCamera == editorCamera || activeCamera == renderingCamera) previouslyActiveCamera = activeCamera;
+    activeCamera = inCamera;
 
     activeCamera->GetComponentByClass<Camera>()->OnUpdate();
 }
@@ -104,6 +116,18 @@ void Camera::SetRenderingCamera(Object *inCameraObject) {
 
 Object *Camera::GetActiveCamera() {
     return activeCamera;
+}
+
+Object *Camera::GetEditorCamera() {
+    return editorCamera;
+}
+
+Object *Camera::GetRenderingCamera() {
+    return renderingCamera;
+}
+
+Object *Camera::GetPreviouslyActiveCamera() {
+    return previouslyActiveCamera;
 }
 
 glm::mat4 Camera::GetViewMatrix() const {

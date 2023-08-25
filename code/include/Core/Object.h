@@ -23,7 +23,6 @@ public:
     Transform* transform;
 
     int id;
-    bool dirtyFlag = true;
     bool visibleInEditor = true;
 
 private:

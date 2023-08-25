@@ -8,6 +8,9 @@
 
 class Transform : public Component {
 private:
+    //Global space information concatenate in matrix
+    glm::mat4 mModelMatrix = glm::mat4(1.0f);
+
     //Local space information
     glm::vec3 position = {0.0f, 0.0f, 0.0f };
     glm::vec3 rotation = {0.0f, 0.0f, 0.0f }; //In degrees
@@ -15,8 +18,7 @@ private:
 
     glm::vec3 globalRotation = {0, 0, 0};
 
-    //Global space information concatenate in matrix
-    glm::mat4 mModelMatrix = glm::mat4(1.0f);
+    bool dirtyFlag = true;
 
 public:
     Transform(Object *parent, int id);
@@ -28,6 +30,7 @@ public:
     void SetLocalPosition(const glm::vec3& newPosition);
     void SetLocalRotation(const glm::vec3& newRotation);
     void SetLocalScale(const glm::vec3& newScale);
+    void SetDirtyFlag();
 
     [[nodiscard]] glm::vec3 GetGlobalPosition() const;
     [[nodiscard]] glm::vec3 GetLocalPosition() const;
@@ -42,9 +45,9 @@ public:
     [[nodiscard]] glm::vec3 GetBackward() const;
     [[nodiscard]] glm::vec3 GetForward() const;
     [[nodiscard]] glm::mat4 GetLocalModelMatrix() const;
+    [[nodiscard]] bool GetDirtyFlag();
 
 private:
-    void SetDirtyFlag();
     void CalculateGlobalRotation();
 };
 

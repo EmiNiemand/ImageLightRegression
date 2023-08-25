@@ -25,14 +25,19 @@ void Object::SetParent(Object *newParent) {
     if (this == Application::GetInstance()->scene) {
         return;
     }
+    glm::vec3 globalPosition = transform->GetGlobalPosition();
     parent->children.erase(id);
     parent = newParent;
     newParent->AddChild(this);
+    transform->SetLocalPosition(globalPosition - parent->transform->GetGlobalPosition());
 }
 
 void Object::AddChild(Object* child) {
+    glm::vec3 globalPosition = child->transform->GetGlobalPosition();
+    child->parent->children.erase(child->id);
     child->parent = this;
     children.insert({child->id, child});
+    child->transform->SetLocalPosition(globalPosition - transform->GetGlobalPosition());
 }
 
 void Object::RemoveChild(int childId) {
@@ -56,11 +61,11 @@ void Object::UpdateSelfAndChildren() {
 
     toCheck[0] = this;
 
-    if (dirtyFlag) ForceUpdateSelfAndChildren();
+    if (transform->GetDirtyFlag()) ForceUpdateSelfAndChildren();
 
     for (int i = 0; i < checkIterator; ++i) {
         for (const auto& child : toCheck[i]->children) {
-            if (child.second->dirtyFlag) {
+            if (child.second->transform->GetDirtyFlag()) {
                 child.second->ForceUpdateSelfAndChildren();
             }
             toCheck[checkIterator] = child.second;

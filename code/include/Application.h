@@ -20,8 +20,6 @@ public:
 
     Object* scene = nullptr;
     Object* loadedImage = nullptr;
-    Object* renderedImage = nullptr;
-    Object* differenceImage = nullptr;
 
     float frameTime = 0;
 

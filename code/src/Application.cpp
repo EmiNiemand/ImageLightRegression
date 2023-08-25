@@ -56,6 +56,9 @@ void Application::Startup() {
     Object* camera = Object::Instantiate("Camera", scene);
     camera->AddComponent<Camera>();
     camera->transform->SetLocalPosition({10, 0, 10});
+    Renderer* cameraRenderer = camera->AddComponent<Renderer>();
+    cameraRenderer->LoadModel("resources/models/Camera/Camera.obj");
+    cameraRenderer->drawShadows = false;
 
     Object* skybox = Object::Instantiate("Skybox", scene);
     skybox->AddComponent<Skybox>();
@@ -72,14 +75,6 @@ void Application::Startup() {
     loadedImage->AddComponent<Image>();
     loadedImage->visibleInEditor = false;
 
-    renderedImage = Object::Instantiate("Rendered Image", scene);
-    renderedImage->AddComponent<Image>();
-    renderedImage->visibleInEditor = false;
-
-    differenceImage = Object::Instantiate("Difference Image", scene);
-    differenceImage->AddComponent<Image>();
-    differenceImage->visibleInEditor = false;
-
     Object* pointLight = Object::Instantiate("Light", scene);
     pointLight->AddComponent<PointLight>();
     pointLight->transform->SetLocalPosition({0, 5, 0});
@@ -90,7 +85,12 @@ void Application::Run() {
         frameTime = (float)glfwGetTime();
 
         glfwPollEvents();
-        InputManager::GetInstance()->PollInput();
+        InputManager* inputManager = InputManager::GetInstance();
+        inputManager->PollInput();
+
+        if (inputManager->IsKeyPressed(Key::KEY_LEFT_CONTROL) && inputManager->IsKeyDown(Key::KEY_KP_0)) {
+            Camera::ChangeActiveCamera();
+        }
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -133,13 +133,6 @@ void Application::Run() {
             }
         }
 
-        InputManager* inputManager = InputManager::GetInstance();
-
-        if ((inputManager->IsKeyPressed(Key::KEY_LEFT_CONTROL) && inputManager->IsKeyDown(Key::KEY_KP_0)) ||
-            (inputManager->IsKeyDown(Key::KEY_LEFT_CONTROL) && inputManager->IsKeyPressed(Key::KEY_KP_0))) {
-            Camera::ChangeActiveCamera();
-        }
-
         RenderingManager::GetInstance()->DrawFrame();
         EditorManager::GetInstance()->Draw();
 
@@ -151,10 +144,17 @@ void Application::Run() {
 
 void Application::Shutdown() {
     for (const auto& component : components) {
-        delete component.second;
+        Component::Destroy(component.second);
     }
 
-    components.clear();
+    for (int i = 0; i < destroyComponentBuffer.size(); ++i) {
+        int componentID = destroyComponentBuffer[i];
+        components[componentID]->OnDestroy();
+        delete components[componentID];
+        components.erase(componentID);
+    }
+
+    destroyComponentBuffer.clear();
 
     for (const auto& object : objects) {
         delete object.second;

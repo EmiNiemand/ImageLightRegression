@@ -20,18 +20,18 @@ glm::mat4 Transform::GetLocalModelMatrix() const {
 
 void Transform::ComputeModelMatrix() {
     mModelMatrix = GetLocalModelMatrix();
-    parent->dirtyFlag = false;
+    dirtyFlag = false;
 }
 
 void Transform::ComputeModelMatrix(const glm::mat4& parentGlobalModelMatrix) {
     mModelMatrix = parentGlobalModelMatrix * GetLocalModelMatrix();
-    parent->dirtyFlag = false;
+    dirtyFlag = false;
 }
 
 void Transform::SetLocalPosition(const glm::vec3& newPosition) {
     position = newPosition;
     if (!parent) return;
-    if (parent->dirtyFlag) return;
+    if (dirtyFlag) return;
     SetDirtyFlag();
 }
 
@@ -39,15 +39,33 @@ void Transform::SetLocalRotation(const glm::vec3& newRotation) {
     rotation = newRotation;
     if (!parent) return;
     CalculateGlobalRotation();
-    if (parent->dirtyFlag) return;
+    if (dirtyFlag) return;
     SetDirtyFlag();
 }
 
 void Transform::SetLocalScale(const glm::vec3& newScale) {
     scale = newScale;
     if (!parent) return;
-    if (parent->dirtyFlag) return;
+    if (dirtyFlag) return;
     SetDirtyFlag();
+}
+
+void Transform::SetDirtyFlag() {
+    const int gameObjectsSize = (int)Application::GetInstance()->objects.size() + 1;
+    auto toSet = new Object*[gameObjectsSize];
+
+    int checkIterator = 1;
+    toSet[0] = parent;
+
+    for (int i = 0; i < checkIterator; i++) {
+        toSet[i]->transform->dirtyFlag = true;
+        for (const auto& child : toSet[i]->children) {
+            toSet[checkIterator] = child.second;
+            checkIterator++;
+        }
+    }
+
+    delete[] toSet;
 }
 
 glm::vec3 Transform::GetGlobalPosition() const {
@@ -94,22 +112,8 @@ glm::vec3 Transform::GetForward() const {
     return -mModelMatrix[2];
 }
 
-void Transform::SetDirtyFlag() {
-    const int gameObjectsSize = (int)Application::GetInstance()->objects.size() + 1;
-    auto toSet = new Object*[gameObjectsSize];
-
-    int checkIterator = 1;
-    toSet[0] = parent;
-
-    for (int i = 0; i < checkIterator; i++) {
-        toSet[i]->dirtyFlag = true;
-        for (const auto& child : toSet[i]->children) {
-            toSet[checkIterator] = child.second;
-            checkIterator++;
-        }
-    }
-
-    delete[] toSet;
+bool Transform::GetDirtyFlag() {
+    return dirtyFlag;
 }
 
 void Transform::CalculateGlobalRotation() {

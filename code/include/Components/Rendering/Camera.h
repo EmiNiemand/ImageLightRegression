@@ -11,6 +11,7 @@ protected:
     inline static Object* activeCamera;
     inline static Object* renderingCamera;
     inline static Object* editorCamera;
+    inline static Object* previouslyActiveCamera;
 
     float fov = 45.0f;
     float zNear = 0.1f;
@@ -33,9 +34,15 @@ public:
     [[nodiscard]] float GetZFar() const;
 
     static void ChangeActiveCamera();
+    static void SetActiveCamera(Object* inCamera);
     static void SetRenderingCamera(Object* inCameraObject);
 
     static Object* GetActiveCamera();
+    static Object* GetEditorCamera();
+    static Object* GetRenderingCamera();
+    static Object* GetPreviouslyActiveCamera();
+
+
     [[nodiscard]] glm::mat4 GetViewMatrix() const;
     [[nodiscard]] glm::mat4 GetProjectionMatrix() const;
 };
