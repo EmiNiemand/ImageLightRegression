@@ -49,6 +49,29 @@ void Gizmos::Update() {
     Object* selectedObject = EditorManager::GetInstance()->selectedNode;
     if (!selectedObject) return;
 
+    hookPoints.clear();
+
+    // Calculate hook points
+    if (mode != 1) {
+        for (int i = 0; i < 3; ++i) {
+            glm::vec3 direction = glm::vec3(0.0f);
+            direction[i] = 1.0f;
+            CalculateLinePoint(selectedObject->transform->GetGlobalPosition(), direction);
+        }
+    }
+    else {
+        CalculateCirclePoints(selectedObject->transform->GetGlobalPosition(), glm::vec3(1, 0, 0), glm::vec3(0, 0, 1));
+        CalculateCirclePoints(selectedObject->transform->GetGlobalPosition(), glm::vec3(0, 1, 0), glm::vec3(0, 0, 1));
+        CalculateCirclePoints(selectedObject->transform->GetGlobalPosition(), glm::vec3(1, 0, 0), glm::vec3(0, 1, 0));
+    }
+
+    ManageInput();
+}
+
+void Gizmos::ManageInput() {
+    Object* selectedObject = EditorManager::GetInstance()->selectedNode;
+
+    // Change gizmo mode
     InputManager* inputManager = InputManager::GetInstance();
     if (inputManager->IsKeyPressed(Key::KEY_LEFT_CONTROL) && inputManager->IsKeyDown(Key::KEY_E)) {
         mode = 0;
@@ -60,67 +83,15 @@ void Gizmos::Update() {
         mode = 2;
     }
 
-    hookPoints.clear();
-
     Application* application = Application::GetInstance();
     Viewport* viewport = &Application::viewports[0];
 
-    Camera* camera = Camera::GetActiveCamera()->GetComponentByClass<Camera>();
-    glm::mat4 view = camera->GetViewMatrix();
-    glm::mat4 projectionView = camera->GetProjectionMatrix() * view;
-    float size = glm::length(glm::vec3(view[3])) / 3;
-
-    // Calculate hook points
-    if (mode != 1) {
-        glm::vec4 objectPosition;
-        glm::vec4 direction;
-        for (int i = 0; i < 3; ++i) {
-            objectPosition = glm::vec4(selectedObject->transform->GetGlobalPosition(), 1.0f);
-
-            direction = glm::vec4(0.0f);
-            direction[i] = 1.0f;
-            direction *= 0.25f * size;
-
-            objectPosition += direction;
-            objectPosition = projectionView * objectPosition;
-
-            glm::vec2 objectViewportPosition = glm::vec2(objectPosition.x, objectPosition.y) / objectPosition.w;
-
-            hookPoints.emplace_back(objectViewportPosition);
-        }
-    }
-    else {
-        glm::vec4 objectPosition;
-        for (int j = 0; j < 24; ++j) {
-            objectPosition = glm::vec4(selectedObject->transform->GetGlobalPosition(), 1.0f);
-            float ang = M_PI * 2 / 24 * j;
-            glm::vec3 offset = (glm::vec3(1, 0, 0) * cos(ang) + glm::vec3(0, 0, 1) * -sin(ang));
-            objectPosition = projectionView * (objectPosition + glm::vec4(offset, 0) * 0.25f * size);
-            glm::vec2 objectViewportPosition = glm::vec2(objectPosition.x, objectPosition.y) / objectPosition.w;
-            hookPoints.emplace_back(objectViewportPosition);
-        }
-        for (int j = 0; j < 24; ++j) {
-            objectPosition = glm::vec4(selectedObject->transform->GetGlobalPosition(), 1.0f);
-            float ang = M_PI * 2 / 24 * j;
-            glm::vec3 offset = (glm::vec3(0, 1, 0) * cos(ang) + glm::vec3(0, 0, 1) * -sin(ang));
-            objectPosition = projectionView * (objectPosition + glm::vec4(offset, 0) * 0.25f * size);
-            glm::vec2 objectViewportPosition = glm::vec2(objectPosition.x, objectPosition.y) / objectPosition.w;
-            hookPoints.emplace_back(objectViewportPosition);
-        }
-        for (int j = 0; j < 24; ++j) {
-            objectPosition = glm::vec4(selectedObject->transform->GetGlobalPosition(), 1.0f);
-            float ang = M_PI * 2 / 24 * j;
-            glm::vec3 offset = (glm::vec3(1, 0, 0) * cos(ang) + glm::vec3(0, 1, 0) * -sin(ang));
-            objectPosition = projectionView * (objectPosition + glm::vec4(offset, 0) * 0.25f * size);
-            glm::vec2 objectViewportPosition = glm::vec2(objectPosition.x, objectPosition.y) / objectPosition.w;
-            hookPoints.emplace_back(objectViewportPosition);
-        }
-    }
-
     double cursorX, cursorY;
     glfwGetCursorPos(application->window, &cursorX, &cursorY);
+
     glm::vec2 cursorPosition = glm::vec2(cursorX, cursorY);
 
+    // Check if mouse is in viewport if left mouse was clicked
     if (inputManager->IsKeyDown(Key::MOUSE_LEFT_BUTTON) && CUM::IsInViewport(cursorPosition, viewport)) {
         cursorPreviousX = cursorX;
         cursorPreviousY = cursorY;
@@ -128,10 +99,12 @@ void Gizmos::Update() {
         glm::vec2 viewportResolution = glm::vec2(viewport->resolution);
         glm::vec2 viewportPosition = glm::vec2(viewport->position);
 
+        // Calculate window space to viewport space
         cursorPosition.x = 2.0f * (cursorPosition.x - viewportPosition.x) / viewportResolution.x - 1.0f;
         cursorPosition.y = 1.0f - 2.0f * (cursorPosition.y - ((float)Application::resolution.y - (viewportPosition.y +
-                viewportResolution.y))) / viewportResolution.y;
+                                                               viewportResolution.y))) / viewportResolution.y;
 
+        // Look for closest point and select it as hooked point if it's close enough to cursor
         float minDistance = 0.0f;
         float distance;
         for (int8 i = 0; i < (int8)hookPoints.size(); ++i) {
@@ -145,6 +118,7 @@ void Gizmos::Update() {
             }
         }
     }
+    // Manage mouse input if any point was hooked
     if (inputManager->IsKeyPressed(Key::MOUSE_LEFT_BUTTON) && hookedPoint >= 0) {
         glfwSetInputMode(application->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -180,9 +154,52 @@ void Gizmos::Update() {
 
         glfwSetCursorPos(application->window, cursorPreviousX, cursorPreviousY);
     }
+    // Reset state after mouse button was released
     else if (inputManager->IsKeyReleased(Key::MOUSE_LEFT_BUTTON)) {
         glfwSetInputMode(Application::GetInstance()->window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         hookedPoint = -1;
+    }
+}
+
+void Gizmos::CalculateLinePoint(glm::vec3 initialPosition, glm::vec3 direction) {
+    Camera* camera = Camera::GetActiveCamera()->GetComponentByClass<Camera>();
+
+    glm::mat4 view = camera->GetViewMatrix();
+    glm::mat4 projectionView = camera->GetProjectionMatrix() * view;
+
+    float size = glm::length(glm::vec3(view[3])) / 3;
+
+    direction *= 0.25f * size;
+
+    glm::vec4 objectPosition = glm::vec4(initialPosition, 1.0f);
+
+    objectPosition += glm::vec4(direction, 0.0f);
+    objectPosition = projectionView * objectPosition;
+
+    glm::vec2 objectViewportPosition = glm::vec2(objectPosition.x, objectPosition.y) / objectPosition.w;
+
+    hookPoints.emplace_back(objectViewportPosition);
+}
+
+void Gizmos::CalculateCirclePoints(glm::vec3 initialPosition, glm::vec3 direction1, glm::vec3 direction2) {
+    Camera* camera = Camera::GetActiveCamera()->GetComponentByClass<Camera>();
+
+    glm::mat4 view = camera->GetViewMatrix();
+    glm::mat4 projectionView = camera->GetProjectionMatrix() * view;
+    // Size scalar to keep gizmos the same size even when camera is moving away
+    float size = glm::length(glm::vec3(view[3])) / 3;
+
+    for (int j = 0; j < 24; ++j) {
+        glm::vec4 objectPosition = glm::vec4(initialPosition, 1.0f);
+
+        float ang = M_PI * 2 / 24 * j;
+
+        glm::vec3 offset = (direction1 * cos(ang) + direction2 * -sin(ang));
+        objectPosition = projectionView * (objectPosition + glm::vec4(offset, 0) * 0.25f * size);
+
+        glm::vec2 objectViewportPosition = glm::vec2(objectPosition.x, objectPosition.y) / objectPosition.w;
+
+        hookPoints.emplace_back(objectViewportPosition);
     }
 }
 

@@ -29,6 +29,9 @@ public:
 
     void Draw();
     void Update();
+    void ManageInput();
+    void CalculateLinePoint(glm::vec3 initialPosition, glm::vec3 direction);
+    void CalculateCirclePoints(glm::vec3 initialPosition, glm::vec3 direction1, glm::vec3 direction2);
 };
 
 
