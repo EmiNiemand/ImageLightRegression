@@ -36,6 +36,7 @@ public:
                               const glm::vec2& inPosition = glm::vec2(0.0f), const glm::vec2& inPivot = glm::vec2(0.5f));
 
     void SetTexture(const std::string& inPath);
+    [[nodiscard]] unsigned int GetTextureID();
 };
 
 

@@ -9,6 +9,7 @@
 
 class Object;
 class Texture;
+class Gizmos;
 
 class EditorManager {
 public:
@@ -16,8 +17,15 @@ public:
 
     std::string dndPath = {};
     std::string fileExplorerCurrentPath = "resources";
+
+    Gizmos* gizmos = nullptr;
+
     Texture* fileTexture = nullptr;
     Texture* directoryTexture = nullptr;
+
+    Texture* startTexture = nullptr;
+    Texture* stopTexture = nullptr;
+    Texture* renderToFileTexture = nullptr;
 
 private:
     inline static EditorManager* editorManager;
@@ -36,6 +44,7 @@ public:
     void Startup();
     void Shutdown();
 
+    void Update();
     void Draw();
 
 private:

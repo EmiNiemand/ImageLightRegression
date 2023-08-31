@@ -1,11 +1,14 @@
 #include "Components/Rendering/EditorCamera.h"
-#include "Application.h"
 #include "Managers/InputManager.h"
 #include "Core/Object.h"
 #include "Components/Transform.h"
+#include "CUM.h"
+#include "Application.h"
 #include "Macros.h"
 
-EditorCamera::EditorCamera(Object *parent, int id) : Camera(parent, id) {}
+EditorCamera::EditorCamera(Object *parent, int id) : Camera(parent, id) {
+    enabled = false;
+}
 
 EditorCamera::~EditorCamera() = default;
 
@@ -13,6 +16,7 @@ void EditorCamera::OnCreate() {
     Camera::OnCreate();
 
     if (!editorCamera) {
+        enabled = true;
         editorCamera = parent;
         activeCamera = parent;
     }
@@ -20,6 +24,10 @@ void EditorCamera::OnCreate() {
 
 void EditorCamera::Update() {
     if (!enabled) return;
+
+    if (InputManager::GetInstance()->IsKeyPressed(Key::KEY_LEFT_CONTROL) && InputManager::GetInstance()->IsKeyDown(Key::KEY_KP_0)) {
+        Camera::ChangeActiveCamera();
+    }
 
     Camera::Update();
 
@@ -33,10 +41,7 @@ void EditorCamera::Update() {
     double cursorX, cursorY;
     glfwGetCursorPos(application->window, &cursorX, &cursorY);
 
-    if (inputManager->IsKeyDown(Key::MOUSE_RIGHT_BUTTON) &&
-    cursorX >= viewport->position.x && cursorX <= viewport->position.x + viewport->resolution.x &&
-    cursorY <= Application::resolution. y - viewport->position.y &&
-    cursorY >= Application::resolution. y - (viewport->position.y + viewport->resolution.y)) {
+    if (inputManager->IsKeyDown(Key::MOUSE_RIGHT_BUTTON) && CUM::IsInViewport(glm::ivec2(cursorX, cursorY), viewport)) {
         cursorPreviousX = cursorX;
         cursorPreviousY = cursorY;
     }
@@ -44,21 +49,21 @@ void EditorCamera::Update() {
     if (inputManager->IsKeyPressed(Key::MOUSE_RIGHT_BUTTON) && cursorPreviousX > 0 && cursorPreviousY > 0) {
         glfwSetInputMode(application->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-        double mouseX = cursorX - cursorPreviousX;
-        double mouseY = cursorY - cursorPreviousY;
+        double mouseShiftX = cursorX - cursorPreviousX;
+        double mouseShiftY = cursorY - cursorPreviousY;
 
         float yaw;
         float pitch;
 
-        if (mouseX != 0.0) {
-            int direction = (int)mouseX/abs((int)mouseX);
+        if (mouseShiftX != 0.0) {
+            int direction = (int)mouseShiftX/abs((int)mouseShiftX);
             yaw = (float)(direction);
         }
         else {
             yaw = 0.0f;
         }
-        if (mouseY != 0.0) {
-            int direction = (int)mouseY/abs((int)mouseY);
+        if (mouseShiftY != 0.0) {
+            int direction = (int)mouseShiftY/abs((int)mouseShiftY);
             pitch = (float)(direction);
         }
         else {

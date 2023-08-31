@@ -132,12 +132,18 @@ struct CubeWithNormals {
     };
 };
 
-struct Rectangle{
-    inline static float vertices[20] = {
-            -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
-            -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-            1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
-            1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+struct Rectangle {
+    inline static float vertices[16] = {
+            -1.0f,  1.0f, 0.0f, 1.0f,
+            -1.0f, -1.0f, 0.0f, 0.0f,
+            1.0f,  1.0f, 1.0f, 1.0f,
+            1.0f, -1.0f, 1.0f, 0.0f,
+    };
+};
+
+struct Point {
+    inline static float vertices[3] = {
+            0.0f, 0.0f, 0.0f
     };
 };
 

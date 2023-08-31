@@ -24,6 +24,7 @@ public:
 private:
     inline static RenderingManager* renderingManager;
     Shader* selectedObjectShader = nullptr;
+    Shader* imageDifferenceShader = nullptr;
 
     std::vector<Renderer*> drawBuffer{};
 public:

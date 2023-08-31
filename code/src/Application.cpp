@@ -88,10 +88,6 @@ void Application::Run() {
         InputManager* inputManager = InputManager::GetInstance();
         inputManager->PollInput();
 
-        if (inputManager->IsKeyPressed(Key::KEY_LEFT_CONTROL) && inputManager->IsKeyDown(Key::KEY_KP_0)) {
-            Camera::ChangeActiveCamera();
-        }
-
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -132,6 +128,8 @@ void Application::Run() {
                 component.second->Update();
             }
         }
+
+        EditorManager::GetInstance()->Update();
 
         RenderingManager::GetInstance()->DrawFrame();
         EditorManager::GetInstance()->Draw();

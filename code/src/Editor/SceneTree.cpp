@@ -16,7 +16,7 @@ void SceneTree::ShowTreeNode(Object* parent) {
         nodeFlags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 
         ImGui::TreeNodeEx((void*)(intptr_t)parent->id, nodeFlags, "%s", parent->name.c_str());
-        if (ImGui::IsItemClicked() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+        if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
             EditorManager::GetInstance()->selectedNode = parent;
         }
         ManageNodeInput(parent);
@@ -47,16 +47,23 @@ void SceneTree::ManageNodeInput(Object* hoveredObject) {
             int payloadData = *(const int *)payload->Data;
 
             Object* child = Application::GetInstance()->objects.at(payloadData);
-            hoveredObject->AddChild(child);
+
+            if (hoveredObject->children.contains(payloadData)) {
+                child->SetParent(hoveredObject->GetParent());
+            }
+            else {
+                hoveredObject->AddChild(child);
+            }
         }
 
         ImGui::EndDragDropTarget();
     }
 
-    if (ImGui::IsItemClicked() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
         EditorManager::GetInstance()->selectedNode = hoveredObject;
+
     }
-    if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
         ImGui::OpenPopup((std::to_string(hoveredObject->id) + "ContextMenu").c_str(), ImGuiPopupFlags_NoOpenOverExistingPopup);
     }
     if (ImGui::BeginPopup((std::to_string(hoveredObject->id) + "ContextMenu").c_str())) {
@@ -85,6 +92,9 @@ void SceneTree::ManageNodeInput(Object* hoveredObject) {
 }
 
 void SceneTree::ShowPopUp() {
+    if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+        EditorManager::GetInstance()->selectedNode = nullptr;
+    }
     if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
         ImGui::OpenPopup("SceneTreePopUpContextMenu", ImGuiPopupFlags_NoOpenOverExistingPopup);
     }

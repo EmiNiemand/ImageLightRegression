@@ -3,7 +3,9 @@
 #include "Editor/SceneTree.h"
 #include "Editor/Inspector.h"
 #include "Editor/FileExplorer.h"
+#include "Editor/ToolBar.h"
 #include "Editor/IconsMaterialDesign.h"
+#include "Editor/Gizmos.h"
 #include "Components/Rendering/UI/Image.h"
 #include "Resources/Texture.h"
 #include "Application.h"
@@ -41,19 +43,33 @@ void EditorManager::Startup() {
 
     ImGui_ImplGlfw_InstallCallbacks(Application::GetInstance()->window);
 
+    gizmos = new Gizmos();
+
     fileTexture = ResourceManager::LoadResource<Texture>("resources/EditorIcons/File.png");
     directoryTexture = ResourceManager::LoadResource<Texture>("resources/EditorIcons/Directory.png");
+    startTexture = ResourceManager::LoadResource<Texture>("resources/EditorIcons/Start.png");
+    stopTexture = ResourceManager::LoadResource<Texture>("resources/EditorIcons/Stop.png");
+    renderToFileTexture = ResourceManager::LoadResource<Texture>("resources/EditorIcons/SaveToFile.png");
 }
 
 void EditorManager::Shutdown() {
     ResourceManager::UnloadResource(fileTexture->GetPath());
     ResourceManager::UnloadResource(directoryTexture->GetPath());
+    ResourceManager::UnloadResource(startTexture->GetPath());
+    ResourceManager::UnloadResource(stopTexture->GetPath());
+    ResourceManager::UnloadResource(renderToFileTexture->GetPath());
+
+    delete gizmos;
 
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 
     delete editorManager;
+}
+
+void EditorManager::Update() {
+    gizmos->Update();
 }
 
 void EditorManager::Draw() {
@@ -76,6 +92,9 @@ void EditorManager::ShowToolBar() const {
     ImGui::Begin("ToolBar", nullptr, WINDOW_FLAGS);
     ImGui::SetWindowSize("ToolBar", ImVec2((float)Application::resolution.x, (float)Application::resolution.y / 9));
     ImGui::SetWindowPos("ToolBar", ImVec2(0.0f, 0.0f));
+
+    ToolBar::ShowToolBar();
+
     ImGui::End();
 }
 

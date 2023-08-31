@@ -106,7 +106,7 @@ void Inspector::ShowTransform() {
     Transform* transform = EditorManager::GetInstance()->selectedNode->transform;
 
     if (ImGui::CollapsingHeader("Transform", HEADER_FLAGS)) {
-        if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+        if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
             ImGui::OpenPopup("TransformContextMenu");
         }
         if (ImGui::BeginPopup("TransformContextMenu", ImGuiPopupFlags_NoOpenOverExistingPopup)) {
@@ -150,7 +150,7 @@ void Inspector::ShowCamera() {
         return;
     }
 
-    if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
         ImGui::OpenPopup("CameraContextMenu");
     }
     if (ImGui::BeginPopup("CameraContextMenu", ImGuiPopupFlags_NoOpenOverExistingPopup)) {
@@ -203,7 +203,7 @@ void Inspector::ShowRenderer() {
         return;
     }
 
-    if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
         ImGui::OpenPopup("RendererContextMenu");
     }
     if (ImGui::BeginPopup("RendererContextMenu", ImGuiPopupFlags_NoOpenOverExistingPopup)) {
@@ -286,7 +286,7 @@ void Inspector::ShowDirectionalLight() {
         return;
     }
 
-    if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
         ImGui::OpenPopup("DirectionalLightContextMenu");
     }
     if (ImGui::BeginPopup("DirectionalLightContextMenu", ImGuiPopupFlags_NoOpenOverExistingPopup)) {
@@ -339,7 +339,7 @@ void Inspector::ShowPointLight() {
         return;
     }
 
-    if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
         ImGui::OpenPopup("PointLightContextMenu");
     }
     if (ImGui::BeginPopup("PointLightContextMenu", ImGuiPopupFlags_NoOpenOverExistingPopup)) {
@@ -407,7 +407,7 @@ void Inspector::ShowSpotLight() {
         return;
     }
 
-    if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+    if (ImGui::IsItemHovered() && ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
         ImGui::OpenPopup("SpotLightContextMenu");
     }
     if (ImGui::BeginPopup("SpotLightContextMenu", ImGuiPopupFlags_NoOpenOverExistingPopup)) {
@@ -485,7 +485,7 @@ void Inspector::ShowSkybox() {
         return;
     }
 
-    if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+    if (ImGui::IsItemHovered() && ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
         ImGui::OpenPopup("SkyboxContextMenu");
     }
     if (ImGui::BeginPopup("SkyboxContextMenu", ImGuiPopupFlags_NoOpenOverExistingPopup)) {

@@ -1,0 +1,5 @@
+{
+  "vertex": "resources/Shaders/Gizmos/Gizmo.vert",
+  "fragment": "resources/Shaders/Gizmos/Gizmo.frag",
+  "geometry": "resources/Shaders/Gizmos/Gizmo.geom"
+}

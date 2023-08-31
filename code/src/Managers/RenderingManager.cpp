@@ -6,6 +6,7 @@
 #include "Rendering/SkyboxRenderer.h"
 #include "Rendering/UIRenderer.h"
 #include "Rendering/PostProcessRenderer.h"
+#include "Editor/Gizmos.h"
 #include "Resources/Shader.h"
 #include "Core/Object.h"
 #include "Components/Transform.h"
@@ -28,6 +29,11 @@ RenderingManager* RenderingManager::GetInstance() {
 
 void RenderingManager::Startup() {
     selectedObjectShader = ResourceManager::LoadResource<Shader>("resources/Resources/ShaderResources/SelectedObjectShader.json");
+    imageDifferenceShader = ResourceManager::LoadResource<Shader>("resources/Resources/ShaderResources/ImageDifferenceShader.json");
+
+    imageDifferenceShader->Activate();
+    imageDifferenceShader->SetInt("loadedImageTexture", 0);
+    imageDifferenceShader->SetInt("screenTexture", 1);
 
     shadowRenderer = new ShadowRenderer();
     objectRenderer = new ObjectRenderer();
@@ -45,6 +51,9 @@ void RenderingManager::Shutdown() {
 
     selectedObjectShader->Delete();
     ResourceManager::UnloadResource(selectedObjectShader->GetPath());
+
+    imageDifferenceShader->Delete();
+    ResourceManager::UnloadResource(imageDifferenceShader->GetPath());
 
     delete renderingManager;
 }
@@ -64,29 +73,40 @@ void RenderingManager::DrawFrame() {
     DrawSelectedObjectTexture();
     DrawPostProcesses();
 
+    EditorManager::GetInstance()->gizmos->Draw();
+
     Application* application = Application::GetInstance();
 
     glViewport(Application::viewports[1].position.x, Application::viewports[1].position.y,
                Application::viewports[1].resolution.x, Application::viewports[1].resolution.y);
     application->loadedImage->GetComponentByClass<Image>()->Draw(uiRenderer->imageShader);
 
+    Camera::SetActiveCamera(Camera::GetRenderingCamera());
+    shadowRenderer->PrepareShadowMap();
+
+    DrawScreenTexture();
+
     if (application->isStarted) {
-        Camera::SetActiveCamera(Camera::GetRenderingCamera());
-        shadowRenderer->PrepareShadowMap();
-
-        DrawScreenTexture();
-
         glViewport(Application::viewports[2].position.x, Application::viewports[2].position.y,
                    Application::viewports[2].resolution.x, Application::viewports[2].resolution.y);
 
         Image::DrawImageByID(objectRenderer->screenTexture, uiRenderer->imageShader, glm::vec2(1.0f));
 
+
         glViewport(Application::viewports[3].position.x, Application::viewports[3].position.y,
                    Application::viewports[3].resolution.x, Application::viewports[3].resolution.y);
 
+        imageDifferenceShader->Activate();
+        glBindVertexArray(uiRenderer->GetVAO());
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, Application::GetInstance()->loadedImage->GetComponentByClass<Image>()->GetTextureID());
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, objectRenderer->screenTexture);
 
-        Camera::SetActiveCamera(Camera::GetRenderingCamera());
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        glBindVertexArray(0);
     }
+    Camera::SetActiveCamera(Camera::GetPreviouslyActiveCamera());
 
     RenderingManager::GetInstance()->ClearBuffer();
 }
@@ -113,11 +133,12 @@ void RenderingManager::UpdateProjection() const {
     skyboxRenderer->cubeMapShader->Activate();
     skyboxRenderer->cubeMapShader->SetMat4("projection", projection);
 
-    uiRenderer->imageShader->Activate();
-    uiRenderer->imageShader->SetMat4("projection", projection);
-
     selectedObjectShader->Activate();
     selectedObjectShader->SetMat4("projection", projection);
+
+    Gizmos* gizmos = EditorManager::GetInstance()->gizmos;
+    gizmos->gizmoShader->Activate();
+    gizmos->gizmoShader->SetMat4("projection", projection);
 }
 
 void RenderingManager::UpdateView() const {
@@ -132,6 +153,10 @@ void RenderingManager::UpdateView() const {
 
     selectedObjectShader->Activate();
     selectedObjectShader->SetMat4("view", view);
+
+    Gizmos* gizmos = EditorManager::GetInstance()->gizmos;
+    gizmos->gizmoShader->Activate();
+    gizmos->gizmoShader->SetMat4("view", view);
 }
 
 void RenderingManager::OnWindowResize() const {

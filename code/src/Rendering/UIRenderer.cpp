@@ -2,7 +2,6 @@
 #include "Managers/ResourceManager.h"
 #include "Resources/Shader.h"
 #include "Core/Object.h"
-#include "Components/Rendering/Camera.h"
 
 UIRenderer::UIRenderer() {
     imageShader = ResourceManager::LoadResource<Shader>("resources/Resources/ShaderResources/ImageShader.json");
@@ -13,7 +12,9 @@ UIRenderer::UIRenderer() {
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(Rectangle::vertices), &Rectangle::vertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 }
 
 UIRenderer::~UIRenderer() {

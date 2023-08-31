@@ -8,11 +8,15 @@
 
 #include <filesystem>
 
+#define PADDING 16.0f
+#define THUMBNAIL_SIZE 48.0f
+#define CELL_SIZE (PADDING + THUMBNAIL_SIZE)
+
+
 void FileExplorer::ShowFiles() {
     std::string& fileExplorerCurrentPath = EditorManager::GetInstance()->fileExplorerCurrentPath;
 
     ImGui::BeginTable("File Explorer", 2, ImGuiTableFlags_Resizable);
-
     ImGui::TableSetupColumn("Folders", ImGuiTableColumnFlags_WidthFixed, 120.0f);
 
     ImGui::TableNextRow(ImGuiTableRowFlags_None, ImGui::GetContentRegionAvail().y);
@@ -22,12 +26,8 @@ void FileExplorer::ShowFiles() {
 
     ImGui::TableNextColumn();
 
-    float padding = 16.0f;
-    float thumbnailSize = 48.0f;
-    float cellSize = thumbnailSize + padding;
-
     float panelWidth = ImGui::GetContentRegionAvail().x;
-    int columnCount = (int)(panelWidth / cellSize);
+    int columnCount = (int)(panelWidth / CELL_SIZE);
     if (columnCount < 1) {
         columnCount = 1;
     }
@@ -56,7 +56,7 @@ void FileExplorer::ShowFiles() {
         std::string label = entry.path().filename().string();
         std::string extension = entry.path().extension().string();
 
-        ImVec2 thumbnailSizeVec2 = ImVec2(thumbnailSize, thumbnailSize);
+        ImVec2 thumbnailSizeVec2 = ImVec2(THUMBNAIL_SIZE, THUMBNAIL_SIZE);
         ImVec2 thumbnailUV0 = ImVec2(0.0f, 1.0f);
         ImVec2 thumbnailUV1 = ImVec2(1.0f, 0.0f);
 
@@ -92,12 +92,12 @@ void FileExplorer::ShowFiles() {
 
         ImGui::PopStyleColor(3);
 
-        float text_scale = 0.75f;
+        float text_scale = 0.85f;
         ImGui::SetWindowFontScale(text_scale);
         ImGuiStyle &style = ImGui::GetStyle();
 
         float size = ImGui::CalcTextSize(label.c_str()).x * text_scale + style.FramePadding.x * 2.0f;
-        float avail = thumbnailSize;
+        float avail = THUMBNAIL_SIZE;
 
         float off = (avail - size) * 0.5f;
         if (off > 0.0f) {

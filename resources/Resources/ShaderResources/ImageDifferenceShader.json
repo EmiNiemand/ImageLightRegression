@@ -1,0 +1,5 @@
+{
+  "vertex": "resources/Shaders/UI/ImageDifference.vert",
+  "fragment": "resources/Shaders/UI/ImageDifference.frag",
+  "geometry": ""
+}

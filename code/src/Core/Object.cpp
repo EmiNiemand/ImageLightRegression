@@ -28,13 +28,14 @@ void Object::SetParent(Object *newParent) {
     glm::vec3 globalPosition = transform->GetGlobalPosition();
     parent->children.erase(id);
     parent = newParent;
-    newParent->AddChild(this);
+    parent->AddChild(this);
     transform->SetLocalPosition(globalPosition - parent->transform->GetGlobalPosition());
 }
 
 void Object::AddChild(Object* child) {
     glm::vec3 globalPosition = child->transform->GetGlobalPosition();
-    child->parent->children.erase(child->id);
+    if (child->parent)
+        child->parent->children.erase(child->id);
     child->parent = this;
     children.insert({child->id, child});
     child->transform->SetLocalPosition(globalPosition - transform->GetGlobalPosition());

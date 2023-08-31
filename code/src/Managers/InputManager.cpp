@@ -1,4 +1,7 @@
 #include "Managers/InputManager.h"
+#include "Components/Transform.h"
+#include "Components/Rendering/Camera.h"
+#include "Core/Object.h"
 #include "Application.h"
 
 InputManager::InputManager() = default;
@@ -112,3 +115,4 @@ void InputManager::MouseActionCallback(GLFWwindow *window, int button, int actio
         keysUpBuffer.push_back(static_cast<Key>(button));
     }
 }
+
