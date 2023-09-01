@@ -49,7 +49,7 @@ public:
     static void UnloadResource(std::string path);
 
 private:
-    ResourceManager();
+    explicit ResourceManager();
 };
 
 

@@ -1,9 +1,9 @@
-#include <utility>
-
 #include "Core/Object.h"
 #include "Application.h"
 #include "Factories/ObjectFactory.h"
-#include "Components/Transform.h"
+#include "Components/ComponentHeaders.h"
+
+#include <utility>
 
 Object::Object(std::string name, Object *parent, int id) : name(std::move(name)), parent(parent), id(id) {
     transform = this->AddComponent<Transform>();
@@ -141,4 +141,65 @@ bool Object::GetEnabled() const {
 
 Object *Object::GetParent() const {
     return parent;
+}
+
+void Object::Save(nlohmann::json& json) {
+    json["Name"] = name;
+    json["VisibleInEditor"] = visibleInEditor;
+    json["Enabled"] = enabled;
+
+    transform->Save(json["Transform"]);
+
+    json["Children"] = nlohmann::json::array();
+    for (auto const &object : children) {
+        if (!object.second->visibleInEditor) continue;
+        json["Children"].push_back(nlohmann::json::object());
+        object.second->Save(json["Children"].back());
+    }
+
+    json["Components"] = nlohmann::json::array();
+    for (auto const &component : components) {
+        json["Components"].push_back(nlohmann::json::object());
+        component.second->Save(json["Components"].back());
+    }
+}
+
+void Object::Load(nlohmann::json& json) {
+    visibleInEditor = json["VisibleInEditor"];
+    enabled = json["Enabled"];
+
+    transform->Load(json["Transform"]);
+
+    for (auto& child : json["Children"]) {
+        Instantiate(child["Name"], this)->Load(child);
+    }
+
+    for (auto& component : json["Components"]) {
+        if (component.contains("ComponentType")) {
+            if (component["ComponentType"] == "DirectionalLight") {
+                AddComponent<DirectionalLight>()->Load(component);
+            }
+            if (component["ComponentType"] == "PointLight") {
+                AddComponent<PointLight>()->Load(component);
+            }
+            if (component["ComponentType"] == "SpotLight") {
+                AddComponent<SpotLight>()->Load(component);
+            }
+            if (component["ComponentType"] == "Image") {
+                AddComponent<Image>()->Load(component);
+            }
+            if (component["ComponentType"] == "Camera") {
+                AddComponent<Camera>()->Load(component);
+            }
+            if (component["ComponentType"] == "EditorCamera") {
+                AddComponent<EditorCamera>()->Load(component);
+            }
+            if (component["ComponentType"] == "Renderer") {
+                AddComponent<Renderer>()->Load(component);
+            }
+            if (component["ComponentType"] == "Skybox") {
+                AddComponent<Skybox>()->Load(component);
+            }
+        }
+    }
 }

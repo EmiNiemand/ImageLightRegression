@@ -31,6 +31,10 @@ public:
     void SetDiffuse(const glm::vec3& inDiffuse);
     void SetSpecular(const glm::vec3& inSpecular);
     void SetColor(const glm::vec3& inColor);
+
+    void Save(nlohmann::json &json) override;
+
+    void Load(nlohmann::json &json) override;
 };
 
 

@@ -32,6 +32,9 @@ public:
 
     void LoadModel(const std::string& path);
 
+    void Save(nlohmann::json &json) override;
+    void Load(nlohmann::json &json) override;
+
 private:
     void AddToDraw();
 };

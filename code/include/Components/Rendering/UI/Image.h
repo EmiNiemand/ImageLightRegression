@@ -37,6 +37,9 @@ public:
 
     void SetTexture(const std::string& inPath);
     [[nodiscard]] unsigned int GetTextureID();
+
+    void Save(nlohmann::json &json) override;
+    void Load(nlohmann::json &json) override;
 };
 
 

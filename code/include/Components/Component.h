@@ -1,9 +1,11 @@
 #ifndef IMAGELIGHTREGRESSION_COMPONENT_H
 #define IMAGELIGHTREGRESSION_COMPONENT_H
 
+#include "Core/Interfaces/ISerializable.h"
+
 class Object;
 
-class Component {
+class Component : public ISerializable {
 public:
     Object* parent;
     int id;
@@ -34,6 +36,8 @@ public:
     inline virtual void Start() {};
     inline virtual void Update() {};
 
+    void Save(nlohmann::json& json) override;
+    void Load(nlohmann::json& json) override;
 };
 
 

@@ -99,3 +99,13 @@ void EditorCamera::Update() {
         renderingCamera->transform->SetLocalRotation(parent->transform->GetGlobalRotation());
     }
 }
+
+void EditorCamera::Save(nlohmann::json &json) {
+    Camera::Save(json);
+
+    json["ComponentType"] = "EditorCamera";
+}
+
+void EditorCamera::Load(nlohmann::json &json) {
+    Camera::Load(json);
+}

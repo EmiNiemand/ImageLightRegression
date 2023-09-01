@@ -47,3 +47,40 @@ void Renderer::LoadModel(const std::string& path) {
 void Renderer::AddToDraw() {
     RenderingManager::GetInstance()->AddToDrawBuffer(this);
 }
+
+void Renderer::Save(nlohmann::json &json) {
+    Component::Save(json);
+
+    json["ComponentType"] = "Renderer";
+    json["Material"] = nlohmann::json::array();
+    json["Material"].push_back(material.color.x);
+    json["Material"].push_back(material.color.y);
+    json["Material"].push_back(material.color.z);
+    json["Material"].push_back(material.shininess);
+    json["Material"].push_back(material.reflection);
+    json["Material"].push_back(material.refraction);
+
+    json["TextureScale"] = nlohmann::json::array();
+    json["TextureScale"].push_back(texScale.x);
+    json["TextureScale"].push_back(texScale.y);
+
+    json["Model"] = model->GetPath();
+    json["DrawShadows"] = drawShadows;
+}
+
+void Renderer::Load(nlohmann::json &json) {
+    Component::Load(json);
+
+    material.color.x = json["Material"][0];
+    material.color.y = json["Material"][1];
+    material.color.z = json["Material"][2];
+    material.shininess = json["Material"][3];
+    material.reflection = json["Material"][4];
+    material.refraction = json["Material"][5];
+
+    texScale.x = json["TextureScale"][0];
+    texScale.y = json["TextureScale"][1];
+
+    LoadModel(json["Model"]);
+    drawShadows = json["DrawShadows"];
+}

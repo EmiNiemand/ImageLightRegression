@@ -37,7 +37,7 @@ void Transform::SetLocalPosition(const glm::vec3& newPosition) {
 
 void Transform::SetLocalRotation(const glm::vec3& newRotation) {
     rotation = newRotation;
-    if (!parent) return;
+    if (!parent->GetParent()) return;
     CalculateGlobalRotation();
     if (dirtyFlag) return;
     SetDirtyFlag();
@@ -122,4 +122,31 @@ void Transform::CalculateGlobalRotation() {
     for (auto&& child : parent->children) {
         child.second->transform->CalculateGlobalRotation();
     }
+}
+
+void Transform::Save(nlohmann::json &json) {
+    Component::Save(json);
+
+    json["Position"] = nlohmann::json::array();
+    json["Position"].push_back(position.x);
+    json["Position"].push_back(position.y);
+    json["Position"].push_back(position.z);
+
+    json["Rotation"] = nlohmann::json::array();
+    json["Rotation"].push_back(rotation.x);
+    json["Rotation"].push_back(rotation.y);
+    json["Rotation"].push_back(rotation.z);
+
+    json["Scale"] = nlohmann::json::array();
+    json["Scale"].push_back(scale.x);
+    json["Scale"].push_back(scale.y);
+    json["Scale"].push_back(scale.z);
+}
+
+void Transform::Load(nlohmann::json &json) {
+    Component::Load(json);
+
+    SetLocalPosition({json["Position"][0], json["Position"][1], json["Position"][2]});
+    SetLocalRotation({json["Rotation"][0], json["Rotation"][1], json["Rotation"][2]});
+    SetLocalScale({json["Scale"][0], json["Scale"][1], json["Scale"][2]});
 }

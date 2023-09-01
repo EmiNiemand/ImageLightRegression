@@ -47,7 +47,7 @@ void Gizmos::Draw() {
 
 void Gizmos::Update() {
     Object* selectedObject = EditorManager::GetInstance()->selectedNode;
-    if (!selectedObject) return;
+    if (!selectedObject || selectedObject == Application::GetInstance()->scene) return;
 
     hookPoints.clear();
 

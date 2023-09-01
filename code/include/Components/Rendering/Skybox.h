@@ -20,7 +20,11 @@ public:
 
     [[nodiscard]] CubeMap* GetCubeMap() const;
 
+    void SetCubeMap(std::string cubeMapPath);
     void SetActive();
+
+    void Save(nlohmann::json &json) override;
+    void Load(nlohmann::json &json) override;
 };
 
 

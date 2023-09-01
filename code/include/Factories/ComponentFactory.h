@@ -3,6 +3,8 @@
 
 #include "Application.h"
 
+#include <string>
+
 class Object;
 class Camera;
 class Spotlight;

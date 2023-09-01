@@ -1,4 +1,5 @@
 #include "Factories/ComponentFactory.h"
+#include "Core/Object.h"
 
 ComponentFactory::ComponentFactory() = default;
 

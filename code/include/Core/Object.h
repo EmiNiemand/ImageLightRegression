@@ -2,6 +2,7 @@
 #define IMAGELIGHTREGRESSION_OBJECT_H
 
 #include "Factories/ComponentFactory.h"
+#include "Core/Interfaces/ISerializable.h"
 
 #include <string>
 #include <unordered_map>
@@ -11,7 +12,7 @@
 class Component;
 class Transform;
 
-class Object {
+class Object : public ISerializable {
     friend class Application;
     friend class ObjectFactory;
     friend class EditorCamera;
@@ -77,6 +78,9 @@ public:
     void UpdateSelfAndChildren();
     void EnableSelfAndChildren();
     void DisableSelfAndChildren();
+
+    void Save(nlohmann::json& json) override;
+    void Load(nlohmann::json& json) override;
 
 private:
     Object(std::string name, Object *parent, int id);

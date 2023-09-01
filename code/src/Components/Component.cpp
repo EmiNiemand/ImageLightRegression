@@ -22,3 +22,17 @@ void Component::SetEnabled(bool inEnabled) {
     enabled = inEnabled;
     OnUpdate();
 }
+
+void Component::Save(nlohmann::json &json) {
+    json["CallOnAwake"] = callOnAwake;
+    json["CallOnStart"] = callOnStart;
+    json["Enabled"] = enabled;
+}
+
+void Component::Load(nlohmann::json &json) {
+    callOnAwake = json["CallOnAwake"];
+    callOnStart = json["CallOnStart"];
+    enabled = json["Enabled"];
+
+    OnUpdate();
+}

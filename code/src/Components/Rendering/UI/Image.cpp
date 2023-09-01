@@ -68,4 +68,25 @@ unsigned int Image::GetTextureID() {
     return texture->GetID();
 }
 
+void Image::Save(nlohmann::json &json) {
+    Component::Save(json);
+
+    json["ComponentType"] = "Image";
+
+    json["Size"] = nlohmann::json::array();
+    json["Size"].push_back(size.x);
+    json["Size"].push_back(size.y);
+
+    json["Texture"] = texture->GetPath();
+}
+
+void Image::Load(nlohmann::json &json) {
+    Component::Load(json);
+
+    size.x = json["Size"][0];
+    size.y = json["Size"][1];
+
+    SetTexture(json["Texture"]);
+}
+
 

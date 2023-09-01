@@ -3,6 +3,7 @@
 #include "Managers/InputManager.h"
 #include "Managers/RenderingManager.h"
 #include "Managers/EditorManager.h"
+#include "Managers/SceneManager.h"
 #include "Core/Object.h"
 #include "Components/Rendering/EditorCamera.h"
 #include "Components/Transform.h"
@@ -42,6 +43,7 @@ void Application::Startup() {
     InputManager::GetInstance()->Startup();
     RenderingManager::GetInstance()->Startup();
     EditorManager::GetInstance()->Startup();
+    SceneManager::GetInstance()->Startup();
 
     destroyObjectBuffer.reserve(200);
     destroyComponentBuffer.reserve(200);
@@ -53,31 +55,11 @@ void Application::Startup() {
     mainCamera->transform->SetLocalPosition({0, 1, 10});
     mainCamera->visibleInEditor = false;
 
-    Object* camera = Object::Instantiate("Camera", scene);
-    camera->AddComponent<Camera>();
-    camera->transform->SetLocalPosition({10, 0, 10});
-    Renderer* cameraRenderer = camera->AddComponent<Renderer>();
-    cameraRenderer->LoadModel("resources/models/Camera/Camera.obj");
-    cameraRenderer->drawShadows = false;
-
-    Object* skybox = Object::Instantiate("Skybox", scene);
-    skybox->AddComponent<Skybox>();
-
-    Object* loadedObject = Object::Instantiate("Something", scene);
-    loadedObject->AddComponent<Renderer>()->LoadModel("resources/models/Cube/Cube.obj");
-
-    Object* loadedObject1 = Object::Instantiate("Ground", scene);
-    loadedObject1->AddComponent<Renderer>()->LoadModel("resources/models/Cube/Cube.obj");
-    loadedObject1->transform->SetLocalPosition({0, -2, 0});
-    loadedObject1->transform->SetLocalScale({10, 1, 10});
-
     loadedImage = Object::Instantiate("Loaded Image", scene);
     loadedImage->AddComponent<Image>();
     loadedImage->visibleInEditor = false;
 
-    Object* pointLight = Object::Instantiate("Light", scene);
-    pointLight->AddComponent<PointLight>();
-    pointLight->transform->SetLocalPosition({0, 5, 0});
+    SceneManager::GetInstance()->LoadScene("resources/Outputs/Scene.scn");
 }
 
 void Application::Run() {
@@ -141,6 +123,8 @@ void Application::Run() {
 }
 
 void Application::Shutdown() {
+    SceneManager::GetInstance()->SaveScene("resources/Outputs/Scene.scn");
+
     for (const auto& component : components) {
         Component::Destroy(component.second);
     }
@@ -164,6 +148,7 @@ void Application::Shutdown() {
     RenderingManager::GetInstance()->Shutdown();
     InputManager::GetInstance()->Shutdown();
     ResourceManager::GetInstance()->Shutdown();
+    SceneManager::GetInstance()->Shutdown();
 
     glfwDestroyWindow(window);
     glfwTerminate();

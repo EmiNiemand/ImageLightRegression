@@ -30,6 +30,24 @@ CubeMap *Skybox::GetCubeMap() const {
     return cubeMap;
 }
 
+void Skybox::SetCubeMap(std::string cubeMapPath) {
+    ResourceManager::UnloadResource(cubeMap->GetPath());
+    cubeMap = ResourceManager::LoadResource<CubeMap>(cubeMapPath);
+}
+
 void Skybox::SetActive() {
     RenderingManager::GetInstance()->skyboxRenderer->SetActiveSkybox(parent);
+}
+
+void Skybox::Save(nlohmann::json &json) {
+    Component::Save(json);
+
+    json["ComponentType"] = "Skybox";
+    json["CubeMap"] = cubeMap->GetPath();
+}
+
+void Skybox::Load(nlohmann::json &json) {
+    Component::Load(json);
+
+    SetCubeMap(json["CubeMap"]);
 }

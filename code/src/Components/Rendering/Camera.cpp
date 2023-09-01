@@ -141,3 +141,23 @@ glm::mat4 Camera::GetViewMatrix() const {
 glm::mat4 Camera::GetProjectionMatrix() const {
     return glm::perspective(glm::radians(fov), 16.0f / 9.0f, zNear, zFar);
 }
+
+void Camera::Save(nlohmann::json &json) {
+    Component::Save(json);
+
+    /// TODO: add saving and loading rendering camera and active camera something with id idk
+    json["ComponentType"] = "Camera";
+    json["FOV"] = fov;
+    json["zNear"] = zNear;
+    json["zFar"] = zFar;
+}
+
+void Camera::Load(nlohmann::json &json) {
+    Component::Load(json);
+
+    fov = json["FOV"];
+    zNear = json["zNear"];
+    zFar = json["zFar"];
+
+    OnUpdate();
+}

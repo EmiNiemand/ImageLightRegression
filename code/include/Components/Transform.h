@@ -47,6 +47,9 @@ public:
     [[nodiscard]] glm::mat4 GetLocalModelMatrix() const;
     [[nodiscard]] bool GetDirtyFlag();
 
+    void Save(nlohmann::json &json) override;
+    void Load(nlohmann::json &json) override;
+
 private:
     void CalculateGlobalRotation();
 };
