@@ -26,6 +26,8 @@ public:
     Texture* startTexture = nullptr;
     Texture* stopTexture = nullptr;
     Texture* renderToFileTexture = nullptr;
+    Texture* newScene = nullptr;
+    Texture* saveScene = nullptr;
 
 private:
     inline static EditorManager* editorManager;
@@ -57,6 +59,9 @@ private:
     void ShowLoadedImage() const;
 
     static void SetUnityTheme();
+
+    void SaveSettings();
+    void LoadSettings();
 };
 
 

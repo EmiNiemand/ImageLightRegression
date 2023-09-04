@@ -134,7 +134,76 @@
                 "VisibleInEditor": true
             },
             {
-                "Children": [],
+                "Children": [
+                    {
+                        "Children": [],
+                        "Components": [
+                            {
+                                "CallOnAwake": true,
+                                "CallOnStart": true,
+                                "Enabled": true,
+                                "Position": [
+                                    -2.0,
+                                    -2.0,
+                                    0.0
+                                ],
+                                "Rotation": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "Scale": [
+                                    10.0,
+                                    1.0,
+                                    10.0
+                                ]
+                            },
+                            {
+                                "CallOnAwake": true,
+                                "CallOnStart": true,
+                                "ComponentType": "Renderer",
+                                "DrawShadows": true,
+                                "Enabled": true,
+                                "Material": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    32.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "Model": "resources/models/Cube/Cube.obj",
+                                "TextureScale": [
+                                    1.0,
+                                    1.0
+                                ]
+                            }
+                        ],
+                        "Enabled": true,
+                        "Name": "Ground",
+                        "Transform": {
+                            "CallOnAwake": true,
+                            "CallOnStart": true,
+                            "Enabled": true,
+                            "Position": [
+                                -2.0,
+                                -2.0,
+                                0.0
+                            ],
+                            "Rotation": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "Scale": [
+                                10.0,
+                                1.0,
+                                10.0
+                            ]
+                        },
+                        "VisibleInEditor": true
+                    }
+                ],
                 "Components": [
                     {
                         "CallOnAwake": true,
@@ -197,74 +266,6 @@
                         1.0,
                         1.0,
                         1.0
-                    ]
-                },
-                "VisibleInEditor": true
-            },
-            {
-                "Children": [],
-                "Components": [
-                    {
-                        "CallOnAwake": true,
-                        "CallOnStart": true,
-                        "Enabled": true,
-                        "Position": [
-                            0.0,
-                            -2.0,
-                            0.0
-                        ],
-                        "Rotation": [
-                            0.0,
-                            0.0,
-                            0.0
-                        ],
-                        "Scale": [
-                            10.0,
-                            1.0,
-                            10.0
-                        ]
-                    },
-                    {
-                        "CallOnAwake": true,
-                        "CallOnStart": true,
-                        "ComponentType": "Renderer",
-                        "DrawShadows": true,
-                        "Enabled": true,
-                        "Material": [
-                            1.0,
-                            1.0,
-                            1.0,
-                            32.0,
-                            0.0,
-                            0.0
-                        ],
-                        "Model": "resources/models/Cube/Cube.obj",
-                        "TextureScale": [
-                            1.0,
-                            1.0
-                        ]
-                    }
-                ],
-                "Enabled": true,
-                "Name": "Ground",
-                "Transform": {
-                    "CallOnAwake": true,
-                    "CallOnStart": true,
-                    "Enabled": true,
-                    "Position": [
-                        0.0,
-                        -2.0,
-                        0.0
-                    ],
-                    "Rotation": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "Scale": [
-                        10.0,
-                        1.0,
-                        10.0
                     ]
                 },
                 "VisibleInEditor": true

@@ -1,5 +1,6 @@
 #include "Managers/EditorManager.h"
 #include "Managers/ResourceManager.h"
+#include "Managers/SceneManager.h"
 #include "Editor/SceneTree.h"
 #include "Editor/Inspector.h"
 #include "Editor/FileExplorer.h"
@@ -8,8 +9,9 @@
 #include "Editor/Gizmos.h"
 #include "Components/Rendering/UI/Image.h"
 #include "Resources/Texture.h"
-#include "Application.h"
 #include "Core/Object.h"
+#include "CUM.h"
+#include "Application.h"
 
 #define WINDOW_FLAGS (ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | \
                       ImGuiWindowFlags_NoScrollbar)
@@ -50,6 +52,10 @@ void EditorManager::Startup() {
     startTexture = ResourceManager::LoadResource<Texture>("resources/EditorIcons/Start.png");
     stopTexture = ResourceManager::LoadResource<Texture>("resources/EditorIcons/Stop.png");
     renderToFileTexture = ResourceManager::LoadResource<Texture>("resources/EditorIcons/SaveToFile.png");
+    newScene = ResourceManager::LoadResource<Texture>("resources/EditorIcons/NewScene.png");
+    saveScene = ResourceManager::LoadResource<Texture>("resources/EditorIcons/SaveScene.png");
+
+    LoadSettings();
 }
 
 void EditorManager::Shutdown() {
@@ -58,12 +64,16 @@ void EditorManager::Shutdown() {
     ResourceManager::UnloadResource(startTexture->GetPath());
     ResourceManager::UnloadResource(stopTexture->GetPath());
     ResourceManager::UnloadResource(renderToFileTexture->GetPath());
+    ResourceManager::UnloadResource(newScene->GetPath());
+    ResourceManager::UnloadResource(saveScene->GetPath());
 
     delete gizmos;
 
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+    
+    SaveSettings();
 
     delete editorManager;
 }
@@ -262,4 +272,21 @@ void EditorManager::SetUnityTheme() {
     iconsConfig.GlyphMinAdvanceX = iconFontSize;
 
     io.Fonts->AddFontFromFileTTF("resources/Fonts/MaterialIcons-Regular.ttf", iconFontSize, &iconsConfig, iconsRanges);
+}
+
+void EditorManager::SaveSettings() {
+    nlohmann::json jsonSettings;
+    // TODO: after moving camera from application to manager add saving camera here
+
+    jsonSettings["LastOpenedScene"] = SceneManager::GetInstance()->loadedPath;
+    CUM::SaveJsonToFile("resources/Settings/EditorSettings.json", jsonSettings);
+}
+
+void EditorManager::LoadSettings() {
+    nlohmann::json jsonSettings;
+    CUM::LoadJsonFromFile("resources/Settings/EditorSettings.json", jsonSettings);
+
+    // TODO: after moving camera from application to manager add loading camera parameters here
+
+    SceneManager::GetInstance()->LoadScene(jsonSettings["LastOpenedScene"]);
 }

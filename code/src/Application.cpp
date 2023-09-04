@@ -8,8 +8,6 @@
 #include "Components/Rendering/EditorCamera.h"
 #include "Components/Transform.h"
 #include "Components/Rendering/Renderer.h"
-#include "Components/Rendering/Lights/PointLight.h"
-#include "Components/Rendering/Skybox.h"
 #include "Components/Rendering/UI/Image.h"
 
 #include <glad/glad.h>  // Initialize with gladLoadGL()
@@ -38,28 +36,26 @@ void Application::Startup() {
     // Calculated difference image viewport
     viewports[3] = {glm::ivec2(resolution.x / 64 * 35, resolution.y / 18 * 5), glm::ivec2(resolution.x / 16 * 4, resolution.y / 9 * 2)};
 
-
-    ResourceManager::GetInstance()->Startup();
-    InputManager::GetInstance()->Startup();
-    RenderingManager::GetInstance()->Startup();
-    EditorManager::GetInstance()->Startup();
-    SceneManager::GetInstance()->Startup();
-
-    destroyObjectBuffer.reserve(200);
-    destroyComponentBuffer.reserve(200);
-
     scene = Object::Instantiate("Scene", nullptr);
 
+    // TODO: move creating editor camera to editor manager
     Object* mainCamera = Object::Instantiate("Main Camera", scene);
     mainCamera->AddComponent<EditorCamera>();
     mainCamera->transform->SetLocalPosition({0, 1, 10});
     mainCamera->visibleInEditor = false;
 
+    ResourceManager::GetInstance()->Startup();
+    InputManager::GetInstance()->Startup();
+    RenderingManager::GetInstance()->Startup();
+    SceneManager::GetInstance()->Startup();
+    EditorManager::GetInstance()->Startup();
+
+    destroyObjectBuffer.reserve(200);
+    destroyComponentBuffer.reserve(200);
+
     loadedImage = Object::Instantiate("Loaded Image", scene);
     loadedImage->AddComponent<Image>();
     loadedImage->visibleInEditor = false;
-
-    SceneManager::GetInstance()->LoadScene("resources/Outputs/Scene.scn");
 }
 
 void Application::Run() {
@@ -73,44 +69,34 @@ void Application::Run() {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        for (int i = 0; i < destroyComponentBuffer.size(); ++i) {
-            int componentID = destroyComponentBuffer[i];
-            components[componentID]->OnDestroy();
-            delete components[componentID];
-            components.erase(componentID);
-        }
-        destroyComponentBuffer.clear();
-
-        for (int i = 0; i < destroyObjectBuffer.size(); ++i) {
-            int objectID = destroyObjectBuffer[i];
-            objects[objectID]->parent->children.erase(objectID);
-            delete objects[objectID];
-            objects.erase(objectID);
-        }
-        destroyObjectBuffer.clear();
+        DestroyQueuedComponents();
+        DestroyQueuedObjects();
 
         scene->UpdateSelfAndChildren();
 
-        for (const auto& component: components) {
+        auto componentsCopy = components;
+
+        for (const auto& component: componentsCopy) {
             if (component.second->callOnAwake) {
                 component.second->Awake();
                 component.second->parent->UpdateSelfAndChildren();
             }
         }
 
-        for (const auto& component: components) {
+        for (const auto& component: componentsCopy) {
             if (component.second->callOnStart && component.second->GetEnabled()) {
                 component.second->Start();
                 component.second->parent->UpdateSelfAndChildren();
             }
         }
 
-        for (const auto& component: components) {
+        for (const auto& component: componentsCopy) {
             if (component.second->GetEnabled()) {
                 component.second->Update();
             }
         }
 
+        SceneManager::GetInstance()->Update();
         EditorManager::GetInstance()->Update();
 
         RenderingManager::GetInstance()->DrawFrame();
@@ -123,32 +109,11 @@ void Application::Run() {
 }
 
 void Application::Shutdown() {
-    SceneManager::GetInstance()->SaveScene("resources/Outputs/Scene.scn");
-
-    for (const auto& component : components) {
-        Component::Destroy(component.second);
-    }
-
-    for (int i = 0; i < destroyComponentBuffer.size(); ++i) {
-        int componentID = destroyComponentBuffer[i];
-        components[componentID]->OnDestroy();
-        delete components[componentID];
-        components.erase(componentID);
-    }
-
-    destroyComponentBuffer.clear();
-
-    for (const auto& object : objects) {
-        delete object.second;
-    }
-
-    objects.clear();
-
     EditorManager::GetInstance()->Shutdown();
+    SceneManager::GetInstance()->Shutdown();
     RenderingManager::GetInstance()->Shutdown();
     InputManager::GetInstance()->Shutdown();
     ResourceManager::GetInstance()->Shutdown();
-    SceneManager::GetInstance()->Shutdown();
 
     glfwDestroyWindow(window);
     glfwTerminate();
@@ -225,4 +190,24 @@ void Application::glfwFramebufferSizeCallback(GLFWwindow *window, int width, int
     viewports[3] = {glm::ivec2(resolution.x / 64 * 35, resolution.y / 18 * 5), glm::ivec2(resolution.x / 16 * 4, resolution.y / 9 * 2)};
 
     RenderingManager::GetInstance()->OnWindowResize();
+}
+
+void Application::DestroyQueuedComponents() {
+    for (int i = 0; i < destroyComponentBuffer.size(); ++i) {
+        int componentID = destroyComponentBuffer[i];
+        components[componentID]->OnDestroy();
+        delete components[componentID];
+        components.erase(componentID);
+    }
+    destroyComponentBuffer.clear();
+}
+
+void Application::DestroyQueuedObjects() {
+    for (int i = 0; i < destroyObjectBuffer.size(); ++i) {
+        int objectID = destroyObjectBuffer[i];
+        objects[objectID]->parent->children.erase(objectID);
+        delete objects[objectID];
+        objects.erase(objectID);
+    }
+    destroyObjectBuffer.clear();
 }

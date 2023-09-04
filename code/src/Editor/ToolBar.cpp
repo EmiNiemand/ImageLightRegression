@@ -1,6 +1,7 @@
 #include "Editor/ToolBar.h"
 #include "Managers/EditorManager.h"
 #include "Managers/RenderingManager.h"
+#include "Managers/SceneManager.h"
 #include "Rendering/ObjectRenderer.h"
 #include "Resources/Texture.h"
 #include "Application.h"
@@ -9,31 +10,75 @@
 
 #include <glad/glad.h>
 #include <stb_image_write.h>
+#include <filesystem>
 
 #define PADDING 16.0f
 #define THUMBNAIL_SIZE 48.0f
 #define CELL_SIZE (PADDING + THUMBNAIL_SIZE)
 
 void ToolBar::ShowToolBar() {
+    SceneManager* sceneManager = SceneManager::GetInstance();
+    EditorManager* editorManager = EditorManager::GetInstance();
+
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (ImGui::GetContentRegionAvail().y - 50.0f) * 0.5f);
 
     ImGui::BeginChild("##canvas");
 
+    ImGui::SameLine();
+    ShowButton("NewScene", editorManager->newScene->GetID());
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
+        ImGui::OpenPopup("SceneCreationPopup");
+    }
+    if (ImGui::BeginPopupModal("SceneCreationPopup", 0, ImGuiWindowFlags_Popup | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize)) {
+        static char text[126] = "Scene Name";
+
+        ImGui::InputText("##FileName", &text[0], sizeof(char) * 126);
+
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetWindowSize().x * 0.05f);
+
+        if (ImGui::Button("Cancel", ImVec2(ImGui::GetWindowSize().x*0.40f, 0.0f))) {
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Accept", ImVec2(ImGui::GetWindowSize().x*0.40f, 0.0f))) {
+            EditorManager::GetInstance()->selectedNode = nullptr;
+            sceneManager->ClearScene();
+
+            std::filesystem::path newScenePath(editorManager->fileExplorerCurrentPath);
+            newScenePath /= text;
+            sceneManager->SaveScene(newScenePath.string() + ".scn");
+
+
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
+    ImGui::SameLine();
+    ShowButton("SaveScene", editorManager->saveScene->GetID());
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
+        sceneManager->SaveScene(sceneManager->loadedPath);
+    }
+
     ImGui::SameLine(ImGui::GetWindowContentRegionWidth() - 120.0f);
     if (!Application::GetInstance()->isStarted) {
-        ShowButton("StartButton", EditorManager::GetInstance()->startTexture->GetID());
+        ShowButton("StartButton", editorManager->startTexture->GetID());
     }
     else {
-        ShowButton("StopButton", EditorManager::GetInstance()->stopTexture->GetID());
+        ShowButton("StopButton", editorManager->stopTexture->GetID());
     }
     if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
         Application::GetInstance()->isStarted = !Application::GetInstance()->isStarted;
     }
+
     ImGui::SameLine();
-    ShowButton("RenderToFileButton", EditorManager::GetInstance()->renderToFileTexture->GetID());
+    ShowButton("RenderToFileButton", editorManager->renderToFileTexture->GetID());
     if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
         SaveRenderToFile();
     }
+
     ImGui::EndChild();
 }
 

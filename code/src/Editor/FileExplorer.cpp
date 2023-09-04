@@ -1,7 +1,10 @@
 #include "Editor/FileExplorer.h"
 #include "Editor/IconsMaterialDesign.h"
 #include "Managers/EditorManager.h"
+#include "Managers/SceneManager.h"
 #include "Resources/Texture.h"
+#include "Core/Object.h"
+#include "Application.h"
 
 #include "imgui.h"
 #include "imgui_internal.h"
@@ -117,8 +120,9 @@ void FileExplorer::ShowFiles() {
             } else {
                 std::string name = entry.path().filename().string();
                 if (extension == ".scn") {
-                    // Load scene
-                    // TODO: Create .scn file extension to load scene (use json)
+                    EditorManager::GetInstance()->selectedNode = nullptr;
+                    SceneManager::GetInstance()->ClearScene();
+                    SceneManager::GetInstance()->LoadScene(entry.path().string());
                 }
             }
         }

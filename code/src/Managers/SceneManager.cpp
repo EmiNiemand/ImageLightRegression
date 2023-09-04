@@ -1,9 +1,10 @@
 #include "Managers/SceneManager.h"
+#include "Managers/InputManager.h"
+#include "Managers/EditorManager.h"
 #include "Core/Object.h"
 #include "Macros.h"
+#include "CUM.h"
 #include "Application.h"
-
-#include <fstream>
 
 SceneManager::SceneManager() = default;
 SceneManager::~SceneManager() = default;
@@ -20,7 +21,22 @@ void SceneManager::Startup() {
 }
 
 void SceneManager::Shutdown() {
+    ClearScene();
     delete sceneManager;
+}
+
+void SceneManager::ClearScene() {
+    Application* application = Application::GetInstance();
+    Object* scene = application->scene;
+
+    for (auto child : scene->children) {
+        if (child.second->visibleInEditor) {
+            Object::Destroy(child.second);
+        }
+    }
+
+    application->DestroyQueuedComponents();
+    application->DestroyQueuedObjects();
 }
 
 void SceneManager::SaveScene(const std::string& filePath) {
@@ -29,48 +45,39 @@ void SceneManager::SaveScene(const std::string& filePath) {
     jsonScene.push_back(nlohmann::json::object());
     Application::GetInstance()->scene->Save(jsonScene.back());
 
-    SaveJsonToFile(filePath, jsonScene);
+    CUM::SaveJsonToFile(filePath, jsonScene);
 }
 
-void SceneManager::LoadScene(const std::string& fileName) {
+void SceneManager::LoadScene(const std::string& filePath) {
     nlohmann::json jsonScene;
-    LoadJsonFromFile(fileName, jsonScene);
+    CUM::LoadJsonFromFile(filePath, jsonScene);
+
+    loadedPath = filePath;
 
     Application::GetInstance()->scene->Load(jsonScene.front());
 }
 
-void SceneManager::SaveJsonToFile(const std::string& filePath, const nlohmann::json& json) {
-    std::filesystem::path path(filePath);
-    if (std::filesystem::exists(path)) {
-        std::filesystem::remove(path);
-    }
-    std::ofstream file(filePath);
-    file << json.dump(4);
-    file.close();
+void SceneManager::Update() {
+    if (InputManager::GetInstance()->IsKeyPressed(Key::KEY_LEFT_CONTROL) && InputManager::GetInstance()->IsKeyDown(Key::KEY_S)) {
+        if (!loadedPath.empty()) {
+            SaveScene(loadedPath);
+        }
+        else {
+            for (int i = 0;; ++i) {
+                std::filesystem::path filePath(EditorManager::GetInstance()->fileExplorerCurrentPath);
 
-#ifdef DEBUG
-    ILR_INFO_MSG("Json was successfully saved to a file: " + filePath);
-#endif
-}
+                if (i == 0) {
+                    filePath /= (std::string("Scene") + ".scn");
+                }
+                else {
+                    filePath /= ("Scene_" + std::to_string(i) + ".scn");
+                }
+                if (!std::filesystem::exists(filePath)) {
+                    SaveScene(filePath.string());
+                    break;
+                }
+            }
 
-void SceneManager::LoadJsonFromFile(const std::string &filePath, nlohmann::json &json) {
-    if (filePath.empty()) {
-#ifdef DEBUG
-        ILR_ERROR_MSG("Wrong path: " + filePath + " should not be empty");
-#endif
-        return;
+        }
     }
-    std::ifstream file(filePath);
-    if (!file.is_open()) {
-#ifdef DEBUG
-        ILR_ERROR_MSG("Failed to open file: " + filePath);
-#endif
-        return;
-    }
-    json = nlohmann::json::parse(file);
-    file.close();
-
-#ifdef DEBUG
-    ILR_INFO_MSG("Json was successfully loaded from a file: " + filePath);
-#endif
 }
