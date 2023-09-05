@@ -36,14 +36,6 @@ void Application::Startup() {
     // Calculated difference image viewport
     viewports[3] = {glm::ivec2(resolution.x / 64 * 35, resolution.y / 18 * 5), glm::ivec2(resolution.x / 16 * 4, resolution.y / 9 * 2)};
 
-    scene = Object::Instantiate("Scene", nullptr);
-
-    // TODO: move creating editor camera to editor manager
-    Object* mainCamera = Object::Instantiate("Main Camera", scene);
-    mainCamera->AddComponent<EditorCamera>();
-    mainCamera->transform->SetLocalPosition({0, 1, 10});
-    mainCamera->visibleInEditor = false;
-
     ResourceManager::GetInstance()->Startup();
     InputManager::GetInstance()->Startup();
     RenderingManager::GetInstance()->Startup();
@@ -52,10 +44,6 @@ void Application::Startup() {
 
     destroyObjectBuffer.reserve(200);
     destroyComponentBuffer.reserve(200);
-
-    loadedImage = Object::Instantiate("Loaded Image", scene);
-    loadedImage->AddComponent<Image>();
-    loadedImage->visibleInEditor = false;
 }
 
 void Application::Run() {
@@ -72,7 +60,7 @@ void Application::Run() {
         DestroyQueuedComponents();
         DestroyQueuedObjects();
 
-        scene->UpdateSelfAndChildren();
+        SceneManager::GetInstance()->scene->UpdateSelfAndChildren();
 
         auto componentsCopy = components;
 

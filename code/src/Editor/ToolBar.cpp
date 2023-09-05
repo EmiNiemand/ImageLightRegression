@@ -30,9 +30,14 @@ void ToolBar::ShowToolBar() {
         ImGui::OpenPopup("SceneCreationPopup");
     }
     if (ImGui::BeginPopupModal("SceneCreationPopup", 0, ImGuiWindowFlags_Popup | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize)) {
-        static char text[126] = "Scene Name";
+        ImGui::Text("resources/");
 
-        ImGui::InputText("##FileName", &text[0], sizeof(char) * 126);
+        ImGui::SameLine();
+        static char text[126] = "Scene Path And Name";
+        ImGui::InputText("##ScenePathAndName", &text[0], sizeof(char) * 126);
+
+        ImGui::SameLine();
+        ImGui::Text(".jpg");
 
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetWindowSize().x * 0.05f);
 
@@ -41,7 +46,6 @@ void ToolBar::ShowToolBar() {
         }
 
         ImGui::SameLine();
-
         if (ImGui::Button("Accept", ImVec2(ImGui::GetWindowSize().x*0.40f, 0.0f))) {
             EditorManager::GetInstance()->selectedNode = nullptr;
             sceneManager->ClearScene();
@@ -76,7 +80,35 @@ void ToolBar::ShowToolBar() {
     ImGui::SameLine();
     ShowButton("RenderToFileButton", editorManager->renderToFileTexture->GetID());
     if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
-        SaveRenderToFile();
+        ImGui::OpenPopup("RenderToFilePopup");
+    }
+
+    if (ImGui::BeginPopupModal("RenderToFilePopup", 0, ImGuiWindowFlags_Popup | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("resources/Outputs/");
+
+        ImGui::SameLine();
+        static char text[126] = "File Name";
+        ImGui::InputText("##FileName", &text[0], sizeof(char) * 126);
+
+        ImGui::SameLine();
+        ImGui::Text(".jpg");
+
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetWindowSize().x * 0.05f);
+
+        if (ImGui::Button("Cancel", ImVec2(ImGui::GetWindowSize().x*0.40f, 0.0f))) {
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::SameLine();
+        if (ImGui::Button("Accept", ImVec2(ImGui::GetWindowSize().x*0.40f, 0.0f))) {
+            std::filesystem::path filePath("resources/Outputs");
+            filePath /= text;
+
+            SaveRenderToFile(filePath.string() + ".png");
+
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
     }
 
     ImGui::EndChild();
@@ -98,7 +130,7 @@ void ToolBar::ShowButton(const std::string& label, unsigned int textureID) {
     ImGui::PopStyleColor(3);
 }
 
-void ToolBar::SaveRenderToFile() {
+void ToolBar::SaveRenderToFile(const std::string& path) {
     int width = Application::viewports[0].resolution.x;
     int height = Application::viewports[0].resolution.y;
 
@@ -118,6 +150,6 @@ void ToolBar::SaveRenderToFile() {
     }
     delete[] data;
 
-    stbi_write_png("resources/Outputs/Render.png", width, height , 4, flippedData, width * 4);
+    stbi_write_png(path.c_str(), width, height , 4, flippedData, width * 4);
     delete[] flippedData;
 }

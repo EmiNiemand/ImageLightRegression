@@ -1,7 +1,8 @@
 #include "Core/Object.h"
-#include "Application.h"
 #include "Factories/ObjectFactory.h"
+#include "Managers/SceneManager.h"
 #include "Components/ComponentHeaders.h"
+#include "Application.h"
 
 #include <utility>
 
@@ -22,7 +23,7 @@ void Object::Destroy(Object* object) {
 }
 
 void Object::SetParent(Object *newParent) {
-    if (this == Application::GetInstance()->scene) {
+    if (this == SceneManager::GetInstance()->scene) {
         return;
     }
     glm::vec3 globalPosition = transform->GetGlobalPosition();

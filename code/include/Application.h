@@ -18,10 +18,6 @@ public:
     inline static glm::ivec2 resolution = glm::ivec2(1920, 1000);
     inline static Viewport viewports[4];
 
-    // TODO: move scene to scene manager
-    Object* scene = nullptr;
-    Object* loadedImage = nullptr;
-
     float frameTime = 0;
 
     bool isStarted = false;

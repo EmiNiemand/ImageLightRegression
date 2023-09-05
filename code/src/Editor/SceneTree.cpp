@@ -1,5 +1,6 @@
 #include "Editor/SceneTree.h"
 #include "Managers/EditorManager.h"
+#include "Managers/SceneManager.h"
 #include "Core/Object.h"
 #include "Macros.h"
 
@@ -37,7 +38,7 @@ void SceneTree::ShowTreeNode(Object* parent) {
 
 void SceneTree::ManageNodeInput(Object* hoveredObject) {
     if (ImGui::BeginDragDropSource()) {
-        if (hoveredObject != Application::GetInstance()->scene) {
+        if (hoveredObject != SceneManager::GetInstance()->scene) {
             ImGui::SetDragDropPayload("DNDSceneObject", &hoveredObject->id, sizeof(int));
         }
         ImGui::EndDragDropSource();
@@ -72,7 +73,7 @@ void SceneTree::ManageNodeInput(Object* hoveredObject) {
             ImGui::CloseCurrentPopup();
         }
 
-        if (hoveredObject == Application::GetInstance()->scene) {
+        if (hoveredObject == SceneManager::GetInstance()->scene) {
             ImGui::EndPopup();
             return;
         }

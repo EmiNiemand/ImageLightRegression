@@ -8,7 +8,7 @@ public:
     static void ShowToolBar();
 private:
     static void ShowButton(const std::string& label, unsigned int textureID);
-    static void SaveRenderToFile();
+    static void SaveRenderToFile(const std::string& path);
 };
 
 

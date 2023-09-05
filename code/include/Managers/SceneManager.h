@@ -3,8 +3,12 @@
 
 #include <string>
 
+class Object;
+
 class SceneManager {
 public:
+    Object* scene = nullptr;
+
     std::string loadedPath;
 
 private:

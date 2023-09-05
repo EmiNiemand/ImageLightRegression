@@ -2,6 +2,7 @@
 #include "Managers/ResourceManager.h"
 #include "Managers/EditorManager.h"
 #include "Managers/InputManager.h"
+#include "Managers/SceneManager.h"
 #include "Resources/Shader.h"
 #include "Core/Object.h"
 #include "Components/Transform.h"
@@ -47,7 +48,7 @@ void Gizmos::Draw() {
 
 void Gizmos::Update() {
     Object* selectedObject = EditorManager::GetInstance()->selectedNode;
-    if (!selectedObject || selectedObject == Application::GetInstance()->scene) return;
+    if (!selectedObject || selectedObject == SceneManager::GetInstance()->scene) return;
 
     hookPoints.clear();
 

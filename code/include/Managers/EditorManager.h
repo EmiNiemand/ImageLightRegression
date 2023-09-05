@@ -15,6 +15,9 @@ class EditorManager {
 public:
     Object* selectedNode = nullptr;
 
+    Object* editorCamera = nullptr;
+    Object* loadedImage = nullptr;
+
     std::string dndPath = {};
     std::string fileExplorerCurrentPath = "resources";
 

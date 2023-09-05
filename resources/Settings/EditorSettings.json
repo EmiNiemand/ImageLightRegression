@@ -1,3 +1,116 @@
 {
-    "LastOpenedScene": "resources\\Outputs\\Scene.scn"
+    "Camera": {
+        "Children": [],
+        "Components": [
+            {
+                "CallOnAwake": true,
+                "CallOnStart": true,
+                "ComponentType": "EditorCamera",
+                "Enabled": true,
+                "FOV": 45.0,
+                "zFar": 100.0,
+                "zNear": 0.10000000149011612
+            },
+            {
+                "CallOnAwake": true,
+                "CallOnStart": true,
+                "Enabled": true,
+                "Position": [
+                    48.831382751464844,
+                    22.635072708129883,
+                    36.677406311035156
+                ],
+                "Rotation": [
+                    -20.5,
+                    59.0,
+                    0.0
+                ],
+                "Scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            {
+                "CallOnAwake": true,
+                "CallOnStart": true,
+                "ComponentType": "EditorCamera",
+                "Enabled": true,
+                "FOV": 45.0,
+                "zFar": 100.0,
+                "zNear": 0.10000000149011612
+            },
+            {
+                "CallOnAwake": true,
+                "CallOnStart": true,
+                "ComponentType": "EditorCamera",
+                "Enabled": true,
+                "FOV": 45.0,
+                "zFar": 100.0,
+                "zNear": 0.10000000149011612
+            },
+            {
+                "CallOnAwake": true,
+                "CallOnStart": true,
+                "ComponentType": "EditorCamera",
+                "Enabled": true,
+                "FOV": 45.0,
+                "zFar": 100.0,
+                "zNear": 0.10000000149011612
+            },
+            {
+                "CallOnAwake": true,
+                "CallOnStart": true,
+                "ComponentType": "EditorCamera",
+                "Enabled": true,
+                "FOV": 45.0,
+                "zFar": 100.0,
+                "zNear": 0.10000000149011612
+            },
+            {
+                "CallOnAwake": true,
+                "CallOnStart": true,
+                "ComponentType": "EditorCamera",
+                "Enabled": true,
+                "FOV": 45.0,
+                "zFar": 100.0,
+                "zNear": 0.10000000149011612
+            }
+        ],
+        "Enabled": true,
+        "Name": "Editor Camera",
+        "Transform": {
+            "CallOnAwake": true,
+            "CallOnStart": true,
+            "Enabled": true,
+            "Position": [
+                48.831382751464844,
+                22.635072708129883,
+                36.677406311035156
+            ],
+            "Rotation": [
+                -20.5,
+                59.0,
+                0.0
+            ],
+            "Scale": [
+                1.0,
+                1.0,
+                1.0
+            ]
+        },
+        "VisibleInEditor": false
+    },
+    "LastLoadedImage": {
+        "CallOnAwake": true,
+        "CallOnStart": true,
+        "ComponentType": "Image",
+        "Enabled": true,
+        "Size": [
+            1.0,
+            1.0
+        ],
+        "Texture": "resources/Outputs/TestRender.jpg"
+    },
+    "LastOpenedScene": "resources\\Outputs\\TestScene.scn"
 }

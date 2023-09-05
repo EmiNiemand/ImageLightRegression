@@ -73,20 +73,20 @@ void RenderingManager::DrawFrame() {
     DrawSelectedObjectTexture();
     DrawPostProcesses();
 
-    EditorManager::GetInstance()->gizmos->Draw();
+    EditorManager* editorManager = EditorManager::GetInstance();
 
-    Application* application = Application::GetInstance();
+    editorManager->gizmos->Draw();
 
     glViewport(Application::viewports[1].position.x, Application::viewports[1].position.y,
                Application::viewports[1].resolution.x, Application::viewports[1].resolution.y);
-    application->loadedImage->GetComponentByClass<Image>()->Draw(uiRenderer->imageShader);
+    editorManager->loadedImage->GetComponentByClass<Image>()->Draw(uiRenderer->imageShader);
 
     Camera::SetActiveCamera(Camera::GetRenderingCamera());
     shadowRenderer->PrepareShadowMap();
 
     DrawScreenTexture();
 
-    if (application->isStarted) {
+    if (Application::GetInstance()->isStarted) {
         glViewport(Application::viewports[2].position.x, Application::viewports[2].position.y,
                    Application::viewports[2].resolution.x, Application::viewports[2].resolution.y);
 
@@ -99,7 +99,7 @@ void RenderingManager::DrawFrame() {
         imageDifferenceShader->Activate();
         glBindVertexArray(uiRenderer->GetVAO());
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, Application::GetInstance()->loadedImage->GetComponentByClass<Image>()->GetTextureID());
+        glBindTexture(GL_TEXTURE_2D, editorManager->loadedImage->GetComponentByClass<Image>()->GetTextureID());
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, objectRenderer->screenTexture);
 

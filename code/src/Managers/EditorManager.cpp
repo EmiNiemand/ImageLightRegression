@@ -7,6 +7,8 @@
 #include "Editor/ToolBar.h"
 #include "Editor/IconsMaterialDesign.h"
 #include "Editor/Gizmos.h"
+#include "Components/Transform.h"
+#include "Components/Rendering/EditorCamera.h"
 #include "Components/Rendering/UI/Image.h"
 #include "Resources/Texture.h"
 #include "Core/Object.h"
@@ -54,6 +56,15 @@ void EditorManager::Startup() {
     renderToFileTexture = ResourceManager::LoadResource<Texture>("resources/EditorIcons/SaveToFile.png");
     newScene = ResourceManager::LoadResource<Texture>("resources/EditorIcons/NewScene.png");
     saveScene = ResourceManager::LoadResource<Texture>("resources/EditorIcons/SaveScene.png");
+
+    editorCamera = Object::Instantiate("Editor Camera", SceneManager::GetInstance()->scene);
+    editorCamera->AddComponent<EditorCamera>();
+    editorCamera->transform->SetLocalPosition({0, 1, 10});
+    editorCamera->visibleInEditor = false;
+
+    loadedImage = Object::Instantiate("Loaded Image", SceneManager::GetInstance()->scene);
+    loadedImage->AddComponent<Image>();
+    loadedImage->visibleInEditor = false;
 
     LoadSettings();
 }
@@ -113,7 +124,7 @@ void EditorManager::ShowSceneTree() const {
     ImGui::SetWindowSize("SceneTree", ImVec2((float)Application::resolution.x / 16 * 3, (float)Application::resolution.y / 9 * 4));
     ImGui::SetWindowPos("SceneTree", ImVec2(0.0f, (float)Application::resolution.y / 9));
 
-    SceneTree::ShowTreeNode(Application::GetInstance()->scene);
+    SceneTree::ShowTreeNode(SceneManager::GetInstance()->scene);
     SceneTree::ShowPopUp();
 
     ImGui::End();
@@ -124,7 +135,7 @@ void EditorManager::ShowInspector() const {
     ImGui::SetWindowSize("Properties", ImVec2((float)Application::resolution.x / 16 * 3, (float)Application::resolution.y / 9 * 6));
     ImGui::SetWindowPos("Properties", ImVec2((float)Application::resolution.x / 16 * 13, (float)Application::resolution.y / 9));
 
-    if (selectedNode != nullptr && selectedNode != Application::GetInstance()->scene) {
+    if (selectedNode != nullptr && selectedNode != SceneManager::GetInstance()->scene) {
         Inspector::ShowName();
         for (auto& component : selectedNode->components) {
             Inspector::ShowComponentProperties(component.second);
@@ -165,7 +176,7 @@ void EditorManager::ShowLoadedImage() const {
                 payloadData.replace(pos, searchString.length(), replaceString);
                 pos = payloadData.find(searchString, pos + replaceString.length());
             }
-            Application::GetInstance()->loadedImage->GetComponentByClass<Image>()->SetTexture(payloadData);
+            loadedImage->GetComponentByClass<Image>()->SetTexture(payloadData);
         }
 
         ImGui::EndDragDropTarget();
@@ -276,9 +287,11 @@ void EditorManager::SetUnityTheme() {
 
 void EditorManager::SaveSettings() {
     nlohmann::json jsonSettings;
-    // TODO: after moving camera from application to manager add saving camera here
 
+    editorCamera->Save(jsonSettings["Camera"]);
+    loadedImage->GetComponentByClass<Image>()->Save(jsonSettings["LastLoadedImage"]);
     jsonSettings["LastOpenedScene"] = SceneManager::GetInstance()->loadedPath;
+
     CUM::SaveJsonToFile("resources/Settings/EditorSettings.json", jsonSettings);
 }
 
@@ -286,7 +299,9 @@ void EditorManager::LoadSettings() {
     nlohmann::json jsonSettings;
     CUM::LoadJsonFromFile("resources/Settings/EditorSettings.json", jsonSettings);
 
-    // TODO: after moving camera from application to manager add loading camera parameters here
-
-    SceneManager::GetInstance()->LoadScene(jsonSettings["LastOpenedScene"]);
+    if (!jsonSettings["LastOpenedScene"].empty() && std::filesystem::exists(jsonSettings["LastOpenedScene"])) {
+        editorCamera->Load(jsonSettings["Camera"]);
+        loadedImage->GetComponentByClass<Image>()->Load(jsonSettings["LastLoadedImage"]);
+        SceneManager::GetInstance()->LoadScene(jsonSettings["LastOpenedScene"]);
+    }
 }

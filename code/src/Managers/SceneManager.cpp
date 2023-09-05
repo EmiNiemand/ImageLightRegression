@@ -2,7 +2,6 @@
 #include "Managers/InputManager.h"
 #include "Managers/EditorManager.h"
 #include "Core/Object.h"
-#include "Macros.h"
 #include "CUM.h"
 #include "Application.h"
 
@@ -17,7 +16,7 @@ SceneManager *SceneManager::GetInstance() {
 }
 
 void SceneManager::Startup() {
-
+    scene = Object::Instantiate("Scene", nullptr);
 }
 
 void SceneManager::Shutdown() {
@@ -27,7 +26,6 @@ void SceneManager::Shutdown() {
 
 void SceneManager::ClearScene() {
     Application* application = Application::GetInstance();
-    Object* scene = application->scene;
 
     for (auto child : scene->children) {
         if (child.second->visibleInEditor) {
@@ -43,7 +41,7 @@ void SceneManager::SaveScene(const std::string& filePath) {
     nlohmann::json jsonScene = nlohmann::json::array();
 
     jsonScene.push_back(nlohmann::json::object());
-    Application::GetInstance()->scene->Save(jsonScene.back());
+    scene->Save(jsonScene.back());
 
     CUM::SaveJsonToFile(filePath, jsonScene);
 }
@@ -54,7 +52,7 @@ void SceneManager::LoadScene(const std::string& filePath) {
 
     loadedPath = filePath;
 
-    Application::GetInstance()->scene->Load(jsonScene.front());
+    scene->Load(jsonScene.front());
 }
 
 void SceneManager::Update() {
