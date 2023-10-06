@@ -148,9 +148,8 @@ void ShadowRenderer::PrepareShadowMap() {
 
             glm::vec3 lightPosition = lightTransform->GetGlobalPosition();
 
-            pointLightPositions[lightIndex] = lightPosition;
-
             glm::mat4 shadowTransforms[6];
+            // TODO: check if cube map shadows are bugged
             shadowTransforms[0] = lightProjection * glm::lookAt(lightPosition, lightPosition + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
             shadowTransforms[1] = lightProjection * glm::lookAt(lightPosition, lightPosition + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
             shadowTransforms[2] = lightProjection * glm::lookAt(lightPosition, lightPosition + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));

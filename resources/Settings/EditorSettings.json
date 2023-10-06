@@ -16,13 +16,13 @@
                 "CallOnStart": true,
                 "Enabled": true,
                 "Position": [
-                    48.831382751464844,
-                    22.635072708129883,
-                    36.677406311035156
+                    -2.1925649642944336,
+                    8.782376289367676,
+                    16.568458557128906
                 ],
                 "Rotation": [
-                    -20.5,
-                    59.0,
+                    -28.0,
+                    -10.5,
                     0.0
                 ],
                 "Scale": [
@@ -30,6 +30,96 @@
                     1.0,
                     1.0
                 ]
+            },
+            {
+                "CallOnAwake": true,
+                "CallOnStart": true,
+                "ComponentType": "EditorCamera",
+                "Enabled": true,
+                "FOV": 45.0,
+                "zFar": 100.0,
+                "zNear": 0.10000000149011612
+            },
+            {
+                "CallOnAwake": true,
+                "CallOnStart": true,
+                "ComponentType": "EditorCamera",
+                "Enabled": true,
+                "FOV": 45.0,
+                "zFar": 100.0,
+                "zNear": 0.10000000149011612
+            },
+            {
+                "CallOnAwake": true,
+                "CallOnStart": true,
+                "ComponentType": "EditorCamera",
+                "Enabled": true,
+                "FOV": 45.0,
+                "zFar": 100.0,
+                "zNear": 0.10000000149011612
+            },
+            {
+                "CallOnAwake": true,
+                "CallOnStart": true,
+                "ComponentType": "EditorCamera",
+                "Enabled": true,
+                "FOV": 45.0,
+                "zFar": 100.0,
+                "zNear": 0.10000000149011612
+            },
+            {
+                "CallOnAwake": true,
+                "CallOnStart": true,
+                "ComponentType": "EditorCamera",
+                "Enabled": true,
+                "FOV": 45.0,
+                "zFar": 100.0,
+                "zNear": 0.10000000149011612
+            },
+            {
+                "CallOnAwake": true,
+                "CallOnStart": true,
+                "ComponentType": "EditorCamera",
+                "Enabled": true,
+                "FOV": 45.0,
+                "zFar": 100.0,
+                "zNear": 0.10000000149011612
+            },
+            {
+                "CallOnAwake": true,
+                "CallOnStart": true,
+                "ComponentType": "EditorCamera",
+                "Enabled": true,
+                "FOV": 45.0,
+                "zFar": 100.0,
+                "zNear": 0.10000000149011612
+            },
+            {
+                "CallOnAwake": true,
+                "CallOnStart": true,
+                "ComponentType": "EditorCamera",
+                "Enabled": true,
+                "FOV": 45.0,
+                "zFar": 100.0,
+                "zNear": 0.10000000149011612
+            },
+            {
+                "CallOnAwake": true,
+                "CallOnStart": true,
+                "ComponentType": "EditorCamera",
+                "Enabled": true,
+                "FOV": 45.0,
+                "zFar": 100.0,
+                "zNear": 0.10000000149011612
+            },
+            {
+                "CallOnAwake": true,
+                "CallOnStart": true,
+                "ComponentType": "EditorCamera",
+                "Enabled": true,
+                "FOV": 45.0,
+                "zFar": 100.0,
+                "zNear": 0.10000000149011612
             },
             {
                 "CallOnAwake": true,
@@ -84,13 +174,13 @@
             "CallOnStart": true,
             "Enabled": true,
             "Position": [
-                48.831382751464844,
-                22.635072708129883,
-                36.677406311035156
+                -2.1925649642944336,
+                8.782376289367676,
+                16.568458557128906
             ],
             "Rotation": [
-                -20.5,
-                59.0,
+                -28.0,
+                -10.5,
                 0.0
             ],
             "Scale": [
@@ -110,7 +200,7 @@
             1.0,
             1.0
         ],
-        "Texture": "resources/Outputs/TestRender.jpg"
+        "Texture": "resources/Outputs/Doopa.png"
     },
-    "LastOpenedScene": "resources\\Outputs\\TestScene.scn"
+    "LastOpenedScene": "resources\\Scenes\\TestScene.scn"
 }

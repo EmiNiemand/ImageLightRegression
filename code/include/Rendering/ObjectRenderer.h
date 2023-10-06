@@ -12,7 +12,6 @@ class SpotLight;
 
 class ObjectRenderer {
 public:
-    // pair of light number and ptr to light
     PointLight* pointLights[NUMBER_OF_LIGHTS]{};
     DirectionalLight* directionalLights[NUMBER_OF_LIGHTS]{};
     SpotLight* spotLights[NUMBER_OF_LIGHTS]{};

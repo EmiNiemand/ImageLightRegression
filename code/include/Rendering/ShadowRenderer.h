@@ -15,7 +15,6 @@ public:
 
     glm::mat4 directionalLightSpaceMatrices[4];
     glm::mat4 spotLightSpaceMatrices[4];
-    glm::vec3 pointLightPositions[4];
 
 public:
     ShadowRenderer();

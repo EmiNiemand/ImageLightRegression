@@ -169,6 +169,7 @@ void RenderingManager::DrawScreenTexture() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     Shader* shader = objectRenderer->shader;
+    shader->SetFloat("farPlane", Camera::GetActiveCamera()->GetComponentByClass<Camera>()->GetZFar());
 
     for (int i = 0; i < 4; ++i) {
         glActiveTexture(GL_TEXTURE5 + i);
@@ -189,8 +190,6 @@ void RenderingManager::DrawScreenTexture() {
     for (int i = 8; i < 12; ++i) {
         glActiveTexture(GL_TEXTURE5 + i);
         glBindTexture(GL_TEXTURE_CUBE_MAP, shadowRenderer->depthMaps[i]);
-        shader->SetVec3("pointLightPositions[" + std::to_string(i - 8) + "]",
-                        shadowRenderer->pointLightPositions[i - 8]);
     }
     skyboxRenderer->Draw();
     Draw(shader);

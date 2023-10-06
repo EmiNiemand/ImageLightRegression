@@ -84,7 +84,6 @@ uniform DirectionalLight directionalLights[NR_DIRECTIONAL_LIGHTS];
 uniform PointLight pointLights[NR_POINT_LIGHTS];
 uniform SpotLight spotLights[NR_SPOT_LIGHTS];
 
-uniform vec3 pointLightPositions[NR_POINT_LIGHTS];
 uniform vec3 viewPosition;
 uniform float farPlane;
 
@@ -141,7 +140,7 @@ void main() {
         shadow = 0.0f;
 
         if(pointLights[i].isActive) {
-            shadow = CalculatePointLightShadow(pointLightPositions[i], pointLightShadowMapTexture[i]);
+            shadow = CalculatePointLightShadow(pointLights[i].position, pointLightShadowMapTexture[i]);
 
             lightSettings = CalculatePointLight(pointLights[i], normalizedNormal, fragPosition, viewDirection);
             result += lightSettings[0] + (1 - shadow) * (lightSettings[1] + lightSettings[2]);
