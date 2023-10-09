@@ -4,6 +4,7 @@
 #include "Managers/RenderingManager.h"
 #include "Managers/EditorManager.h"
 #include "Managers/SceneManager.h"
+#include "Managers/NeuralNetworkManager.h"
 #include "Core/Object.h"
 #include "Components/Rendering/EditorCamera.h"
 #include "Components/Transform.h"
@@ -41,6 +42,7 @@ void Application::Startup() {
     RenderingManager::GetInstance()->Startup();
     SceneManager::GetInstance()->Startup();
     EditorManager::GetInstance()->Startup();
+    NeuralNetworkManager::GetInstance()->Startup();
 
     destroyObjectBuffer.reserve(200);
     destroyComponentBuffer.reserve(200);
@@ -87,7 +89,13 @@ void Application::Run() {
         SceneManager::GetInstance()->Update();
         EditorManager::GetInstance()->Update();
 
+        NeuralNetworkManager* neuralNetworkManager = NeuralNetworkManager::GetInstance();
+        neuralNetworkManager->PreRenderUpdate();
+
         RenderingManager::GetInstance()->DrawFrame();
+
+        neuralNetworkManager->PostRenderUpdate();
+
         EditorManager::GetInstance()->Draw();
 
         glfwSwapBuffers(window);
@@ -97,6 +105,7 @@ void Application::Run() {
 }
 
 void Application::Shutdown() {
+    NeuralNetworkManager::GetInstance()->Shutdown();
     EditorManager::GetInstance()->Shutdown();
     SceneManager::GetInstance()->Shutdown();
     RenderingManager::GetInstance()->Shutdown();

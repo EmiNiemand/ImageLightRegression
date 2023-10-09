@@ -2,6 +2,7 @@
 #include "Managers/EditorManager.h"
 #include "Managers/RenderingManager.h"
 #include "Managers/SceneManager.h"
+#include "Managers/NeuralNetworkManager.h"
 #include "Rendering/ObjectRenderer.h"
 #include "Resources/Texture.h"
 #include "Application.h"
@@ -17,6 +18,7 @@
 #define CELL_SIZE (PADDING + THUMBNAIL_SIZE)
 
 void ToolBar::ShowToolBar() {
+    Application* application = Application::GetInstance();
     SceneManager* sceneManager = SceneManager::GetInstance();
     EditorManager* editorManager = EditorManager::GetInstance();
 
@@ -29,7 +31,8 @@ void ToolBar::ShowToolBar() {
     if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
         ImGui::OpenPopup("SceneCreationPopup");
     }
-    if (ImGui::BeginPopupModal("SceneCreationPopup", 0, ImGuiWindowFlags_Popup | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize)) {
+    if (ImGui::BeginPopupModal("SceneCreationPopup", 0, ImGuiWindowFlags_Popup | ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::Text("resources/");
 
         ImGui::SameLine();
@@ -67,14 +70,19 @@ void ToolBar::ShowToolBar() {
     }
 
     ImGui::SameLine(ImGui::GetWindowContentRegionWidth() - 120.0f);
-    if (!Application::GetInstance()->isStarted) {
+    if (!application->isStarted) {
         ShowButton("StartButton", editorManager->startTexture->GetID());
     }
     else {
         ShowButton("StopButton", editorManager->stopTexture->GetID());
     }
     if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
-        Application::GetInstance()->isStarted = !Application::GetInstance()->isStarted;
+        if (!application->isStarted && !editorManager->loadedImage) return;
+
+        application->isStarted = !application->isStarted;
+
+        if (application->isStarted) NeuralNetworkManager::GetInstance()->InitializeNetwork();
+        if (!application->isStarted) NeuralNetworkManager::GetInstance()->Finalize();
     }
 
     ImGui::SameLine();
@@ -134,14 +142,14 @@ void ToolBar::SaveRenderToFile(const std::string& path) {
     int width = Application::viewports[0].resolution.x;
     int height = Application::viewports[0].resolution.y;
 
-    unsigned char* data = new unsigned char[width*height*4];
+    char* data = new char[width*height*4];
 
     // Get texture image
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, RenderingManager::GetInstance()->objectRenderer->screenTexture);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
-    unsigned char* flippedData = new unsigned char[width*height*4];
+    char* flippedData = new char[width * height * 4];
 
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < width * 4; ++j) {
