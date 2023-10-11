@@ -16,13 +16,13 @@
                 "CallOnStart": true,
                 "Enabled": true,
                 "Position": [
-                    -19.70050048828125,
-                    5.101417541503906,
-                    31.175521850585938
+                    -19.67494010925293,
+                    5.81919527053833,
+                    39.350772857666016
                 ],
                 "Rotation": [
-                    -11.0,
-                    -35.0,
+                    -2.0,
+                    -27.0,
                     0.0
                 ],
                 "Scale": [
@@ -30,6 +30,33 @@
                     1.0,
                     1.0
                 ]
+            },
+            {
+                "CallOnAwake": true,
+                "CallOnStart": true,
+                "ComponentType": "EditorCamera",
+                "Enabled": true,
+                "FOV": 45.0,
+                "zFar": 100.0,
+                "zNear": 0.10000000149011612
+            },
+            {
+                "CallOnAwake": true,
+                "CallOnStart": true,
+                "ComponentType": "EditorCamera",
+                "Enabled": true,
+                "FOV": 45.0,
+                "zFar": 100.0,
+                "zNear": 0.10000000149011612
+            },
+            {
+                "CallOnAwake": true,
+                "CallOnStart": true,
+                "ComponentType": "EditorCamera",
+                "Enabled": true,
+                "FOV": 45.0,
+                "zFar": 100.0,
+                "zNear": 0.10000000149011612
             },
             {
                 "CallOnAwake": true,
@@ -516,13 +543,13 @@
             "CallOnStart": true,
             "Enabled": true,
             "Position": [
-                -19.70050048828125,
-                5.101417541503906,
-                31.175521850585938
+                -19.67494010925293,
+                5.81919527053833,
+                39.350772857666016
             ],
             "Rotation": [
-                -11.0,
-                -35.0,
+                -2.0,
+                -27.0,
                 0.0
             ],
             "Scale": [

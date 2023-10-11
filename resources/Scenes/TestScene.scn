@@ -143,19 +143,19 @@
                                 "CallOnStart": true,
                                 "Enabled": true,
                                 "Position": [
-                                    -2.0,
+                                    0.0,
                                     -2.0,
                                     0.0
                                 ],
                                 "Rotation": [
                                     0.0,
-                                    0.0,
-                                    0.0
+                                    -94.0,
+                                    -8.5
                                 ],
                                 "Scale": [
-                                    10.0,
-                                    1.0,
-                                    10.0
+                                    21.0,
+                                    2.0,
+                                    21.5
                                 ]
                             },
                             {
@@ -186,19 +186,19 @@
                             "CallOnStart": true,
                             "Enabled": true,
                             "Position": [
-                                -2.0,
+                                0.0,
                                 -2.0,
                                 0.0
                             ],
                             "Rotation": [
                                 0.0,
-                                0.0,
-                                0.0
+                                -94.0,
+                                -8.5
                             ],
                             "Scale": [
-                                10.0,
-                                1.0,
-                                10.0
+                                21.0,
+                                2.0,
+                                21.5
                             ]
                         },
                         "VisibleInEditor": true

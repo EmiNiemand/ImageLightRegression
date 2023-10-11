@@ -147,10 +147,10 @@ void Gizmos::ManageInput() {
             selectedObject->transform->SetLocalPosition(selectedObject->transform->GetLocalPosition() + transformValue);
         }
         else if (mode == 1) {
-            selectedObject->transform->SetLocalRotation(selectedObject->transform->GetLocalPosition() + transformValue);
+            selectedObject->transform->SetLocalRotation(selectedObject->transform->GetLocalRotation() + transformValue);
         }
         else {
-            selectedObject->transform->SetLocalScale(selectedObject->transform->GetLocalPosition() + transformValue);
+            selectedObject->transform->SetLocalScale(selectedObject->transform->GetLocalScale() + transformValue);
         }
 
         glfwSetCursorPos(application->window, cursorPreviousX, cursorPreviousY);
