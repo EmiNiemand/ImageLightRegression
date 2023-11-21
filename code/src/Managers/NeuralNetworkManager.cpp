@@ -15,11 +15,11 @@
 
 #include "effolkronium/random.hpp"
 #include "stb_image_write.h"
-#include "nlohmann/json.hpp"
 
 #include <glad/glad.h>
 
-# define M_PI 3.14159265358979323846
+#define M_PI 3.14159265358979323846
+#define RNG(min, max) effolkronium::random_static::get(min, max)
 
 NeuralNetworkManager::NeuralNetworkManager() = default;
 
@@ -39,93 +39,197 @@ void NeuralNetworkManager::Startup() {
     Load();
 }
 
-void NeuralNetworkManager::Run() {
-
-}
-
 void NeuralNetworkManager::Shutdown() {
+    if (state == NetworkState::Processing || state == NetworkState::Training) {
+        Application::GetInstance()->isStarted = false;
+        FinalizeNetwork();
+    }
+
     if (thread != nullptr) {
         if (thread->joinable()) thread->join();
         delete thread;
     }
 
+    for (int i = 0; i < weights.size(); ++i) {
+        delete weights[i];
+    }
+    weights.clear();
+
+    for (int i = 0; i < biases.size(); ++i) {
+        delete biases[i];
+    }
+    biases.clear();
+
+    delete loadedData;
+
     delete neuralNetworkManager;
 }
 
-void NeuralNetworkManager::InitializeNetwork() {
+void NeuralNetworkManager::InitializeNetwork(NetworkTask task) {
     layers.reserve(16);
+    poolingLayers.reserve(4);
 
-#ifdef DEBUG
-    Train(100, 50, 0.01);
-#endif
+    currentTask = task;
 
-#ifdef RELEASE
-    RenderingManager* renderingManager = RenderingManager::GetInstance();
+    if (RenderingManager::GetInstance()->objectRenderer->pointLights[0] == nullptr) return;
 
-    if (renderingManager->objectRenderer->pointLights[0] == nullptr) return;
-
-    state = Processing;
-    Forward();
-
-    glm::vec3 cameraPosition = Camera::GetRenderingCamera()->transform->GetGlobalPosition();
-    glm::vec3 lightPosition = CUM::SphericalToCartesianCoordinates(layers[15]->maps[0], layers[15]->maps[1],
-                                         glm::length(cameraPosition));
-
-    renderingManager->objectRenderer->pointLights[0]->parent->transform->SetLocalPosition(cameraPosition + lightPosition);
-
-    state = Idle;
-#endif
+    if (task == NetworkTask::TrainNetwork) {
+        Train(5, 1, 0.01);
+    }
+    else if (task == NetworkTask::ProcessImage) {
+        ProcessImage();
+    }
 }
 
 void NeuralNetworkManager::FinalizeNetwork() {
-#ifdef DEBUG
-    Save();
-#endif
+    if (currentTask == NetworkTask::TrainNetwork) {
+        Save();
+    }
 
     for (int i = 0; i < layers.size(); ++i) {
         delete layers[i];
     }
     layers.clear();
+
+    for (int i = 0; i < poolingLayers.size(); ++i) {
+        delete poolingLayers[i];
+    }
+    poolingLayers.clear();
+
+    currentTask = None;
+    state = Idle;
 }
 
-Layer* NeuralNetworkManager::GetLoadedImageWithSize(int outWidth, int outHeight) {
-    const Texture* texture = EditorManager::GetInstance()->loadedImage->GetComponentByClass<Image>()->GetTexture();
+void NeuralNetworkManager::ProcessImage() {
+    state = Processing;
+    RenderingManager* renderingManager = RenderingManager::GetInstance();
 
-    int inWidth = texture->GetResolution().x;
-    int inHeight = texture->GetResolution().y;
+    if (renderingManager->objectRenderer->pointLights[0] == nullptr) FinalizeNetwork();
 
-    unsigned char* image = new unsigned char[inWidth * inHeight * 3];
+    Forward();
 
-    // Get texture image
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture->GetID());
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+    glm::vec3 cameraPosition = Camera::GetRenderingCamera()->transform->GetGlobalPosition();
+    float* cameraSphericalCoords = CUM::CartesianToSphericalCoordinates(cameraPosition);
+    glm::vec3 lightPosition = CUM::SphericalToCartesianCoordinates(layers[15]->maps[0] + cameraSphericalCoords[0],
+        layers[15]->maps[1] + cameraSphericalCoords[1], glm::length(cameraPosition));
 
-    unsigned char* resizedImage = CUM::ResizeImage(image, inWidth, inHeight, outWidth, outHeight);
-    delete[] image;
+    delete[] cameraSphericalCoords;
 
-    image = CUM::RotateImage(resizedImage, outWidth, outHeight, 3);
-    delete[] resizedImage;
+    renderingManager->objectRenderer->pointLights[0]->parent->transform->SetLocalPosition(lightPosition);
+}
 
-    Layer* output = new Layer();
-
-    output->width = outWidth;
-    output->height = outHeight;
-    output->depth = 3;
-
-    output->maps = new float[outWidth * outHeight * 3];
-
-    int counter = 0;
-    for (int i = 0; i < outWidth * outHeight * 3; i+=3) {
-        output->maps[counter] = (float)image[i] / 255;
-        output->maps[counter + outWidth] = (float)image[i + 1] / 255;
-        output->maps[counter + 2 * outWidth] = (float)image[i + 2] / 255;
-        ++counter;
+void NeuralNetworkManager::Train(int epoch, int trainingSize, float learningStep) {
+    if (thread != nullptr) {
+        if (thread->joinable()) thread->join();
+        delete thread;
     }
 
-    delete[] image;
+    thread = new std::thread(&NeuralNetworkManager::ThreadTrain, epoch, trainingSize, learningStep);
+}
 
-    return output;
+void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, float learningStep) {
+    NeuralNetworkManager* manager = NeuralNetworkManager::GetInstance();
+    manager->state = NetworkState::Training;
+
+    Texture* texture = EditorManager::GetInstance()->loadedImage->GetComponentByClass<Image>()->GetTexture();
+    unsigned int prevImage = texture->GetID();
+    glm::ivec2 prevImageResolution = texture->GetResolution();
+
+    float* dataSet = GenerateDataSet(trainingSize, manager->outputSize);
+
+    for (int i = 0; i < epoch; ++i) {
+        float epochLoss = 0;
+
+        for (int j = 0; j < trainingSize * manager->outputSize; j += manager->outputSize) {
+            glm::vec3 cameraPosition = glm::normalize(glm::vec3(RNG(-1.0f, 1.0f), RNG(0.0f, 1.0f), RNG(-1.0f, 1.0f))) * 20.0f;
+            float* cameraSphericalCoords = CUM::CartesianToSphericalCoordinates(cameraPosition);
+            glm::vec3 lightPosition = CUM::SphericalToCartesianCoordinates(dataSet[j] + cameraSphericalCoords[0],
+                                                                           dataSet[j+1] + cameraSphericalCoords[1], 20.0f);
+            delete[] cameraSphericalCoords;
+
+            if (j == 0) {
+                spdlog::info("TCamera: " + std::to_string(cameraPosition.x) + ", " + std::to_string(cameraPosition.y) +
+                                ", " + std::to_string(cameraPosition.z));
+                spdlog::info("TLight: " + std::to_string(lightPosition.x) + ", " + std::to_string(lightPosition.y) +
+                                ", " + std::to_string(lightPosition.z));
+            }
+
+            Camera::GetRenderingCamera()->transform->SetLocalPosition(cameraPosition);
+
+            // Calculate camera looking direction and rotate it to look at point(0,0,0)
+            glm::vec3 direction = glm::normalize(glm::vec3(0, 0, 0) - cameraPosition);
+
+            float angleX = (float)(asin(direction.y) * 180.0f / M_PI);
+            float angleY = (float)(-atan2(direction.x, -direction.z) * 180.0f / M_PI);
+            Camera::GetRenderingCamera()->transform->SetLocalRotation(glm::vec3(angleX, angleY, 0));
+
+            RenderingManager* renderingManager = RenderingManager::GetInstance();
+
+            // Render camera POV to texture which is used in network forward method as input image
+            int width = Application::viewports[0].resolution.x;
+            int height = Application::viewports[0].resolution.y;
+            texture->SetID(renderingManager->objectRenderer->renderingCameraTexture);
+            texture->SetResolution(glm::ivec2(width, height));
+
+            renderingManager->objectRenderer->pointLights[0]->parent->transform->SetLocalPosition(lightPosition);
+
+            renderingManager->DrawOtherViewports();
+
+            manager->Forward();
+
+            float predictedValues[2] = {dataSet[j], dataSet[j + 1]};
+            spdlog::info("Output: " + std::to_string(manager->layers[15]->maps[0] * 180.0f / M_PI) + ", " +
+                std::to_string(manager->layers[15]->maps[1] * 180.0f / M_PI) + ", Target: " +
+                std::to_string(predictedValues[0] * 180.0f / M_PI) + ", " +
+                std::to_string(predictedValues[1] * 180.0f / M_PI));
+
+
+            float loss = MSELossFunction(manager->layers[15]->maps, predictedValues, manager->outputSize);
+            epochLoss += loss;
+
+            manager->Backward(predictedValues, learningStep);
+
+            for (int k = 0; k < manager->layers.size(); ++k) {
+                delete manager->layers[k];
+            }
+            manager->layers.clear();
+
+            for (int k = 0; k < manager->poolingLayers.size(); ++k) {
+                delete manager->poolingLayers[k];
+            }
+            manager->poolingLayers.clear();
+
+            if (!Application::GetInstance()->isStarted) {
+                break;
+            }
+        }
+
+        float averageEpochLoss = epochLoss / (float)trainingSize;
+
+        spdlog::info("Epoch: " + std::to_string(i) + ", Loss: " + std::to_string(averageEpochLoss));
+
+        if (!Application::GetInstance()->isStarted) {
+            break;
+        }
+    }
+
+    delete[] dataSet;
+
+    texture->SetID(prevImage);
+    texture->SetResolution(prevImageResolution);
+}
+
+float *NeuralNetworkManager::GenerateDataSet(int trainingSize, int networkOutputSize) {
+    // Generate data set which is array of spherical angles where 2 next floats are spherical angles: horizontal and diagonal
+    int dataSetSize = trainingSize * networkOutputSize;
+    float* dataSet = new float[dataSetSize];
+
+    for (int i = 0; i < dataSetSize; i += networkOutputSize) {
+        dataSet[i] = RNG(0.0f, (float)(2.0f * M_PI));
+        dataSet[i + 1] = RNG(0.0f, (float)M_PI);
+    }
+
+    return dataSet;
 }
 
 void NeuralNetworkManager::Forward() {
@@ -287,117 +391,47 @@ void NeuralNetworkManager::Backward(float* predicted, float learningRate) {
     delete[] outputGradients;
 }
 
-void NeuralNetworkManager::Train(int epoch, int trainingSize, float learningStep) {
-    if (thread != nullptr) {
-        if (thread->joinable()) thread->join();
-        delete thread;
+Layer* NeuralNetworkManager::GetLoadedImageWithSize(int outWidth, int outHeight) {
+    const Texture* texture = EditorManager::GetInstance()->loadedImage->GetComponentByClass<Image>()->GetTexture();
+
+    int inWidth = texture->GetResolution().x;
+    int inHeight = texture->GetResolution().y;
+
+    unsigned char* image = new unsigned char[inWidth * inHeight * 3];
+
+    // Get texture image
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture->GetID());
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+
+    unsigned char* resizedImage = CUM::ResizeImage(image, inWidth, inHeight, outWidth, outHeight);
+    delete[] image;
+
+    image = CUM::RotateImage(resizedImage, outWidth, outHeight, 3);
+    delete[] resizedImage;
+
+    Layer* output = new Layer();
+
+    output->width = outWidth;
+    output->height = outHeight;
+    output->depth = 3;
+
+    output->maps = new float[outWidth * outHeight * 3];
+
+    int counter = 0;
+    for (int i = 0; i < outWidth * outHeight * 3; i+=3) {
+        output->maps[counter] = (float)image[i] / 255;
+        output->maps[counter + outWidth] = (float)image[i + 1] / 255;
+        output->maps[counter + 2 * outWidth] = (float)image[i + 2] / 255;
+        ++counter;
     }
 
-    thread = new std::thread(&NeuralNetworkManager::ThreadTrain, epoch, trainingSize, learningStep);
+    delete[] image;
+
+    return output;
 }
 
-void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, float learningStep) {
-    NeuralNetworkManager* manager = NeuralNetworkManager::GetInstance();
-
-    Texture* texture = EditorManager::GetInstance()->loadedImage->GetComponentByClass<Image>()->GetTexture();
-    unsigned int prevImage = texture->GetID();
-    glm::ivec2 prevImageResolution = texture->GetResolution();
-
-
-    RenderingManager* renderingManager = RenderingManager::GetInstance();
-
-#pragma region DataSetGenerator
-    // Generate data set which is array of spherical coords where 2 next floats are difference between light spherical angles
-    // and camera spherical angles
-    int dataSetSize = trainingSize * 4;
-    float* dataSet = new float[dataSetSize];
-    for (int i = 0; i < dataSetSize; i+=4) {
-        float* cameraAngles = CUM::CartesianToSphericalCoordinates({effolkronium::random_static::get(-1.0f, 1.0f),
-            effolkronium::random_static::get(0.0f, 1.0f), effolkronium::random_static::get(-1.0f, 1.0f)});
-        float* lightAngles = CUM::CartesianToSphericalCoordinates({effolkronium::random_static::get(-1.0f, 1.0f),
-            effolkronium::random_static::get(0.0f, 1.0f), effolkronium::random_static::get(-1.0f, 1.0f)});
-
-        dataSet[i] = cameraAngles[0];
-        dataSet[i + 1] = cameraAngles[1];
-        dataSet[i + 2] = lightAngles[0];
-        dataSet[i + 3] = lightAngles[1];
-
-        delete[] lightAngles;
-        delete[] cameraAngles;
-    }
-#pragma endregion
-
-    for (int i = 0; i < epoch; ++i) {
-        float epochLoss = 0;
-
-        for (int j = 0; j < dataSetSize; j+=4) {
-            glm::vec3 position = CUM::SphericalToCartesianCoordinates(dataSet[j], dataSet[j+1], 20.0f);
-            glm::vec3 lightPosition = CUM::SphericalToCartesianCoordinates(dataSet[j+2], dataSet[j+3], 20.0f);
-
-            if (j == 0) {
-                spdlog::info("TCamera: " + std::to_string(position.x) + ", " + std::to_string(position.y) + ", " + std::to_string(position.z));
-                spdlog::info("TLight: " + std::to_string(lightPosition.x) + ", " + std::to_string(lightPosition.y) + ", " + std::to_string(lightPosition.z));
-            }
-
-            Camera::GetRenderingCamera()->transform->SetLocalPosition(position);
-
-            glm::vec3 direction = glm::normalize(glm::vec3(0, 0, 0) - position);
-
-            float angleX = (float)(asin(direction.y) * 180.0f / M_PI);
-            float angleY = (float)(-atan2(direction.x, -direction.z) * 180.0f / M_PI);
-            Camera::GetRenderingCamera()->transform->SetLocalRotation(glm::vec3(angleX, angleY, 0));
-
-            int width = Application::viewports[0].resolution.x;
-            int height = Application::viewports[0].resolution.y;
-            texture->SetID(renderingManager->objectRenderer->renderingCameraTexture);
-            texture->SetResolution(glm::ivec2(width, height));
-
-            if (renderingManager->objectRenderer->pointLights[0] == nullptr) break;
-            renderingManager->objectRenderer->pointLights[0]->parent->transform->SetLocalPosition(lightPosition);
-
-            renderingManager->DrawOtherViewports();
-
-            manager->Forward();
-
-            float predictedValues[2] = {dataSet[j + 2] - dataSet[j], dataSet[j + 3] - dataSet[j + 1]};
-            spdlog::info("Output: " + std::to_string(manager->layers[15]->maps[0]) + ", " + std::to_string(manager->layers[15]->maps[1]) +
-                         ", Target: " + std::to_string(predictedValues[0]) + ", " + std::to_string(predictedValues[1]));
-
-
-            float loss = MSELossFunction(manager->layers[15]->maps, predictedValues, manager->outputSize);
-            epochLoss += loss;
-
-            manager->Backward(predictedValues, learningStep);
-
-            for (int k = 0; k < manager->layers.size(); ++k) {
-                delete manager->layers[k];
-            }
-            manager->layers.clear();
-
-            for (int k = 0; k < manager->poolingLayers.size(); ++k) {
-                delete manager->poolingLayers[k];
-            }
-            manager->poolingLayers.clear();
-
-            if (!Application::GetInstance()->isStarted) {
-                break;
-            }
-        }
-
-        float averageEpochLoss = epochLoss / (float)trainingSize;
-
-        spdlog::info("Epoch: " + std::to_string(i) + ", Loss: " + std::to_string(averageEpochLoss));
-
-        if (!Application::GetInstance()->isStarted) {
-            break;
-        }
-    }
-
-    texture->SetID(prevImage);
-    texture->SetResolution(prevImageResolution);
-}
-
-
+#pragma region Save And Load
 void NeuralNetworkManager::Load() {
     if (thread != nullptr) {
         if (thread->joinable()) thread->join();
@@ -409,7 +443,7 @@ void NeuralNetworkManager::Load() {
 
 void NeuralNetworkManager::ThreadLoad() {
     NeuralNetworkManager* manager = NeuralNetworkManager::GetInstance();
-    manager->state = Processing;
+    manager->state = LoadingSaving;
 
     for (int i = 0; i < manager->weights.size(); ++i) {
         delete manager->weights[i];
@@ -441,29 +475,26 @@ void NeuralNetworkManager::ThreadLoad() {
     manager->biases.emplace_back(new Layer(4096, 1, 1));
     manager->biases.emplace_back(new Layer(2, 1, 1));
 
-    // TODO: LOAD DATA AS BYTES TO EVERY WEIGHT AND BIAS
-
     FILE* stream;
     fopen_s(&stream, "resources/Resources/NeuralNetworkResources/Model.json", "rb");
     if (stream != nullptr) {
 #pragma region Weights Inits
-        manager->weights.emplace_back(new Group(64, effolkronium::random_static::get(0, 2137), ivec3(3, 3, 3)));
-        manager->weights.emplace_back(new Group(64, effolkronium::random_static::get(0, 2137), ivec3(3, 3, 64)));
-        manager->weights.emplace_back(new Group(128, effolkronium::random_static::get(0, 2137), ivec3(3, 3, 64)));
-        manager->weights.emplace_back(new Group(128, effolkronium::random_static::get(0, 2137), ivec3(3, 3, 128)));
-        manager->weights.emplace_back(new Group(256, effolkronium::random_static::get(0, 2137), ivec3(3, 3, 128)));
-        manager->weights.emplace_back(new Group(256, effolkronium::random_static::get(0, 2137), ivec3(3, 3, 256)));
-        manager->weights.emplace_back(new Group(256, effolkronium::random_static::get(0, 2137), ivec3(3, 3, 256)));
-        manager->weights.emplace_back(new Group(512, effolkronium::random_static::get(0, 2137), ivec3(3, 3, 256)));
-        manager->weights.emplace_back(new Group(512, effolkronium::random_static::get(0, 2137), ivec3(3, 3, 512)));
-        manager->weights.emplace_back(new Group(512, effolkronium::random_static::get(0, 2137), ivec3(3, 3, 512)));
-        manager->weights.emplace_back(new Group(512, effolkronium::random_static::get(0, 2137), ivec3(3, 3, 512)));
-        manager->weights.emplace_back(new Group(512, effolkronium::random_static::get(0, 2137), ivec3(3, 3, 512)));
-        manager->weights.emplace_back(new Group(512, effolkronium::random_static::get(0, 2137), ivec3(3, 3, 512)));
-        manager->weights.emplace_back(new Group(1, effolkronium::random_static::get(0, 2137), ivec3(102760448, 1, 1)));
-        manager->weights.emplace_back(new Group(1, effolkronium::random_static::get(0, 2137), ivec3(16777216, 1, 1)));
-        manager->weights.emplace_back(new Group(1, effolkronium::random_static::get(0, 2137), ivec3(4096 *
-                                                                                            manager->outputSize, 1, 1)));
+        manager->weights.emplace_back(new Group(64, 0, ivec3(3, 3, 3)));
+        manager->weights.emplace_back(new Group(64, 0, ivec3(3, 3, 64)));
+        manager->weights.emplace_back(new Group(128, 0, ivec3(3, 3, 64)));
+        manager->weights.emplace_back(new Group(128, 0, ivec3(3, 3, 128)));
+        manager->weights.emplace_back(new Group(256, 0, ivec3(3, 3, 128)));
+        manager->weights.emplace_back(new Group(256, 0, ivec3(3, 3, 256)));
+        manager->weights.emplace_back(new Group(256, 0, ivec3(3, 3, 256)));
+        manager->weights.emplace_back(new Group(512, 0, ivec3(3, 3, 256)));
+        manager->weights.emplace_back(new Group(512, 0, ivec3(3, 3, 512)));
+        manager->weights.emplace_back(new Group(512, 0, ivec3(3, 3, 512)));
+        manager->weights.emplace_back(new Group(512, 0, ivec3(3, 3, 512)));
+        manager->weights.emplace_back(new Group(512, 0, ivec3(3, 3, 512)));
+        manager->weights.emplace_back(new Group(512, 0, ivec3(3, 3, 512)));
+        manager->weights.emplace_back(new Group(1, 0, ivec3(102760448, 1, 1)));
+        manager->weights.emplace_back(new Group(1, 0, ivec3(16777216, 1, 1)));
+        manager->weights.emplace_back(new Group(1, 0, ivec3(4096 * manager->outputSize, 1, 1)));
 #pragma endregion
 
         for (int w = 0; w < manager->weights.size(); ++w) {
@@ -485,23 +516,22 @@ void NeuralNetworkManager::ThreadLoad() {
         fclose(stream);
     }
     else {
-        manager->weights.emplace_back(new Group(64, effolkronium::random_static::get(0, 2137), ivec3(3, 3, 3), true));
-        manager->weights.emplace_back(new Group(64, effolkronium::random_static::get(0, 2137), ivec3(3, 3, 64), true));
-        manager->weights.emplace_back(new Group(128, effolkronium::random_static::get(0, 2137), ivec3(3, 3, 64), true));
-        manager->weights.emplace_back(new Group(128, effolkronium::random_static::get(0, 2137), ivec3(3, 3, 128), true));
-        manager->weights.emplace_back(new Group(256, effolkronium::random_static::get(0, 2137), ivec3(3, 3, 128), true));
-        manager->weights.emplace_back(new Group(256, effolkronium::random_static::get(0, 2137), ivec3(3, 3, 256), true));
-        manager->weights.emplace_back(new Group(256, effolkronium::random_static::get(0, 2137), ivec3(3, 3, 256), true));
-        manager->weights.emplace_back(new Group(512, effolkronium::random_static::get(0, 2137), ivec3(3, 3, 256), true));
-        manager->weights.emplace_back(new Group(512, effolkronium::random_static::get(0, 2137), ivec3(3, 3, 512), true));
-        manager->weights.emplace_back(new Group(512, effolkronium::random_static::get(0, 2137), ivec3(3, 3, 512), true));
-        manager->weights.emplace_back(new Group(512, effolkronium::random_static::get(0, 2137), ivec3(3, 3, 512), true));
-        manager->weights.emplace_back(new Group(512, effolkronium::random_static::get(0, 2137), ivec3(3, 3, 512), true));
-        manager->weights.emplace_back(new Group(512, effolkronium::random_static::get(0, 2137), ivec3(3, 3, 512), true));
-        manager->weights.emplace_back(new Group(1, effolkronium::random_static::get(0, 2137), ivec3(102760448, 1, 1), true));
-        manager->weights.emplace_back(new Group(1, effolkronium::random_static::get(0, 2137), ivec3(16777216, 1, 1), true));
-        manager->weights.emplace_back(new Group(1, effolkronium::random_static::get(0, 2137), ivec3(4096 *
-                                                                                    manager->outputSize, 1, 1), true));
+        manager->weights.emplace_back(new Group(64, RNG(0, 2137), ivec3(3, 3, 3), true));
+        manager->weights.emplace_back(new Group(64, RNG(0, 2137), ivec3(3, 3, 64), true));
+        manager->weights.emplace_back(new Group(128, RNG(0, 2137), ivec3(3, 3, 64), true));
+        manager->weights.emplace_back(new Group(128, RNG(0, 2137), ivec3(3, 3, 128), true));
+        manager->weights.emplace_back(new Group(256, RNG(0, 2137), ivec3(3, 3, 128), true));
+        manager->weights.emplace_back(new Group(256, RNG(0, 2137), ivec3(3, 3, 256), true));
+        manager->weights.emplace_back(new Group(256, RNG(0, 2137), ivec3(3, 3, 256), true));
+        manager->weights.emplace_back(new Group(512, RNG(0, 2137), ivec3(3, 3, 256), true));
+        manager->weights.emplace_back(new Group(512, RNG(0, 2137), ivec3(3, 3, 512), true));
+        manager->weights.emplace_back(new Group(512, RNG(0, 2137), ivec3(3, 3, 512), true));
+        manager->weights.emplace_back(new Group(512, RNG(0, 2137), ivec3(3, 3, 512), true));
+        manager->weights.emplace_back(new Group(512, RNG(0, 2137), ivec3(3, 3, 512), true));
+        manager->weights.emplace_back(new Group(512, RNG(0, 2137), ivec3(3, 3, 512), true));
+        manager->weights.emplace_back(new Group(1, RNG(0, 2137), ivec3(102760448, 1, 1), true));
+        manager->weights.emplace_back(new Group(1, RNG(0, 2137), ivec3(16777216, 1, 1), true));
+        manager->weights.emplace_back(new Group(1, RNG(0, 2137), ivec3(4096 * manager->outputSize, 1, 1), true));
     }
     manager->state = Idle;
 }
@@ -517,9 +547,8 @@ void NeuralNetworkManager::Save() {
 
 void NeuralNetworkManager::ThreadSave() {
     NeuralNetworkManager* manager = NeuralNetworkManager::GetInstance();
-    manager->state = Processing;
+    manager->state = LoadingSaving;
 
-    // TODO: SAVE TO FILE AS BYTES
     FILE* stream;
     fopen_s(&stream, "resources/Resources/NeuralNetworkResources/Model.json", "wb");
 
@@ -544,3 +573,4 @@ void NeuralNetworkManager::ThreadSave() {
     }
     manager->state = Idle;
 }
+#pragma endregion

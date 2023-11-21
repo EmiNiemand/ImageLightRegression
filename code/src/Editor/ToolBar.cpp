@@ -71,30 +71,13 @@ void ToolBar::ShowToolBar() {
         sceneManager->SaveScene(sceneManager->loadedPath);
     }
 
-    ImGui::SameLine(ImGui::GetWindowContentRegionWidth() - 120.0f);
-    if (!application->isStarted) {
-        ShowButton("StartButton", editorManager->startTexture->GetID(),
-                   NeuralNetworkManager::GetInstance()->state == NetworkState::Idle);
-    }
-    else {
-        ShowButton("StopButton", editorManager->stopTexture->GetID(),
-                   NeuralNetworkManager::GetInstance()->state == NetworkState::Idle);
-    }
-    if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
-        if (!application->isStarted && !editorManager->loadedImage) return;
+    NeuralNetworkManager* neuralNetworkManager = NeuralNetworkManager::GetInstance();
 
-        application->isStarted = !application->isStarted;
-
-        if (application->isStarted) NeuralNetworkManager::GetInstance()->InitializeNetwork();
-        if (!application->isStarted) NeuralNetworkManager::GetInstance()->FinalizeNetwork();
-    }
-
-    ImGui::SameLine();
+    ImGui::SameLine(ImGui::GetWindowContentRegionWidth() - 180.0f);
     ShowButton("RenderToFileButton", editorManager->renderToFileTexture->GetID());
     if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
         ImGui::OpenPopup("RenderToFilePopup");
     }
-
     if (ImGui::BeginPopupModal("RenderToFilePopup", 0, ImGuiWindowFlags_Popup | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::Text("resources/Outputs/");
 
@@ -121,6 +104,38 @@ void ToolBar::ShowToolBar() {
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
+    }
+
+    ImGui::SameLine();
+    if (!application->isStarted || (application->isStarted && neuralNetworkManager->state != NetworkState::Training)) {
+        ShowButton("TrainButton", editorManager->trainTexture->GetID(), neuralNetworkManager->state == NetworkState::Idle);
+    }
+    else if (application->isStarted && neuralNetworkManager->state == NetworkState::Training) {
+        ShowButton("StopTrainButton", editorManager->stopTexture->GetID());
+    }
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
+        if (!application->isStarted && !editorManager->loadedImage) return;
+
+        application->isStarted = !application->isStarted;
+
+        if (application->isStarted) NeuralNetworkManager::GetInstance()->InitializeNetwork(NetworkTask::TrainNetwork);
+        if (!application->isStarted) NeuralNetworkManager::GetInstance()->FinalizeNetwork();
+    }
+
+    ImGui::SameLine();
+    if (!application->isStarted || (application->isStarted && neuralNetworkManager->state != NetworkState::Processing)) {
+        ShowButton("StartButton", editorManager->startTexture->GetID(), neuralNetworkManager->state == NetworkState::Idle);
+    }
+    else if (application->isStarted && neuralNetworkManager->state == NetworkState::Processing) {
+        ShowButton("StopButton", editorManager->stopTexture->GetID());
+    }
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
+        if (!application->isStarted && !editorManager->loadedImage) return;
+
+        application->isStarted = !application->isStarted;
+
+        if (application->isStarted) NeuralNetworkManager::GetInstance()->InitializeNetwork(NetworkTask::ProcessImage);
+        if (!application->isStarted) NeuralNetworkManager::GetInstance()->FinalizeNetwork();
     }
 
     ImGui::EndChild();

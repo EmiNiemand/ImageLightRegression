@@ -14,7 +14,15 @@ class SpotLight;
 
 enum NetworkState {
     Idle,
-    Processing
+    Processing,
+    Training,
+    LoadingSaving
+};
+
+enum NetworkTask {
+    None,
+    ProcessImage,
+    TrainNetwork
 };
 
 class NeuralNetworkManager {
@@ -33,6 +41,8 @@ private:
     std::vector<Group*> weights;
     std::vector<Layer*> biases;
 
+    NetworkTask currentTask = None;
+
     int iteration = 0;
 
     int outputSize = 0;
@@ -44,22 +54,24 @@ public:
     static NeuralNetworkManager* GetInstance();
 
     void Startup();
-    void Run();
     void Shutdown();
 
-    void InitializeNetwork();
+    void InitializeNetwork(NetworkTask task);
     void FinalizeNetwork();
 
 private:
     explicit NeuralNetworkManager();
 
-    static Layer* GetLoadedImageWithSize(int outWidth, int outHeight);
+    void ProcessImage();
+
+    void Train(int epoch, int trainingSize, float learningStep = 0.001f);
+    static void ThreadTrain(int epoch, int trainingSize, float learningStep);
+    static float* GenerateDataSet(int trainingSize, int networkOutputSize);
 
     void Forward();
     void Backward(float* predicted, float learningRate);
 
-    void Train(int epoch, int trainingSize, float learningStep = 0.001f);
-    static void ThreadTrain(int epoch, int trainingSize, float learningStep);
+    static Layer* GetLoadedImageWithSize(int outWidth, int outHeight);
 
     void Load();
     static void ThreadLoad();

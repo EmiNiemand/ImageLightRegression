@@ -27,6 +27,7 @@ public:
     Texture* directoryTexture = nullptr;
 
     Texture* startTexture = nullptr;
+    Texture* trainTexture = nullptr;
     Texture* stopTexture = nullptr;
     Texture* renderToFileTexture = nullptr;
     Texture* newScene = nullptr;

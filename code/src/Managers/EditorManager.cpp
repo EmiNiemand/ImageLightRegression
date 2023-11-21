@@ -52,6 +52,7 @@ void EditorManager::Startup() {
     fileTexture = ResourceManager::LoadResource<Texture>("resources/EditorIcons/File.png");
     directoryTexture = ResourceManager::LoadResource<Texture>("resources/EditorIcons/Directory.png");
     startTexture = ResourceManager::LoadResource<Texture>("resources/EditorIcons/Start.png");
+    trainTexture = ResourceManager::LoadResource<Texture>("resources/EditorIcons/Train.png");
     stopTexture = ResourceManager::LoadResource<Texture>("resources/EditorIcons/Stop.png");
     renderToFileTexture = ResourceManager::LoadResource<Texture>("resources/EditorIcons/SaveToFile.png");
     newScene = ResourceManager::LoadResource<Texture>("resources/EditorIcons/NewScene.png");
@@ -70,6 +71,7 @@ void EditorManager::Shutdown() {
     ResourceManager::UnloadResource(fileTexture->GetPath());
     ResourceManager::UnloadResource(directoryTexture->GetPath());
     ResourceManager::UnloadResource(startTexture->GetPath());
+    ResourceManager::UnloadResource(trainTexture->GetPath());
     ResourceManager::UnloadResource(stopTexture->GetPath());
     ResourceManager::UnloadResource(renderToFileTexture->GetPath());
     ResourceManager::UnloadResource(newScene->GetPath());

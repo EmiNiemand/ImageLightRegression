@@ -51,6 +51,8 @@ unsigned char* CUM::RotateImage(const unsigned char *image, int width, int heigh
 float *CUM::CartesianToSphericalCoordinates(glm::vec3 position) {
     float* output = new float[2];
 
+    position = glm::normalize(position);
+
     output[0] = std::atan2(position.z, position.x);
     output[1] = std::acos(position.y);
 
