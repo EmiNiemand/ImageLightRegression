@@ -25,15 +25,16 @@ void EditorCamera::OnCreate() {
 void EditorCamera::Update() {
     if (!enabled) return;
 
-    if (InputManager::GetInstance()->IsKeyPressed(Key::KEY_LEFT_CONTROL) && InputManager::GetInstance()->IsKeyDown(Key::KEY_KP_0)) {
+    Camera::Update();
+
+    InputManager* inputManager = InputManager::GetInstance();
+
+    if (inputManager->IsKeyPressed(Key::KEY_LEFT_CONTROL) && inputManager->IsKeyDown(Key::KEY_KP_0)) {
         Camera::ChangeActiveCamera();
     }
 
-    Camera::Update();
-
     if (activeCamera != parent) return;
 
-    InputManager* inputManager = InputManager::GetInstance();
     Transform* transform = parent->transform;
 
     Application* application = Application::GetInstance();

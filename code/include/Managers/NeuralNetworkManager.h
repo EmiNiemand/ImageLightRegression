@@ -1,33 +1,41 @@
 #ifndef IMAGELIGHTREGRESSION_NEURALNETWORKMANAGER_H
 #define IMAGELIGHTREGRESSION_NEURALNETWORKMANAGER_H
 
+#include "CUDAFunctions.cuh"
+
+#include "glm/glm.hpp"
+
 #include <vector>
+#include <thread>
 
 class DirectionalLight;
 class PointLight;
 class SpotLight;
 
+enum NetworkState {
+    Idle,
+    Processing
+};
+
 class NeuralNetworkManager {
+public:
+    NetworkState state = Idle;
+
 private:
     inline static NeuralNetworkManager* neuralNetworkManager;
 
-    char* loadedImage;
+    std::thread* thread = nullptr;
 
-    std::vector<float> neurons;
-    std::vector<float> outputs;
-    std::vector<float> weights;
-    std::vector<float> weightsCopy;
-    std::vector<float> biases;
+    Layer* loadedData = nullptr;
 
-    float previousAccuracy = 0;
+    std::vector<Layer*> layers;
+    std::vector<Layer*> poolingLayers;
+    std::vector<Group*> weights;
+    std::vector<Layer*> biases;
 
     int iteration = 0;
 
-    int directionalLightsNumber = 0;
-    int pointLightsNumber = 0;
-    int spotLightsNumber = 0;
-
-
+    int outputSize = 0;
 public:
     NeuralNetworkManager(NeuralNetworkManager &other) = delete;
     void operator=(const NeuralNetworkManager&) = delete;
@@ -36,32 +44,27 @@ public:
     static NeuralNetworkManager* GetInstance();
 
     void Startup();
+    void Run();
     void Shutdown();
 
     void InitializeNetwork();
-    void Finalize();
-
-    void PreRenderUpdate();
-    void PostRenderUpdate();
+    void FinalizeNetwork();
 
 private:
     explicit NeuralNetworkManager();
 
-    float CalculateAverage(char* data, int size);
-    void CalculateWeights();
-    void CalculateOutputs();
-    bool CheckOutputValues();
+    static Layer* GetLoadedImageWithSize(int outWidth, int outHeight);
 
-    void SetLightValues();
-    void DivideLightValues();
+    void Forward();
+    void Backward(float* predicted, float learningRate);
 
-    void CombineNeuronsToDirectionalLight(DirectionalLight* light, int index);
-    void CombineNeuronsToPointLight(PointLight* light, int index);
-    void CombineNeuronsToSpotLight(SpotLight* light, int index);
+    void Train(int epoch, int trainingSize, float learningStep = 0.001f);
+    static void ThreadTrain(int epoch, int trainingSize, float learningStep);
 
-    void DivideDirectionalLightToNeurons(DirectionalLight* light);
-    void DividePointLightToNeurons(PointLight* light);
-    void DivideSpotLightToNeurons(SpotLight* light);
+    void Load();
+    static void ThreadLoad();
+    void Save();
+    static void ThreadSave();
 };
 
 

@@ -15,7 +15,7 @@ public:
     std::unordered_map<int, Object*> objects;
     std::unordered_map<int, Component*> components;
 
-    inline static glm::ivec2 resolution = glm::ivec2(1920, 1000);
+    inline static glm::ivec2 resolution = glm::ivec2(1600, 900);
     inline static Viewport viewports[4];
 
     float frameTime = 0;

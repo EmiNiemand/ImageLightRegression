@@ -11,7 +11,7 @@ private:
 
 public:
     float speed = 0.05f;
-    float rotationSpeed = 0.5f;
+    float rotationSpeed = 1.5f;
 
 public:
     EditorCamera(Object *parent, int id);

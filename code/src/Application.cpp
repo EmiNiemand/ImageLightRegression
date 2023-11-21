@@ -89,13 +89,7 @@ void Application::Run() {
         SceneManager::GetInstance()->Update();
         EditorManager::GetInstance()->Update();
 
-        NeuralNetworkManager* neuralNetworkManager = NeuralNetworkManager::GetInstance();
-        neuralNetworkManager->PreRenderUpdate();
-
         RenderingManager::GetInstance()->DrawFrame();
-
-        neuralNetworkManager->PostRenderUpdate();
-
         EditorManager::GetInstance()->Draw();
 
         glfwSwapBuffers(window);
@@ -105,7 +99,6 @@ void Application::Run() {
 }
 
 void Application::Shutdown() {
-    NeuralNetworkManager::GetInstance()->Shutdown();
     EditorManager::GetInstance()->Shutdown();
     SceneManager::GetInstance()->Shutdown();
     RenderingManager::GetInstance()->Shutdown();
@@ -114,6 +107,8 @@ void Application::Shutdown() {
 
     glfwDestroyWindow(window);
     glfwTerminate();
+
+    NeuralNetworkManager::GetInstance()->Shutdown();
 
     delete application;
 }

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21 FATAL_ERROR)
-project(ImageLightRegression VERSION 2.0)
+project(ImageLightRegression VERSION 2.0 LANGUAGES CXX C CUDA)
 
 IF (WIN32)
   message(NOTICE "\n")

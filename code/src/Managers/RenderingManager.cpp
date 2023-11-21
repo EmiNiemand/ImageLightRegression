@@ -8,6 +8,7 @@
 #include "Rendering/PostProcessRenderer.h"
 #include "Editor/Gizmos.h"
 #include "Resources/Shader.h"
+#include "Resources/Texture.h"
 #include "Core/Object.h"
 #include "Components/Transform.h"
 #include "Components/Rendering/Renderer.h"
@@ -69,7 +70,7 @@ void RenderingManager::Draw(Shader* inShader) {
 void RenderingManager::DrawFrame() {
     shadowRenderer->PrepareShadowMap();
 
-    DrawScreenTexture();
+    DrawFrameToTexture(objectRenderer->fbo);
     DrawSelectedObjectTexture();
     DrawPostProcesses();
 
@@ -77,36 +78,7 @@ void RenderingManager::DrawFrame() {
 
     editorManager->gizmos->Draw();
 
-    glViewport(Application::viewports[1].position.x, Application::viewports[1].position.y,
-               Application::viewports[1].resolution.x, Application::viewports[1].resolution.y);
-    editorManager->loadedImage->GetComponentByClass<Image>()->Draw(uiRenderer->imageShader);
-
-    Camera::SetActiveCamera(Camera::GetRenderingCamera());
-    shadowRenderer->PrepareShadowMap();
-
-    DrawScreenTexture();
-
-    if (Application::GetInstance()->isStarted) {
-        glViewport(Application::viewports[2].position.x, Application::viewports[2].position.y,
-                   Application::viewports[2].resolution.x, Application::viewports[2].resolution.y);
-
-        Image::DrawImageByID(objectRenderer->screenTexture, uiRenderer->imageShader, glm::vec2(1.0f));
-
-
-        glViewport(Application::viewports[3].position.x, Application::viewports[3].position.y,
-                   Application::viewports[3].resolution.x, Application::viewports[3].resolution.y);
-
-        imageDifferenceShader->Activate();
-        glBindVertexArray(uiRenderer->GetVAO());
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, editorManager->loadedImage->GetComponentByClass<Image>()->GetTextureID());
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, objectRenderer->screenTexture);
-
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        glBindVertexArray(0);
-    }
-    Camera::SetActiveCamera(Camera::GetPreviouslyActiveCamera());
+    DrawOtherViewports();
 
     RenderingManager::GetInstance()->ClearBuffer();
 }
@@ -163,8 +135,8 @@ void RenderingManager::OnWindowResize() const {
     objectRenderer->PrepareBuffers();
 }
 
-void RenderingManager::DrawScreenTexture() {
-    glBindFramebuffer(GL_FRAMEBUFFER, objectRenderer->fbo);
+void RenderingManager::DrawFrameToTexture(unsigned int fbo) {
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     glViewport(0, 0, Application::viewports[0].resolution.x, Application::viewports[0].resolution.y);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -246,3 +218,40 @@ void RenderingManager::DrawPostProcesses() {
 
     glEnable(GL_DEPTH_TEST);
 }
+
+void RenderingManager::DrawOtherViewports() {
+    EditorManager* editorManager = EditorManager::GetInstance();
+
+    glViewport(Application::viewports[1].position.x, Application::viewports[1].position.y,
+               Application::viewports[1].resolution.x, Application::viewports[1].resolution.y);
+    editorManager->loadedImage->GetComponentByClass<Image>()->Draw(uiRenderer->imageShader);
+
+    Camera::SetActiveCamera(Camera::GetRenderingCamera());
+    shadowRenderer->PrepareShadowMap();
+
+    DrawFrameToTexture(objectRenderer->fbo3);
+
+    if (Application::GetInstance()->isStarted) {
+        glViewport(Application::viewports[2].position.x, Application::viewports[2].position.y,
+                   Application::viewports[2].resolution.x, Application::viewports[2].resolution.y);
+
+        Image::DrawImageByID(objectRenderer->renderingCameraTexture, uiRenderer->imageShader, glm::vec2(1.0f));
+
+
+        glViewport(Application::viewports[3].position.x, Application::viewports[3].position.y,
+                   Application::viewports[3].resolution.x, Application::viewports[3].resolution.y);
+
+        imageDifferenceShader->Activate();
+        glBindVertexArray(uiRenderer->GetVAO());
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, editorManager->loadedImage->GetComponentByClass<Image>()->GetTexture()->GetID());
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, objectRenderer->renderingCameraTexture);
+
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        glBindVertexArray(0);
+    }
+    Camera::SetActiveCamera(Camera::GetPreviouslyActiveCamera());
+}
+
+

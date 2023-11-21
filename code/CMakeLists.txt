@@ -1,12 +1,14 @@
 # Add source files
-file(GLOB_RECURSE SOURCE_FILES 
-	 *.c
-	 *.cpp)
+file(GLOB_RECURSE SOURCE_FILES
+		*.c
+		*.cpp
+		*.cu)
 	
 # Add header files
-file(GLOB_RECURSE HEADER_FILES 
-	 *.h
-	 *.hpp)
+file(GLOB_RECURSE HEADER_FILES
+		*.h
+		*.hpp
+		*.cuh)
 
 # Define the executable
 add_executable(${PROJECT_NAME} ${HEADER_FILES} ${SOURCE_FILES} ${WIN32_RESOURCES})
@@ -19,6 +21,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/in
 												  ${stb_image_SOURCE_DIR}
 												  ${imgui_SOURCE_DIR})
 
+find_package(CUDAToolkit REQUIRED)
+
 target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} glad)
 target_link_libraries(${PROJECT_NAME} stb_image)
@@ -29,6 +33,7 @@ target_link_libraries(${PROJECT_NAME} glm::glm)
 target_link_libraries(${PROJECT_NAME} imgui)
 target_link_libraries(${PROJECT_NAME} nlohmann_json::nlohmann_json)
 target_link_libraries(${PROJECT_NAME} effolkronium_random)
+target_link_libraries(${PROJECT_NAME} CUDA::cudart)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DRELEASE")

@@ -64,8 +64,8 @@ void Image::SetTexture(const std::string &inPath) {
     texture = ResourceManager::LoadResource<Texture>(inPath);
 }
 
-unsigned int Image::GetTextureID() {
-    return texture->GetID();
+Texture* Image::GetTexture() {
+    return texture;
 }
 
 void Image::Save(nlohmann::json &json) {

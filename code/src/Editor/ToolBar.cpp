@@ -5,9 +5,11 @@
 #include "Managers/NeuralNetworkManager.h"
 #include "Rendering/ObjectRenderer.h"
 #include "Resources/Texture.h"
+#include "CUM.h"
 #include "Application.h"
 
 #include "imgui.h"
+#include "imgui_internal.h"
 
 #include <glad/glad.h>
 #include <stb_image_write.h>
@@ -71,10 +73,12 @@ void ToolBar::ShowToolBar() {
 
     ImGui::SameLine(ImGui::GetWindowContentRegionWidth() - 120.0f);
     if (!application->isStarted) {
-        ShowButton("StartButton", editorManager->startTexture->GetID());
+        ShowButton("StartButton", editorManager->startTexture->GetID(),
+                   NeuralNetworkManager::GetInstance()->state == NetworkState::Idle);
     }
     else {
-        ShowButton("StopButton", editorManager->stopTexture->GetID());
+        ShowButton("StopButton", editorManager->stopTexture->GetID(),
+                   NeuralNetworkManager::GetInstance()->state == NetworkState::Idle);
     }
     if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
         if (!application->isStarted && !editorManager->loadedImage) return;
@@ -82,7 +86,7 @@ void ToolBar::ShowToolBar() {
         application->isStarted = !application->isStarted;
 
         if (application->isStarted) NeuralNetworkManager::GetInstance()->InitializeNetwork();
-        if (!application->isStarted) NeuralNetworkManager::GetInstance()->Finalize();
+        if (!application->isStarted) NeuralNetworkManager::GetInstance()->FinalizeNetwork();
     }
 
     ImGui::SameLine();
@@ -122,7 +126,9 @@ void ToolBar::ShowToolBar() {
     ImGui::EndChild();
 }
 
-void ToolBar::ShowButton(const std::string& label, unsigned int textureID) {
+void ToolBar::ShowButton(const std::string& label, unsigned int textureID, bool isActive) {
+    ImGui::PushItemFlag(ImGuiItemFlags_Disabled, !isActive);
+
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
     ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
     ImGui::PushStyleColor(ImGuiCol_BorderShadow, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
@@ -132,32 +138,37 @@ void ToolBar::ShowButton(const std::string& label, unsigned int textureID) {
     ImVec2 thumbnailUV1 = ImVec2(1.0f, 0.0f);
 
     ImGui::PushID(label.c_str());
-    ImGui::ImageButton((ImTextureID)textureID, thumbnailSizeVec2, thumbnailUV0, thumbnailUV1);
+
+    if (isActive) {
+        ImGui::ImageButton((ImTextureID)textureID, thumbnailSizeVec2, thumbnailUV0, thumbnailUV1);
+    }
+    else {
+        ImGui::ImageButton((ImTextureID)textureID, thumbnailSizeVec2, thumbnailUV0, thumbnailUV1, -1, {0, 0, 0, 0},
+                           {0.5, 0.5, 0.5, 1});
+    }
+
     ImGui::PopID();
 
     ImGui::PopStyleColor(3);
+
+    ImGui::PopItemFlag();
 }
 
 void ToolBar::SaveRenderToFile(const std::string& path) {
     int width = Application::viewports[0].resolution.x;
     int height = Application::viewports[0].resolution.y;
 
-    char* data = new char[width*height*4];
+    unsigned char* data = new unsigned char[width * height * 4];
 
     // Get texture image
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, RenderingManager::GetInstance()->objectRenderer->screenTexture);
+    glBindTexture(GL_TEXTURE_2D, RenderingManager::GetInstance()->objectRenderer->renderingCameraTexture);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
-    char* flippedData = new char[width * height * 4];
-
-    for (int i = 0; i < height; ++i) {
-        for (int j = 0; j < width * 4; ++j) {
-            flippedData[(height - 1 - i) * width * 4 + j] = data[i * width * 4 + j];
-        }
-    }
-    delete[] data;
+    unsigned char* flippedData = CUM::RotateImage(data, width, height, 4);
 
     stbi_write_png(path.c_str(), width, height , 4, flippedData, width * 4);
+
+    delete[] data;
     delete[] flippedData;
 }

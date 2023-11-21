@@ -167,7 +167,7 @@ Other changes:
   "VK_KHR_get_physical_device_properties2", "VK_KHR_portability_enumeration", and
   VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR. (#6109, #6172, #6101)
 - Examples: Windows: Added 'misc/debuggers/imgui.natstepfilter' file to all Visual Studio projects,
-  now that VS 2022 17.6 Preview 2 support adding Debug Step Filter spec files into projects.
+  now that VS 2022 17.6 Preview 2 support adding Debug Step Layer spec files into projects.
 - Examples: SDL3: Updated for latest WIP SDL3 branch. (#6243)
 - TestSuite: Added variety of new regression tests and improved/amended existing ones
   in imgui_test_engine/ repo. [@PathogenDavid, @ocornut]
@@ -550,7 +550,7 @@ Other Changes:
 - IO: Added ImGuiMod_Shortcut which is ImGuiMod_Super on Mac and ImGuiMod_Ctrl otherwise. (#456)
 - IO: Added ImGuiKey_MouseXXX aliases for mouse buttons/wheel so all operations done on ImGuiKey
   can apply to mouse data as well. (#4921)
-- IO: Filter duplicate input events during the AddXXX() calls. (#5599, #4921)
+- IO: Layer duplicate input events during the AddXXX() calls. (#5599, #4921)
 - IO: Fixed AddFocusEvent(false) to also clear MouseDown[] state. (#4921)
 - Menus: Fixed incorrect sub-menu parent association when opening a menu by closing another.
   Among other things, it would accidentally break part of the closing heuristic logic when moving
@@ -2085,7 +2085,7 @@ Breaking Changes:
 Other Changes:
 
 - InputText, Nav: Fixed Home/End key broken when activating Keyboard Navigation. (#787)
-- InputText: Filter out ASCII 127 (DEL) emitted by low-level OSX layer, as we are using the Key value. (#2578)
+- InputText: Layer out ASCII 127 (DEL) emitted by low-level OSX layer, as we are using the Key value. (#2578)
 - Layout: Fixed a couple of subtle bounding box vertical positioning issues relating to the handling of text
   baseline alignment. The issue would generally manifest when laying out multiple items on a same line,
   with varying heights and text baseline offsets.

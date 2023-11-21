@@ -3,6 +3,7 @@
 #include "Managers/EditorManager.h"
 #include "Managers/SceneManager.h"
 #include "Resources/Texture.h"
+#include "Components/Transform.h"
 #include "Core/Object.h"
 #include "Application.h"
 
@@ -123,6 +124,7 @@ void FileExplorer::ShowFiles() {
                     EditorManager::GetInstance()->selectedNode = nullptr;
                     SceneManager::GetInstance()->ClearScene();
                     SceneManager::GetInstance()->LoadScene(entry.path().string());
+                    EditorManager::GetInstance()->editorCamera->transform->SetLocalPosition({0, 1, 10});
                 }
             }
         }

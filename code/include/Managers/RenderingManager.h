@@ -48,10 +48,12 @@ public:
 
     void OnWindowResize() const;
 
+    void DrawOtherViewports();
+
 private:
     explicit RenderingManager();
 
-    void DrawScreenTexture();
+    void DrawFrameToTexture(unsigned int fbo);
     void DrawSelectedObjectTexture();
     void DrawPostProcesses();
 

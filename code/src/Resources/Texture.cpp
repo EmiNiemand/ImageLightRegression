@@ -38,10 +38,23 @@ void Texture::Load() {
     } else {
         ILR_ERROR_MSG("Texture failed to load at path: " + (std::string)path);
     }
+    resolution = glm::ivec2(width, height);
     stbi_image_free(data);
     id = textureID;
 }
 
+void Texture::SetID(unsigned int inID) {
+    id = inID;
+}
+
+void Texture::SetResolution(const glm::ivec2 &inResolution) {
+    resolution = inResolution;
+}
+
 unsigned int Texture::GetID() const {
     return id;
+}
+
+const glm::ivec2& Texture::GetResolution() const {
+    return resolution;
 }

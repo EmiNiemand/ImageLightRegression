@@ -160,6 +160,7 @@ void Object::Save(nlohmann::json& json) {
 
     json["Components"] = nlohmann::json::array();
     for (auto const &component : components) {
+        if (dynamic_cast<Transform*>(component.second) != nullptr) continue;
         json["Components"].push_back(nlohmann::json::object());
         component.second->Save(json["Components"].back());
     }

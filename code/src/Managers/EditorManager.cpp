@@ -58,9 +58,6 @@ void EditorManager::Startup() {
     saveScene = ResourceManager::LoadResource<Texture>("resources/EditorIcons/SaveScene.png");
 
     editorCamera = Object::Instantiate("Editor Camera", SceneManager::GetInstance()->scene);
-    editorCamera->AddComponent<EditorCamera>();
-    editorCamera->transform->SetLocalPosition({0, 1, 10});
-    editorCamera->visibleInEditor = false;
 
     loadedImage = Object::Instantiate("Loaded Image", SceneManager::GetInstance()->scene);
     loadedImage->AddComponent<Image>();
@@ -297,11 +294,15 @@ void EditorManager::SaveSettings() {
 
 void EditorManager::LoadSettings() {
     nlohmann::json jsonSettings;
-    CUM::LoadJsonFromFile("resources/Settings/EditorSettings.json", jsonSettings);
 
-    if (!jsonSettings["LastOpenedScene"].empty() && std::filesystem::exists(jsonSettings["LastOpenedScene"])) {
+    if (CUM::LoadJsonFromFile("resources/Settings/EditorSettings.json", jsonSettings)) {
         editorCamera->Load(jsonSettings["Camera"]);
         loadedImage->GetComponentByClass<Image>()->Load(jsonSettings["LastLoadedImage"]);
         SceneManager::GetInstance()->LoadScene(jsonSettings["LastOpenedScene"]);
+    }
+    else {
+        editorCamera->AddComponent<EditorCamera>();
+        editorCamera->transform->SetLocalPosition({0, 1, 10});
+        editorCamera->visibleInEditor = false;
     }
 }

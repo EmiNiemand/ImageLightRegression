@@ -83,20 +83,16 @@ float Camera::GetZFar() const {
 }
 
 void Camera::ChangeActiveCamera() {
-    if (!(renderingCamera && editorCamera)) return;
-
     if (activeCamera == editorCamera && renderingCamera->GetEnabled() &&
         renderingCamera->GetComponentByClass<Camera>()->enabled) {
-        activeCamera = renderingCamera;
+        SetActiveCamera(renderingCamera);
     }
-    else if (activeCamera == renderingCamera){
-        activeCamera = editorCamera;
+    else if (activeCamera == renderingCamera) {
+        SetActiveCamera(editorCamera);
     }
     else {
-        activeCamera = previouslyActiveCamera;
+        SetActiveCamera(previouslyActiveCamera);
     }
-
-    activeCamera->GetComponentByClass<Camera>()->OnUpdate();
 }
 
 void Camera::SetActiveCamera(Object* inCamera) {

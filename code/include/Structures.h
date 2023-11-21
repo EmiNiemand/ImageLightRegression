@@ -2,6 +2,7 @@
 #define IMAGELIGHTREGRESSION_STRUCTURES_H
 
 #include "glm/glm.hpp"
+#include "spdlog/spdlog.h"
 
 #define MAX_BONE_INFLUENCE 4
 
@@ -146,5 +147,6 @@ struct Point {
             0.0f, 0.0f, 0.0f
     };
 };
+
 
 #endif //IMAGELIGHTREGRESSION_STRUCTURES_H
