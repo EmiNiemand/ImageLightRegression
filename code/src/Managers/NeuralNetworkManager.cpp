@@ -74,7 +74,7 @@ void NeuralNetworkManager::InitializeNetwork(NetworkTask task) {
     if (RenderingManager::GetInstance()->objectRenderer->pointLights[0] == nullptr) return;
 
     if (task == NetworkTask::TrainNetwork) {
-        Train(5, 1, 0.01);
+        Train(5, 25, 0.001);
     }
     else if (task == NetworkTask::ProcessImage) {
         ProcessImage();
@@ -131,57 +131,69 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, float learni
     NeuralNetworkManager* manager = NeuralNetworkManager::GetInstance();
     manager->state = NetworkState::Training;
 
+    RenderingManager* renderingManager = RenderingManager::GetInstance();
+
+    // Save texture values
     Texture* texture = EditorManager::GetInstance()->loadedImage->GetComponentByClass<Image>()->GetTexture();
     unsigned int prevImage = texture->GetID();
     glm::ivec2 prevImageResolution = texture->GetResolution();
 
+    // Set camera texture as new loaded image which is used in network forward method
+    int width = Application::viewports[0].resolution.x;
+    int height = Application::viewports[0].resolution.y;
+    texture->SetID(renderingManager->objectRenderer->renderingCameraTexture);
+    texture->SetResolution(glm::ivec2(width, height));
+
+    // Generate data set
     float* dataSet = GenerateDataSet(trainingSize, manager->outputSize);
+
+    glm::vec3* cameraPositions = new glm::vec3[trainingSize];
+    glm::vec3* lightPositions = new glm::vec3[trainingSize];
+
+    for (int i = 0; i < trainingSize; ++i) {
+        cameraPositions[i] = glm::normalize(glm::vec3(RNG(-1.0f, 1.0f), RNG(0.0f, 1.0f), RNG(-1.0f, 1.0f))) * 10.0f;
+        float* cameraSphericalCoords = CUM::CartesianToSphericalCoordinates(cameraPositions[i]);
+        lightPositions[i] = CUM::SphericalToCartesianCoordinates(dataSet[i * 2] + cameraSphericalCoords[0],
+                                                                       dataSet[i * 2 + 1] + cameraSphericalCoords[1], 10.0f);
+
+        delete[] cameraSphericalCoords;
+
+
+        spdlog::info("TCamera: " + std::to_string(cameraPositions[i].x) + ", " +
+                     std::to_string(cameraPositions[i].y) + ", " + std::to_string(cameraPositions[i].z));
+        spdlog::info("TLight: " + std::to_string(lightPositions[i].x) + ", " + std::to_string(lightPositions[i].y) +
+                     ", " + std::to_string(lightPositions[i].z));
+    }
 
     for (int i = 0; i < epoch; ++i) {
         float epochLoss = 0;
 
         for (int j = 0; j < trainingSize * manager->outputSize; j += manager->outputSize) {
-            glm::vec3 cameraPosition = glm::normalize(glm::vec3(RNG(-1.0f, 1.0f), RNG(0.0f, 1.0f), RNG(-1.0f, 1.0f))) * 20.0f;
-            float* cameraSphericalCoords = CUM::CartesianToSphericalCoordinates(cameraPosition);
-            glm::vec3 lightPosition = CUM::SphericalToCartesianCoordinates(dataSet[j] + cameraSphericalCoords[0],
-                                                                           dataSet[j+1] + cameraSphericalCoords[1], 20.0f);
-            delete[] cameraSphericalCoords;
-
-            if (j == 0) {
-                spdlog::info("TCamera: " + std::to_string(cameraPosition.x) + ", " + std::to_string(cameraPosition.y) +
-                                ", " + std::to_string(cameraPosition.z));
-                spdlog::info("TLight: " + std::to_string(lightPosition.x) + ", " + std::to_string(lightPosition.y) +
-                                ", " + std::to_string(lightPosition.z));
-            }
-
-            Camera::GetRenderingCamera()->transform->SetLocalPosition(cameraPosition);
+            int idx = j / manager->outputSize;
 
             // Calculate camera looking direction and rotate it to look at point(0,0,0)
-            glm::vec3 direction = glm::normalize(glm::vec3(0, 0, 0) - cameraPosition);
+            glm::vec3 direction = glm::normalize(glm::vec3(0, 0, 0) - cameraPositions[idx]);
 
             float angleX = (float)(asin(direction.y) * 180.0f / M_PI);
             float angleY = (float)(-atan2(direction.x, -direction.z) * 180.0f / M_PI);
             Camera::GetRenderingCamera()->transform->SetLocalRotation(glm::vec3(angleX, angleY, 0));
+            Camera::GetRenderingCamera()->transform->SetLocalPosition(cameraPositions[idx]);
 
-            RenderingManager* renderingManager = RenderingManager::GetInstance();
-
-            // Render camera POV to texture which is used in network forward method as input image
-            int width = Application::viewports[0].resolution.x;
-            int height = Application::viewports[0].resolution.y;
-            texture->SetID(renderingManager->objectRenderer->renderingCameraTexture);
-            texture->SetResolution(glm::ivec2(width, height));
-
-            renderingManager->objectRenderer->pointLights[0]->parent->transform->SetLocalPosition(lightPosition);
+            renderingManager->objectRenderer->pointLights[0]->parent->transform->SetLocalPosition(lightPositions[idx]);
 
             renderingManager->DrawOtherViewports();
+
+            spdlog::info("TCamera: " + std::to_string(cameraPositions[idx].x) + ", " +
+                         std::to_string(cameraPositions[idx].y) + ", " + std::to_string(cameraPositions[idx].z));
+            spdlog::info("TLight: " + std::to_string(lightPositions[idx].x) + ", " + std::to_string(lightPositions[idx].y) +
+                         ", " + std::to_string(lightPositions[idx].z));
 
             manager->Forward();
 
             float predictedValues[2] = {dataSet[j], dataSet[j + 1]};
-            spdlog::info("Output: " + std::to_string(manager->layers[15]->maps[0] * 180.0f / M_PI) + ", " +
-                std::to_string(manager->layers[15]->maps[1] * 180.0f / M_PI) + ", Target: " +
-                std::to_string(predictedValues[0] * 180.0f / M_PI) + ", " +
-                std::to_string(predictedValues[1] * 180.0f / M_PI));
+            spdlog::info("Output: " + std::to_string(manager->layers[15]->maps[0]) + ", " +
+                std::to_string(manager->layers[15]->maps[1]) + ", Target: " +
+                std::to_string(predictedValues[0]) + ", " + std::to_string(predictedValues[1]));
 
 
             float loss = MSELossFunction(manager->layers[15]->maps, predictedValues, manager->outputSize);
@@ -213,6 +225,8 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, float learni
         }
     }
 
+    delete[] cameraPositions;
+    delete[] lightPositions;
     delete[] dataSet;
 
     texture->SetID(prevImage);
