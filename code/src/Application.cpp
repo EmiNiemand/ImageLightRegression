@@ -92,6 +92,8 @@ void Application::Run() {
         RenderingManager::GetInstance()->DrawFrame();
         EditorManager::GetInstance()->Draw();
 
+        NeuralNetworkManager::GetInstance()->Run();
+
         glfwSwapBuffers(window);
 
         shouldRun = glfwWindowShouldClose(window);

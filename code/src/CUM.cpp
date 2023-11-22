@@ -66,7 +66,7 @@ glm::vec3 CUM::SphericalToCartesianCoordinates(float phi, float theta, float rad
     position.y = std::cos(theta);
     position.z = std::sin(phi) * std::sin(theta);
 
-    return position * radius;
+    return glm::normalize(position) * radius;
 }
 
 void CUM::SaveJsonToFile(const std::string& filePath, const nlohmann::json& json) {

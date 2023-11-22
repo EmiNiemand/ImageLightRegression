@@ -39,6 +39,13 @@ void NeuralNetworkManager::Startup() {
     Load();
 }
 
+void NeuralNetworkManager::Run() {
+    if (finalize) {
+        FinalizeNetwork();
+        finalize = false;
+    }
+}
+
 void NeuralNetworkManager::Shutdown() {
     if (state == NetworkState::Processing || state == NetworkState::Training) {
         Application::GetInstance()->isStarted = false;
@@ -74,7 +81,7 @@ void NeuralNetworkManager::InitializeNetwork(NetworkTask task) {
     if (RenderingManager::GetInstance()->objectRenderer->pointLights[0] == nullptr) return;
 
     if (task == NetworkTask::TrainNetwork) {
-        Train(5, 25, 0.001);
+        Train(50, 50, 0.0001);
     }
     else if (task == NetworkTask::ProcessImage) {
         ProcessImage();
@@ -145,25 +152,37 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, float learni
     texture->SetResolution(glm::ivec2(width, height));
 
     // Generate data set
-    float* dataSet = GenerateDataSet(trainingSize, manager->outputSize);
+    int dataSetSize = trainingSize * manager->outputSize;
+    float* dataSet = new float[dataSetSize];
 
     glm::vec3* cameraPositions = new glm::vec3[trainingSize];
     glm::vec3* lightPositions = new glm::vec3[trainingSize];
 
     for (int i = 0; i < trainingSize; ++i) {
-        cameraPositions[i] = glm::normalize(glm::vec3(RNG(-1.0f, 1.0f), RNG(0.0f, 1.0f), RNG(-1.0f, 1.0f))) * 10.0f;
+        cameraPositions[i] = glm::normalize(glm::vec3(RNG(-1.0f, 1.0f), RNG(0.0f, 1.0f), RNG(-1.0f, 1.0f))) * 20.0f;
+        lightPositions[i] = glm::normalize(glm::vec3(RNG(-1.0f, 1.0f), RNG(0.0f, 1.0f), RNG(-1.0f, 1.0f))) * 20.0f;
+
         float* cameraSphericalCoords = CUM::CartesianToSphericalCoordinates(cameraPositions[i]);
-        lightPositions[i] = CUM::SphericalToCartesianCoordinates(dataSet[i * 2] + cameraSphericalCoords[0],
-                                                                       dataSet[i * 2 + 1] + cameraSphericalCoords[1], 10.0f);
+        float* lightSphericalCoords = CUM::CartesianToSphericalCoordinates(lightPositions[i]);
+
+        float phi = lightSphericalCoords[0] - cameraSphericalCoords[0];
+        float theta = lightSphericalCoords[1] - cameraSphericalCoords[1];
+
+        if (phi < 0) phi += (float)(2 * M_PI);
+        if (theta < 0) theta += (float)(2 * M_PI);
+
+        dataSet[i * 2] = phi;
+        dataSet[i * 2 + 1] = theta;
 
         delete[] cameraSphericalCoords;
+        delete[] lightSphericalCoords;
 
-
-        spdlog::info("TCamera: " + std::to_string(cameraPositions[i].x) + ", " +
-                     std::to_string(cameraPositions[i].y) + ", " + std::to_string(cameraPositions[i].z));
-        spdlog::info("TLight: " + std::to_string(lightPositions[i].x) + ", " + std::to_string(lightPositions[i].y) +
-                     ", " + std::to_string(lightPositions[i].z));
+        printf("TCamera: %f, %f, %f | TLight: %f, %f, %f  | TAngles: %f, %f \n", cameraPositions[i].x, cameraPositions[i].y,
+               cameraPositions[i].z, lightPositions[i].x, lightPositions[i].y, lightPositions[i].z,
+               dataSet[i * 2], dataSet[i * 2 + 1]);
     }
+
+    float prevEpochAvgLoss = FLT_MAX;
 
     for (int i = 0; i < epoch; ++i) {
         float epochLoss = 0;
@@ -182,11 +201,6 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, float learni
             renderingManager->objectRenderer->pointLights[0]->parent->transform->SetLocalPosition(lightPositions[idx]);
 
             renderingManager->DrawOtherViewports();
-
-            spdlog::info("TCamera: " + std::to_string(cameraPositions[idx].x) + ", " +
-                         std::to_string(cameraPositions[idx].y) + ", " + std::to_string(cameraPositions[idx].z));
-            spdlog::info("TLight: " + std::to_string(lightPositions[idx].x) + ", " + std::to_string(lightPositions[idx].y) +
-                         ", " + std::to_string(lightPositions[idx].z));
 
             manager->Forward();
 
@@ -220,9 +234,15 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, float learni
 
         spdlog::info("Epoch: " + std::to_string(i) + ", Loss: " + std::to_string(averageEpochLoss));
 
-        if (!Application::GetInstance()->isStarted) {
+        if (!Application::GetInstance()->isStarted || prevEpochAvgLoss < averageEpochLoss) {
             break;
         }
+
+        if (!isnan(averageEpochLoss)) {
+            ThreadSave(false);
+        }
+
+        prevEpochAvgLoss = averageEpochLoss;
     }
 
     delete[] cameraPositions;
@@ -231,19 +251,11 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, float learni
 
     texture->SetID(prevImage);
     texture->SetResolution(prevImageResolution);
-}
 
-float *NeuralNetworkManager::GenerateDataSet(int trainingSize, int networkOutputSize) {
-    // Generate data set which is array of spherical angles where 2 next floats are spherical angles: horizontal and diagonal
-    int dataSetSize = trainingSize * networkOutputSize;
-    float* dataSet = new float[dataSetSize];
-
-    for (int i = 0; i < dataSetSize; i += networkOutputSize) {
-        dataSet[i] = RNG(0.0f, (float)(2.0f * M_PI));
-        dataSet[i + 1] = RNG(0.0f, (float)M_PI);
+    if (Application::GetInstance()->isStarted) {
+        Application::GetInstance()->isStarted = false;
+        manager->finalize = true;
     }
-
-    return dataSet;
 }
 
 void NeuralNetworkManager::Forward() {
@@ -345,11 +357,11 @@ void NeuralNetworkManager::Forward() {
     layers.emplace_back(FullyConnectedLayer(layers[14], weights[15]->filters[0].maps, 4096, outputSize, biases[15]->maps));
 }
 
-void NeuralNetworkManager::Backward(float* predicted, float learningRate) {
+void NeuralNetworkManager::Backward(float* target, float learningRate) {
     float* outputGradients = new float[2];
 
     for (int i = 0; i < layers[15]->width; ++i) {
-        outputGradients[i] = 2 * (layers[15]->maps[i] - predicted[i]);
+        outputGradients[i] = 2 * (layers[15]->maps[i] - target[i]);
     }
 
     printf("FCB ");
@@ -358,6 +370,7 @@ void NeuralNetworkManager::Backward(float* predicted, float learningRate) {
     FullyConnectedLayerBackward(layers[14], weights[14], biases[14], layers[13], outputGradients, learningRate);
     printf("FCB ");
     FullyConnectedLayerBackward(layers[13], weights[13], biases[13], poolingLayers[4], outputGradients, learningRate);
+
 
     printf("MPB ");
     MaxPoolingBackward(poolingLayers[4], layers[12], outputGradients, ivec2(2, 2));
@@ -399,6 +412,15 @@ void NeuralNetworkManager::Backward(float* predicted, float learningRate) {
     ConvolutionLayerBackward(layers[1], weights[1], biases[1], layers[0], outputGradients, learningRate);
     printf("CLB ");
     ConvolutionLayerBackward(layers[0], weights[0], biases[0], loadedData, outputGradients, learningRate);
+
+    for (int i = 0; i < weights.size(); ++i) {
+        for (int j = 0; j < weights[i]->count; ++j) {
+            for (int k = 0; k < weights[i]->filters[j].width * weights[i]->filters[j].height * weights[i]->filters[j].depth; ++k) {
+                if (weights[i]->filters[j].maps[k] > 20.0f || weights[i]->filters[j].maps[k] < -20.0f || isnan(weights[i]->filters[j].maps[k]))
+                    printf("%i, %i, %i, %f\n", i, j, k, weights[i]->filters[j].maps[k]);
+            }
+        }
+    }
 
     printf("\n");
 
@@ -556,12 +578,13 @@ void NeuralNetworkManager::Save() {
         delete thread;
     }
 
-    thread = new std::thread(&NeuralNetworkManager::ThreadSave);
+    thread = new std::thread(&NeuralNetworkManager::ThreadSave, true);
 }
 
-void NeuralNetworkManager::ThreadSave() {
+void NeuralNetworkManager::ThreadSave(bool changeState) {
     NeuralNetworkManager* manager = NeuralNetworkManager::GetInstance();
-    manager->state = LoadingSaving;
+
+    if(changeState) manager->state = LoadingSaving;
 
     FILE* stream;
     fopen_s(&stream, "resources/Resources/NeuralNetworkResources/Model.json", "wb");
@@ -582,9 +605,8 @@ void NeuralNetworkManager::ThreadSave() {
             fwrite(manager->biases[b]->maps, sizeof(float), mapSize, stream);
             fseek(stream, (long)(mapSize * sizeof(float)), SEEK_CUR);
         }
-
         fclose(stream);
     }
-    manager->state = Idle;
+    if(changeState) manager->state = Idle;
 }
 #pragma endregion

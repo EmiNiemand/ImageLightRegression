@@ -46,6 +46,8 @@ private:
     int iteration = 0;
 
     int outputSize = 0;
+
+    bool finalize = false;
 public:
     NeuralNetworkManager(NeuralNetworkManager &other) = delete;
     void operator=(const NeuralNetworkManager&) = delete;
@@ -54,6 +56,7 @@ public:
     static NeuralNetworkManager* GetInstance();
 
     void Startup();
+    void Run();
     void Shutdown();
 
     void InitializeNetwork(NetworkTask task);
@@ -66,17 +69,16 @@ private:
 
     void Train(int epoch, int trainingSize, float learningStep = 0.001f);
     static void ThreadTrain(int epoch, int trainingSize, float learningStep);
-    static float* GenerateDataSet(int trainingSize, int networkOutputSize);
 
     void Forward();
-    void Backward(float* predicted, float learningRate);
+    void Backward(float* target, float learningRate);
 
     static Layer* GetLoadedImageWithSize(int outWidth, int outHeight);
 
     void Load();
     static void ThreadLoad();
     void Save();
-    static void ThreadSave();
+    static void ThreadSave(bool changeState);
 };
 
 
