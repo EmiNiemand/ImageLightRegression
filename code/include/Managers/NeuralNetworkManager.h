@@ -29,6 +29,8 @@ class NeuralNetworkManager {
 public:
     NetworkState state = Idle;
 
+    bool waitForUpdate = false;
+
 private:
     inline static NeuralNetworkManager* neuralNetworkManager;
 
@@ -67,11 +69,11 @@ private:
 
     void ProcessImage();
 
-    void Train(int epoch, int trainingSize, float learningStep = 0.001f);
-    static void ThreadTrain(int epoch, int trainingSize, float learningStep);
+    void Train(int epoch, int trainingSize, int batchSize, int patience, float learningStep = 0.001f);
+    static void ThreadTrain(int epoch, int trainingSize, int batchSize, int patience, float learningRate);
 
     void Forward();
-    void Backward(float* target, float learningRate);
+    void Backward(const float* target, std::vector<Gradient*>& gradients);
 
     static Layer* GetLoadedImageWithSize(int outWidth, int outHeight);
 

@@ -96,6 +96,8 @@ void Application::Run() {
 
         glfwSwapBuffers(window);
 
+        NeuralNetworkManager::GetInstance()->waitForUpdate = false;
+
         shouldRun = glfwWindowShouldClose(window);
     }
 }

@@ -2,8 +2,19 @@
 #define IMAGELIGHTREGRESSION_CUDAFUNCTIONS_CUH
 
 #include <cuda_runtime.h>
+#include <vector>
+#include <random>
+
+#define M_PI 3.14159265358979323846
+#define CLIP_VALUE 5
 
 #pragma region Structs
+struct Gradient {
+    std::vector<float> weightsGradients;
+    std::vector<float> biasesGradients;
+    std::vector<float> inputsGradients;
+};
+
 struct ivec2 {
     int x = 0, y = 0;
 };
@@ -48,10 +59,8 @@ struct Group {
         filters = nullptr;
     }
 
-    Group(int filtersCount, int seed, ivec3 filterDim, bool fillData = false) {
+    Group(int filtersCount, float prevLayerSize, float currLayerSize, ivec3 filterDim, bool fillData = false) {
         count = filtersCount;
-
-        std::srand(seed);
 
         filters = new Layer[count];
 
@@ -65,9 +74,15 @@ struct Group {
 
             filters[i].maps = new float[filterSize]();
 
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            float a = std::sqrt(6 / (prevLayerSize + currLayerSize));
+
+            std::uniform_real_distribution<float> distribution(-a, a);
+
             if (fillData) {
                 for (int j = 0; j < filterSize; ++j) {
-                    filters[i].maps[j] = (float)((std::rand() % 1000) - 500)/ 50000.0f;
+                    filters[i].maps[j] = distribution(gen);
                 }
             }
         }
@@ -80,9 +95,10 @@ struct Group {
 #pragma endregion
 
 #pragma region CUDA functions
-extern __global__ void CUDAConvLayer(const float* input, float* output, const float* kernel, const float* biases, int inputDimX,
-                                     int inputDimY, int outputDimX, int outputDimY, int kernelDimX,int kernelDimY, int kernelDimZ,
-                                     int strideDimX, int strideDimY, int paddingDimX, int paddingDimY, int filterCount);
+extern __global__ void CUDAConvLayer(const float* input, float* output, const float* kernel, const float* biases,
+                                     int inputDimX, int inputDimY, int outputDimX, int outputDimY, int kernelDimX,
+                                     int kernelDimY, int kernelDimZ, int strideDimX, int strideDimY, int paddingDimX,
+                                     int paddingDimY, int kernelNumber);
 
 extern __global__ void CUDAReLULayer(float* input, int size);
 
@@ -92,33 +108,45 @@ extern __global__ void CUDAPoolingLayer(const float* input, float* output, int o
 extern __global__ void CUDAFullyConnectedLayer(const float* input, const float* weights, const float* biases,
                                                float* output, int inputSize, int outputSize);
 
-__global__ void CUDARecalculateConvWeightsAndGradient(float* weights, const float* gradients, float* outputGradients,
-                                                      const float* previousLayer, int weightSize, int outGradientWidth,
-                                                      int outGradientHeight, int outGradientDepth, float learningRate);
+extern __global__ void CUDAConvLayerGradients(float* prevGradients, float* weightGradients, const float* currentGradients,
+                                              const float* prevLayer, const float* weights, int prevWidth, int prevHeight,
+                                              int prevDepth, int currentWidth, int currentHeight, int currentDepth,
+                                              int kernelWidth, int kernelHeight);
 
-extern __global__ void CUDARecalculateConvBiases(float* biases, const float* gradient, int size, int depth, float learningRate);
+extern __global__ void CUDAConvLayerBiasGradients(float* biasGradients, const float* currentGradients, int currentWidth,
+                                                  int currentHeight, int currentDepth);
+
+extern __global__ void CUDAClipGradient(float* gradient, int size, float maxValue);
 #pragma endregion
 
 Layer* ConvolutionLayer(const Layer* input, const Group* filters, const ivec2& stride = {1, 1},
                         const ivec2& padding = {0, 0}, const float* biases = nullptr);
 
-void ConvolutionLayerBackward(Layer* currentLayer, Group* weights, Layer* biases, Layer* previousLayer,
-                                 float*& gradient, float learningRate);
+Gradient* ConvolutionLayerBackward(Layer* currentLayer, Group* weights, Layer* previousLayer, std::vector<float>& gradient);
 
 void ReLULayer(Layer* filter);
 
 Layer* PoolingLayer(const Layer* input, const ivec2& poolDim, const ivec2& stride);
 
-void MaxPoolingBackward(const Layer* currentLayer, const Layer* previousLayer, float*& gradient, ivec2 poolDim);
+void MaxPoolingBackward(const Layer* currentLayer, const Layer* previousLayer, std::vector<float>& gradient,
+                                      ivec2 poolDim, ivec2 strideDim);
 
 Layer* FullyConnectedLayer(const Layer* neurons, const float* weights, int inputSize, int outputSize,
                            const float* biases = nullptr);
 
-void FullyConnectedLayerBackward(Layer* currentLayer, Group* weights, Layer* biases, Layer* previousLayer,
-                                 float*& gradient, float learningRate);
+Gradient* FullyConnectedLayerBackward(Layer* currentLayer, Group* weights, Layer* previousLayer, std::vector<float>& gradient);
+
+void TanhLayer(Layer* filter);
 
 float MSELossFunction(const float* input, const float* predictedResult, int size);
 
+void MiniBatch(const std::vector<std::vector<Gradient*>>& gradients, std::vector<Group*>& weights,
+               std::vector<Layer*>& biases, float learningRate);
+
+void UpdateWeightsAndBiases(const std::vector<Gradient*>& gradients, std::vector<Group*>& weights,
+               std::vector<Layer*>& biases, float learningRate);
+
+void ClipGradient(std::vector<float>& gradient);
 
 
 

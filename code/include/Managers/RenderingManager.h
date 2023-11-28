@@ -15,6 +15,8 @@ class PostProcessRenderer;
 
 class RenderingManager {
 public:
+    std::vector<unsigned char> currentlyRenderedImage;
+
     ShadowRenderer* shadowRenderer = nullptr;
     ObjectRenderer* objectRenderer = nullptr;
     SkyboxRenderer* skyboxRenderer = nullptr;

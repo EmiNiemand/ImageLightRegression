@@ -18,7 +18,6 @@
 
 #include <glad/glad.h>
 
-#define M_PI 3.14159265358979323846
 #define RNG(min, max) effolkronium::random_static::get(min, max)
 
 NeuralNetworkManager::NeuralNetworkManager() = default;
@@ -81,7 +80,7 @@ void NeuralNetworkManager::InitializeNetwork(NetworkTask task) {
     if (RenderingManager::GetInstance()->objectRenderer->pointLights[0] == nullptr) return;
 
     if (task == NetworkTask::TrainNetwork) {
-        Train(50, 50, 0.0001);
+        Train(100000, 50, 1, 25, 0.00001);
     }
     else if (task == NetworkTask::ProcessImage) {
         ProcessImage();
@@ -125,16 +124,16 @@ void NeuralNetworkManager::ProcessImage() {
     renderingManager->objectRenderer->pointLights[0]->parent->transform->SetLocalPosition(lightPosition);
 }
 
-void NeuralNetworkManager::Train(int epoch, int trainingSize, float learningStep) {
+void NeuralNetworkManager::Train(int epoch, int trainingSize, int batchSize, int patience, float learningStep) {
     if (thread != nullptr) {
         if (thread->joinable()) thread->join();
         delete thread;
     }
 
-    thread = new std::thread(&NeuralNetworkManager::ThreadTrain, epoch, trainingSize, learningStep);
+    thread = new std::thread(&NeuralNetworkManager::ThreadTrain, epoch, trainingSize, batchSize, patience, learningStep);
 }
 
-void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, float learningStep) {
+void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSize, int patience, float learningRate) {
     NeuralNetworkManager* manager = NeuralNetworkManager::GetInstance();
     manager->state = NetworkState::Training;
 
@@ -168,8 +167,8 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, float learni
         float phi = lightSphericalCoords[0] - cameraSphericalCoords[0];
         float theta = lightSphericalCoords[1] - cameraSphericalCoords[1];
 
-        if (phi < 0) phi += (float)(2 * M_PI);
-        if (theta < 0) theta += (float)(2 * M_PI);
+        if (phi > (float)M_PI) phi = phi - 2.0f * (float)M_PI;
+        if (phi < -(float)M_PI) phi = phi + 2.0f * (float)M_PI;
 
         dataSet[i * 2] = phi;
         dataSet[i * 2 + 1] = theta;
@@ -183,12 +182,22 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, float learni
     }
 
     float prevEpochAvgLoss = FLT_MAX;
+    int patienceCounter = 0;
 
     for (int i = 0; i < epoch; ++i) {
         float epochLoss = 0;
 
-        for (int j = 0; j < trainingSize * manager->outputSize; j += manager->outputSize) {
-            int idx = j / manager->outputSize;
+        std::vector<std::vector<Gradient*>> gradients;
+        gradients.resize(batchSize);
+
+        for (int j = 0; j < batchSize; ++j) {
+            int idx;
+            if (batchSize == trainingSize) {
+                idx = j;
+            }
+            else {
+                idx = RNG(0, trainingSize - 1);
+            }
 
             // Calculate camera looking direction and rotate it to look at point(0,0,0)
             glm::vec3 direction = glm::normalize(glm::vec3(0, 0, 0) - cameraPositions[idx]);
@@ -202,9 +211,11 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, float learni
 
             renderingManager->DrawOtherViewports();
 
+            while (manager->waitForUpdate);
+
             manager->Forward();
 
-            float predictedValues[2] = {dataSet[j], dataSet[j + 1]};
+            float predictedValues[2] = {dataSet[idx * 2], dataSet[idx * 2 + 1]};
             spdlog::info("Output: " + std::to_string(manager->layers[15]->maps[0]) + ", " +
                 std::to_string(manager->layers[15]->maps[1]) + ", Target: " +
                 std::to_string(predictedValues[0]) + ", " + std::to_string(predictedValues[1]));
@@ -213,7 +224,7 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, float learni
             float loss = MSELossFunction(manager->layers[15]->maps, predictedValues, manager->outputSize);
             epochLoss += loss;
 
-            manager->Backward(predictedValues, learningStep);
+            manager->Backward(predictedValues, gradients[j]);
 
             for (int k = 0; k < manager->layers.size(); ++k) {
                 delete manager->layers[k];
@@ -225,24 +236,51 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, float learni
             }
             manager->poolingLayers.clear();
 
+            delete manager->loadedData;
+
             if (!Application::GetInstance()->isStarted) {
                 break;
             }
         }
 
-        float averageEpochLoss = epochLoss / (float)trainingSize;
+        float averageEpochLoss = epochLoss / (float)batchSize;
 
-        spdlog::info("Epoch: " + std::to_string(i) + ", Loss: " + std::to_string(averageEpochLoss));
+        spdlog::info("Epoch: " + std::to_string(i) + ", Loss: " + std::to_string(averageEpochLoss) + ", Rate: " +
+                        std::to_string(learningRate));
 
-        if (!Application::GetInstance()->isStarted || prevEpochAvgLoss < averageEpochLoss) {
+        if (!Application::GetInstance()->isStarted) {
             break;
         }
 
-        if (!isnan(averageEpochLoss)) {
-            ThreadSave(false);
+        if ((i + 1) % 10000 == 0) {
+            learningRate *= 0.1f;
+        }
+        patience++;
+
+        if (prevEpochAvgLoss <= averageEpochLoss + learningRate) {
+            ++patienceCounter;
+            if (patienceCounter == patience) {
+                learningRate *= 0.5f;
+                patienceCounter = 0;
+            }
         }
 
+        if (prevEpochAvgLoss > averageEpochLoss + learningRate) {
+            patienceCounter = 0;
+        }
+
+//        MiniBatch(gradients, manager->weights, manager->biases, learningRate);
+        UpdateWeightsAndBiases(gradients[0], manager->weights, manager->biases, learningRate);
+
         prevEpochAvgLoss = averageEpochLoss;
+        ThreadSave(false);
+
+        for (int g = 0; g < gradients.size(); ++g) {
+            for (int gradient = 0; gradient < gradients[g].size(); ++gradient) {
+                delete gradients[g][gradient];
+            }
+        }
+        gradients.clear();
     }
 
     delete[] cameraPositions;
@@ -276,7 +314,6 @@ void NeuralNetworkManager::Forward() {
     // Max Pooling [0]
     poolingLayers.emplace_back(PoolingLayer(layers[1], {2, 2}, {2, 2}));
 
-
     // Group 2
     // Conv 3
     layers.emplace_back(ConvolutionLayer(poolingLayers[0], weights[2], {1, 1}, {1, 1}, biases[2]->maps));
@@ -308,6 +345,7 @@ void NeuralNetworkManager::Forward() {
     ReLULayer(layers[6]);
     // Max Pooling [2]
     poolingLayers.emplace_back(PoolingLayer(layers[6], {2, 2}, {2, 2}));
+
 
     // Group 4
     // Conv 8
@@ -346,7 +384,6 @@ void NeuralNetworkManager::Forward() {
     // Max Pooling [4]
     poolingLayers.emplace_back(PoolingLayer(layers[12], {2, 2}, {2, 2}));
 #pragma endregion
-
     // Neurons of Hidden Layer 1
     layers.emplace_back(FullyConnectedLayer(poolingLayers[4], weights[13]->filters[0].maps, 25088, 4096, biases[13]->maps));
 
@@ -355,92 +392,94 @@ void NeuralNetworkManager::Forward() {
 
     // Output neurons
     layers.emplace_back(FullyConnectedLayer(layers[14], weights[15]->filters[0].maps, 4096, outputSize, biases[15]->maps));
+    TanhLayer(layers[15]);
 }
 
-void NeuralNetworkManager::Backward(float* target, float learningRate) {
-    float* outputGradients = new float[2];
+void NeuralNetworkManager::Backward(const float* target, std::vector<Gradient*>& gradients) {
+    std::vector<float> outputGradients;
+    outputGradients.reserve(2);
 
+    float max = -FLT_MAX;
     for (int i = 0; i < layers[15]->width; ++i) {
-        outputGradients[i] = 2 * (layers[15]->maps[i] - target[i]);
+        outputGradients.push_back(2 * (layers[15]->maps[i] - target[i]));
+        if (outputGradients[i] > max) max = outputGradients[i];
     }
 
     printf("FCB ");
-    FullyConnectedLayerBackward(layers[15], weights[15], biases[15], layers[14], outputGradients, learningRate);
+    gradients.push_back(FullyConnectedLayerBackward(layers[15], weights[15], layers[14], outputGradients));
+    outputGradients.clear();
     printf("FCB ");
-    FullyConnectedLayerBackward(layers[14], weights[14], biases[14], layers[13], outputGradients, learningRate);
+    gradients.push_back(FullyConnectedLayerBackward(layers[14], weights[14], layers[13], gradients[0]->inputsGradients));
+    gradients[0]->inputsGradients.clear();
     printf("FCB ");
-    FullyConnectedLayerBackward(layers[13], weights[13], biases[13], poolingLayers[4], outputGradients, learningRate);
-
-
-    printf("MPB ");
-    MaxPoolingBackward(poolingLayers[4], layers[12], outputGradients, ivec2(2, 2));
-    printf("CLB ");
-    ConvolutionLayerBackward(layers[12], weights[12], biases[12], layers[11], outputGradients, learningRate);
-    printf("CLB ");
-    ConvolutionLayerBackward(layers[11], weights[11], biases[11], layers[10], outputGradients, learningRate);
-    printf("CLB ");
-    ConvolutionLayerBackward(layers[10], weights[10], biases[10], poolingLayers[3], outputGradients, learningRate);
+    gradients.push_back(FullyConnectedLayerBackward(layers[13], weights[13], poolingLayers[4], gradients[1]->inputsGradients));
+    gradients[1]->inputsGradients.clear();
 
     printf("MPB ");
-    MaxPoolingBackward(poolingLayers[3], layers[9], outputGradients, ivec2(2, 2));
+    MaxPoolingBackward(poolingLayers[4], layers[12], gradients[2]->inputsGradients, ivec2(2, 2), ivec2(2, 2));
     printf("CLB ");
-    ConvolutionLayerBackward(layers[9], weights[9], biases[9], layers[8], outputGradients, learningRate);
+    gradients.push_back(ConvolutionLayerBackward(layers[12], weights[12], layers[11], gradients[2]->inputsGradients));
+    gradients[2]->inputsGradients.clear();
     printf("CLB ");
-    ConvolutionLayerBackward(layers[8], weights[8], biases[8], layers[7], outputGradients, learningRate);
+    gradients.push_back(ConvolutionLayerBackward(layers[11], weights[11], layers[10], gradients[3]->inputsGradients));
+    gradients[3]->inputsGradients.clear();
     printf("CLB ");
-    ConvolutionLayerBackward(layers[7], weights[7], biases[7], poolingLayers[2], outputGradients, learningRate);
+    gradients.push_back(ConvolutionLayerBackward(layers[10], weights[10], poolingLayers[3], gradients[4]->inputsGradients));
+    gradients[4]->inputsGradients.clear();
 
     printf("MPB ");
-    MaxPoolingBackward(poolingLayers[2], layers[6], outputGradients, ivec2(2, 2));
+    MaxPoolingBackward(poolingLayers[3], layers[9], gradients[5]->inputsGradients, ivec2(2, 2), ivec2(2, 2));
     printf("CLB ");
-    ConvolutionLayerBackward(layers[6], weights[6], biases[6], layers[5], outputGradients, learningRate);
+    gradients.push_back(ConvolutionLayerBackward(layers[9], weights[9], layers[8], gradients[5]->inputsGradients));
+    gradients[5]->inputsGradients.clear();
     printf("CLB ");
-    ConvolutionLayerBackward(layers[5], weights[5], biases[5], layers[4], outputGradients, learningRate);
+    gradients.push_back(ConvolutionLayerBackward(layers[8], weights[8], layers[7], gradients[6]->inputsGradients));
+    gradients[6]->inputsGradients.clear();
     printf("CLB ");
-    ConvolutionLayerBackward(layers[4], weights[4], biases[4], poolingLayers[1], outputGradients, learningRate);
+    gradients.push_back(ConvolutionLayerBackward(layers[7], weights[7], poolingLayers[2], gradients[7]->inputsGradients));
+    gradients[7]->inputsGradients.clear();
 
     printf("MPB ");
-    MaxPoolingBackward(poolingLayers[1], layers[3], outputGradients, ivec2(2, 2));
+    MaxPoolingBackward(poolingLayers[2], layers[6], gradients[8]->inputsGradients, ivec2(2, 2), ivec2(2, 2));
     printf("CLB ");
-    ConvolutionLayerBackward(layers[3], weights[3], biases[3], layers[2], outputGradients, learningRate);
+    gradients.push_back(ConvolutionLayerBackward(layers[6], weights[6], layers[5], gradients[8]->inputsGradients));
+    gradients[8]->inputsGradients.clear();
     printf("CLB ");
-    ConvolutionLayerBackward(layers[2], weights[2], biases[2], poolingLayers[0], outputGradients, learningRate);
+    gradients.push_back(ConvolutionLayerBackward(layers[5], weights[5], layers[4], gradients[9]->inputsGradients));
+    gradients[9]->inputsGradients.clear();
+    printf("CLB ");
+    gradients.push_back(ConvolutionLayerBackward(layers[4], weights[4], poolingLayers[1], gradients[10]->inputsGradients));
+    gradients[10]->inputsGradients.clear();
 
     printf("MPB ");
-    MaxPoolingBackward(poolingLayers[0], layers[1], outputGradients, ivec2(2, 2));
+    MaxPoolingBackward(poolingLayers[1], layers[3], gradients[11]->inputsGradients, ivec2(2, 2), ivec2(2, 2));
     printf("CLB ");
-    ConvolutionLayerBackward(layers[1], weights[1], biases[1], layers[0], outputGradients, learningRate);
+    gradients.push_back(ConvolutionLayerBackward(layers[3], weights[3], layers[2], gradients[11]->inputsGradients));
+    gradients[11]->inputsGradients.clear();
     printf("CLB ");
-    ConvolutionLayerBackward(layers[0], weights[0], biases[0], loadedData, outputGradients, learningRate);
+    gradients.push_back(ConvolutionLayerBackward(layers[2], weights[2], poolingLayers[0], gradients[12]->inputsGradients));
+    gradients[12]->inputsGradients.clear();
 
-    for (int i = 0; i < weights.size(); ++i) {
-        for (int j = 0; j < weights[i]->count; ++j) {
-            for (int k = 0; k < weights[i]->filters[j].width * weights[i]->filters[j].height * weights[i]->filters[j].depth; ++k) {
-                if (weights[i]->filters[j].maps[k] > 20.0f || weights[i]->filters[j].maps[k] < -20.0f || isnan(weights[i]->filters[j].maps[k]))
-                    printf("%i, %i, %i, %f\n", i, j, k, weights[i]->filters[j].maps[k]);
-            }
-        }
-    }
+    printf("MPB ");
+    MaxPoolingBackward(poolingLayers[0], layers[1], gradients[13]->inputsGradients, ivec2(2, 2), ivec2(2, 2));
+    printf("CLB ");
+    gradients.push_back(ConvolutionLayerBackward(layers[1], weights[1], layers[0], gradients[13]->inputsGradients));
+    gradients[13]->inputsGradients.clear();
+    printf("CLB ");
+    gradients.push_back(ConvolutionLayerBackward(layers[0], weights[0], loadedData, gradients[14]->inputsGradients));
+    gradients[14]->inputsGradients.clear();
 
     printf("\n");
-
-    delete[] outputGradients;
 }
 
 Layer* NeuralNetworkManager::GetLoadedImageWithSize(int outWidth, int outHeight) {
-    const Texture* texture = EditorManager::GetInstance()->loadedImage->GetComponentByClass<Image>()->GetTexture();
+    int imageSize = RenderingManager::GetInstance()->currentlyRenderedImage.size();
+    unsigned char* image = new unsigned char[imageSize];
+    std::memcpy(image, &RenderingManager::GetInstance()->currentlyRenderedImage[0], imageSize);
 
-    int inWidth = texture->GetResolution().x;
-    int inHeight = texture->GetResolution().y;
+    glm::ivec2 imageResolution = EditorManager::GetInstance()->loadedImage->GetComponentByClass<Image>()->GetTexture()->GetResolution();
 
-    unsigned char* image = new unsigned char[inWidth * inHeight * 3];
-
-    // Get texture image
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture->GetID());
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-
-    unsigned char* resizedImage = CUM::ResizeImage(image, inWidth, inHeight, outWidth, outHeight);
+    unsigned char* resizedImage = CUM::ResizeImage(image, imageResolution.x, imageResolution.y, outWidth, outHeight);
     delete[] image;
 
     image = CUM::RotateImage(resizedImage, outWidth, outHeight, 3);
@@ -456,9 +495,9 @@ Layer* NeuralNetworkManager::GetLoadedImageWithSize(int outWidth, int outHeight)
 
     int counter = 0;
     for (int i = 0; i < outWidth * outHeight * 3; i+=3) {
-        output->maps[counter] = (float)image[i] / 255;
-        output->maps[counter + outWidth] = (float)image[i + 1] / 255;
-        output->maps[counter + 2 * outWidth] = (float)image[i + 2] / 255;
+        output->maps[counter] = (float)image[i] / 127.5f - 1;
+        output->maps[counter + outWidth * outHeight] = (float)image[i + 1] / 127.5f - 1;
+        output->maps[counter + 2 * outWidth * outHeight] = (float)image[i + 2] / 127.5f - 1;
         ++counter;
     }
 
@@ -515,22 +554,22 @@ void NeuralNetworkManager::ThreadLoad() {
     fopen_s(&stream, "resources/Resources/NeuralNetworkResources/Model.json", "rb");
     if (stream != nullptr) {
 #pragma region Weights Inits
-        manager->weights.emplace_back(new Group(64, 0, ivec3(3, 3, 3)));
-        manager->weights.emplace_back(new Group(64, 0, ivec3(3, 3, 64)));
-        manager->weights.emplace_back(new Group(128, 0, ivec3(3, 3, 64)));
-        manager->weights.emplace_back(new Group(128, 0, ivec3(3, 3, 128)));
-        manager->weights.emplace_back(new Group(256, 0, ivec3(3, 3, 128)));
-        manager->weights.emplace_back(new Group(256, 0, ivec3(3, 3, 256)));
-        manager->weights.emplace_back(new Group(256, 0, ivec3(3, 3, 256)));
-        manager->weights.emplace_back(new Group(512, 0, ivec3(3, 3, 256)));
-        manager->weights.emplace_back(new Group(512, 0, ivec3(3, 3, 512)));
-        manager->weights.emplace_back(new Group(512, 0, ivec3(3, 3, 512)));
-        manager->weights.emplace_back(new Group(512, 0, ivec3(3, 3, 512)));
-        manager->weights.emplace_back(new Group(512, 0, ivec3(3, 3, 512)));
-        manager->weights.emplace_back(new Group(512, 0, ivec3(3, 3, 512)));
-        manager->weights.emplace_back(new Group(1, 0, ivec3(102760448, 1, 1)));
-        manager->weights.emplace_back(new Group(1, 0, ivec3(16777216, 1, 1)));
-        manager->weights.emplace_back(new Group(1, 0, ivec3(4096 * manager->outputSize, 1, 1)));
+        manager->weights.emplace_back(new Group(64, 0, 0, ivec3(3, 3, 3)));
+        manager->weights.emplace_back(new Group(64, 0, 0, ivec3(3, 3, 64)));
+        manager->weights.emplace_back(new Group(128, 0, 0, ivec3(3, 3, 64)));
+        manager->weights.emplace_back(new Group(128, 0, 0, ivec3(3, 3, 128)));
+        manager->weights.emplace_back(new Group(256, 0, 0, ivec3(3, 3, 128)));
+        manager->weights.emplace_back(new Group(256, 0, 0, ivec3(3, 3, 256)));
+        manager->weights.emplace_back(new Group(256, 0, 0, ivec3(3, 3, 256)));
+        manager->weights.emplace_back(new Group(512, 0, 0, ivec3(3, 3, 256)));
+        manager->weights.emplace_back(new Group(512, 0, 0, ivec3(3, 3, 512)));
+        manager->weights.emplace_back(new Group(512, 0, 0, ivec3(3, 3, 512)));
+        manager->weights.emplace_back(new Group(512, 0, 0, ivec3(3, 3, 512)));
+        manager->weights.emplace_back(new Group(512, 0, 0, ivec3(3, 3, 512)));
+        manager->weights.emplace_back(new Group(512, 0, 0, ivec3(3, 3, 512)));
+        manager->weights.emplace_back(new Group(1, 0, 0, ivec3(102760448, 1, 1)));
+        manager->weights.emplace_back(new Group(1, 0, 0, ivec3(16777216, 1, 1)));
+        manager->weights.emplace_back(new Group(1, 0, 0, ivec3(4096 * manager->outputSize, 1, 1)));
 #pragma endregion
 
         for (int w = 0; w < manager->weights.size(); ++w) {
@@ -552,22 +591,22 @@ void NeuralNetworkManager::ThreadLoad() {
         fclose(stream);
     }
     else {
-        manager->weights.emplace_back(new Group(64, RNG(0, 2137), ivec3(3, 3, 3), true));
-        manager->weights.emplace_back(new Group(64, RNG(0, 2137), ivec3(3, 3, 64), true));
-        manager->weights.emplace_back(new Group(128, RNG(0, 2137), ivec3(3, 3, 64), true));
-        manager->weights.emplace_back(new Group(128, RNG(0, 2137), ivec3(3, 3, 128), true));
-        manager->weights.emplace_back(new Group(256, RNG(0, 2137), ivec3(3, 3, 128), true));
-        manager->weights.emplace_back(new Group(256, RNG(0, 2137), ivec3(3, 3, 256), true));
-        manager->weights.emplace_back(new Group(256, RNG(0, 2137), ivec3(3, 3, 256), true));
-        manager->weights.emplace_back(new Group(512, RNG(0, 2137), ivec3(3, 3, 256), true));
-        manager->weights.emplace_back(new Group(512, RNG(0, 2137), ivec3(3, 3, 512), true));
-        manager->weights.emplace_back(new Group(512, RNG(0, 2137), ivec3(3, 3, 512), true));
-        manager->weights.emplace_back(new Group(512, RNG(0, 2137), ivec3(3, 3, 512), true));
-        manager->weights.emplace_back(new Group(512, RNG(0, 2137), ivec3(3, 3, 512), true));
-        manager->weights.emplace_back(new Group(512, RNG(0, 2137), ivec3(3, 3, 512), true));
-        manager->weights.emplace_back(new Group(1, RNG(0, 2137), ivec3(102760448, 1, 1), true));
-        manager->weights.emplace_back(new Group(1, RNG(0, 2137), ivec3(16777216, 1, 1), true));
-        manager->weights.emplace_back(new Group(1, RNG(0, 2137), ivec3(4096 * manager->outputSize, 1, 1), true));
+        manager->weights.emplace_back(new Group(64, 27, 3211264, ivec3(3, 3, 3), true));
+        manager->weights.emplace_back(new Group(64, 3211264, 3211264, ivec3(3, 3, 64), true));
+        manager->weights.emplace_back(new Group(128, 802816, 1605632, ivec3(3, 3, 64), true));
+        manager->weights.emplace_back(new Group(128, 1605632, 1605632, ivec3(3, 3, 128), true));
+        manager->weights.emplace_back(new Group(256, 401408, 802816, ivec3(3, 3, 128), true));
+        manager->weights.emplace_back(new Group(256, 802816, 802816, ivec3(3, 3, 256), true));
+        manager->weights.emplace_back(new Group(256, 802816, 802816, ivec3(3, 3, 256), true));
+        manager->weights.emplace_back(new Group(512, 200704, 401408, ivec3(3, 3, 256), true));
+        manager->weights.emplace_back(new Group(512, 401408, 401408, ivec3(3, 3, 512), true));
+        manager->weights.emplace_back(new Group(512, 401408, 401408, ivec3(3, 3, 512), true));
+        manager->weights.emplace_back(new Group(512, 100352, 100352, ivec3(3, 3, 512), true));
+        manager->weights.emplace_back(new Group(512, 100352, 100352, ivec3(3, 3, 512), true));
+        manager->weights.emplace_back(new Group(512, 100352, 100352, ivec3(3, 3, 512), true));
+        manager->weights.emplace_back(new Group(1, 25088, 4096, ivec3(102760448, 1, 1), true));
+        manager->weights.emplace_back(new Group(1, 4096, 4096, ivec3(16777216, 1, 1), true));
+        manager->weights.emplace_back(new Group(1, 4096, 2, ivec3(4096 * manager->outputSize, 1, 1), true));
     }
     manager->state = Idle;
 }
