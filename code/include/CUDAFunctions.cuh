@@ -74,13 +74,13 @@ struct Group {
 
             filters[i].maps = new float[filterSize]();
 
-            std::random_device rd;
-            std::mt19937 gen(rd());
-            float a = std::sqrt(6 / (prevLayerSize + currLayerSize));
-
-            std::uniform_real_distribution<float> distribution(-a, a);
-
             if (fillData) {
+                std::random_device rd;
+                std::mt19937 gen(rd());
+                float a = std::sqrt(6 / (prevLayerSize + currLayerSize));
+
+                std::uniform_real_distribution<float> distribution(-a, a);
+
                 for (int j = 0; j < filterSize; ++j) {
                     filters[i].maps[j] = distribution(gen);
                 }

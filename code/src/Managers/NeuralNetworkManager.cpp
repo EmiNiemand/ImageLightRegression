@@ -67,7 +67,6 @@ void NeuralNetworkManager::Shutdown() {
     biases.clear();
 
     delete loadedData;
-
     delete neuralNetworkManager;
 }
 
@@ -80,7 +79,7 @@ void NeuralNetworkManager::InitializeNetwork(NetworkTask task) {
     if (RenderingManager::GetInstance()->objectRenderer->pointLights[0] == nullptr) return;
 
     if (task == NetworkTask::TrainNetwork) {
-        Train(100000, 50, 1, 25, 0.00001);
+        Train(100000, 1, 1, 25, 0.001);
     }
     else if (task == NetworkTask::ProcessImage) {
         ProcessImage();
@@ -120,6 +119,8 @@ void NeuralNetworkManager::ProcessImage() {
         layers[15]->maps[1] + cameraSphericalCoords[1], glm::length(cameraPosition));
 
     delete[] cameraSphericalCoords;
+    delete loadedData;
+    loadedData = nullptr;
 
     renderingManager->objectRenderer->pointLights[0]->parent->transform->SetLocalPosition(lightPosition);
 }
@@ -237,6 +238,7 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
             manager->poolingLayers.clear();
 
             delete manager->loadedData;
+            manager->loadedData = nullptr;
 
             if (!Application::GetInstance()->isStarted) {
                 break;
