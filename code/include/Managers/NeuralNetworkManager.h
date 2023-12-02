@@ -1,7 +1,7 @@
 #ifndef IMAGELIGHTREGRESSION_NEURALNETWORKMANAGER_H
 #define IMAGELIGHTREGRESSION_NEURALNETWORKMANAGER_H
 
-#include "CUDAFunctions.cuh"
+#include "NeuralNetwork/CUDAFunctions.cuh"
 
 #include "glm/glm.hpp"
 
@@ -69,8 +69,10 @@ private:
 
     void ProcessImage();
 
-    void Train(int epoch, int trainingSize, int batchSize, int patience, float learningStep = 0.001f);
-    static void ThreadTrain(int epoch, int trainingSize, int batchSize, int patience, float learningRate);
+    void Train(int epoch, int trainingSize, int batchSize, int patience, float learningRate = 0.001f, float minLearningRate = 0.00001f);
+    static void ThreadTrain(int epoch, int trainingSize, int batchSize, int patience, float learningRate, float minLearningRate);
+
+    static void FillDataSet(float* dataSet, glm::vec3* cameraPositions, glm::vec3* lightPositions, int dataSize, int trainingSize);
 
     void Forward();
     void Backward(const float* target, std::vector<Gradient*>& gradients);

@@ -1,11 +1,15 @@
 #pragma once
 #include "spdlog/spdlog.h"
+#include "effolkronium/random.hpp"
 
 #define ILR_ERROR_MSG(message)        \
     spdlog::error(message)
 
 #define ILR_INFO_MSG(message)        \
     spdlog::info(message)
+
+#define ILR_WARN_MSG(message)        \
+    spdlog::warn(message)
 
 #define ILR_ASSERT_MSG(condition, message)                                     \
     do {                                                                       \
@@ -33,3 +37,15 @@
     do {                                   \
         spdlog::error("Unimplemented");    \
     } while (false)
+
+#define RNG(min, max) effolkronium::random_static::get(min, max)
+
+#define STRING(val) std::to_string(val)
+#define STRING_VEC2(val) std::to_string(val.x) + ", " + std::to_string(val.y)
+#define STRING_VEC3(val) std::to_string(val.x) + ", " + std::to_string(val.y) + ", " + std::to_string(val.z)
+
+#define DELETE_VECTOR_VALUES(vector)                                  \
+    for (int iterator = 0; iterator < vector.size(); ++iterator) {    \
+         delete vector[iterator];                                     \
+    }                                                                 \
+    vector.clear();

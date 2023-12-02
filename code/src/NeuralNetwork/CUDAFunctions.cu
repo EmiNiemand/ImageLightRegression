@@ -1,5 +1,6 @@
-#include "CUDAFunctions.cuh"
-#include <stdio.h>
+#include "NeuralNetwork/CUDAFunctions.cuh"
+
+#include "NeuralNetwork/AdamOptimizer.h"
 
 #pragma region CUDA
 __global__ void CUDAConvLayer(const float* input, float* output, const float* kernel, const float* biases,
@@ -522,17 +523,22 @@ void MiniBatch(const std::vector<std::vector<Gradient*>>& gradients, std::vector
 
 void UpdateWeightsAndBiases(const std::vector<Gradient*>& gradients, std::vector<Group*>& weights,
                             std::vector<Layer*>& biases, float learningRate) {
+    AdamOptimizer* adamOptimizer = AdamOptimizer::GetInstance();
+    adamOptimizer->SetLearningRate(learningRate);
+
     for (int layer = 0; layer < gradients.size(); ++layer) {
         int idx = 15 - layer;
-        for (int i = 0; i < biases[idx]->width * biases[idx]->height * biases[idx]->depth; ++i) {
-            biases[idx]->maps[i] -= (learningRate * gradients[layer]->biasesGradients[i]);
-        }
+        adamOptimizer->IncrementTimeStep();
+        adamOptimizer->UpdateParameters(biases[idx]->maps,  biases[idx]->width * biases[idx]->height * biases[idx]->depth,
+                                        gradients[layer]->biasesGradients);
 
         for (int i = 0; i < weights[idx]->count; ++i) {
             int weightsSize = weights[idx]->filters[i].width * weights[idx]->filters[i].height * weights[idx]->filters[i].depth;
-            for (int j = 0; j < weightsSize; ++j) {
-                weights[idx]->filters[i].maps[j] -= (learningRate * gradients[layer]->weightsGradients[j + i * weightsSize]);
-            }
+            std::vector<float> weightGradients(weightsSize);
+
+            std::memcpy(&weightGradients[0], &gradients[layer]->weightsGradients[0] + i * weightsSize, weightsSize * sizeof(float));
+
+            adamOptimizer->UpdateParameters(weights[idx]->filters[i].maps, weightsSize, weightGradients);
         }
     }
 }

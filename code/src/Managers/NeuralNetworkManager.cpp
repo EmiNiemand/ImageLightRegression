@@ -3,6 +3,7 @@
 #include "Managers/EditorManager.h"
 #include "Rendering/ObjectRenderer.h"
 #include "Resources/Texture.h"
+#include "NeuralNetwork/AdamOptimizer.h"
 #include "Components/Rendering/Lights/DirectionalLight.h"
 #include "Components/Rendering/Lights/PointLight.h"
 #include "Components/Rendering/Lights/SpotLight.h"
@@ -13,12 +14,8 @@
 #include "Macros.h"
 #include "CUM.h"
 
-#include "effolkronium/random.hpp"
 #include "stb_image_write.h"
-
-#include <glad/glad.h>
-
-#define RNG(min, max) effolkronium::random_static::get(min, max)
+#include <spdlog/sinks/basic_file_sink.h>
 
 NeuralNetworkManager::NeuralNetworkManager() = default;
 
@@ -32,6 +29,8 @@ NeuralNetworkManager* NeuralNetworkManager::GetInstance() {
 }
 
 void NeuralNetworkManager::Startup() {
+    AdamOptimizer::GetInstance()->Startup();
+
     /// Set outputSize for now to 2 which are Euler's angles between camera and light on the Dome
     outputSize = 2;
 
@@ -56,15 +55,10 @@ void NeuralNetworkManager::Shutdown() {
         delete thread;
     }
 
-    for (int i = 0; i < weights.size(); ++i) {
-        delete weights[i];
-    }
-    weights.clear();
+    DELETE_VECTOR_VALUES(weights)
+    DELETE_VECTOR_VALUES(biases)
 
-    for (int i = 0; i < biases.size(); ++i) {
-        delete biases[i];
-    }
-    biases.clear();
+    AdamOptimizer::GetInstance()->Shutdown();
 
     delete loadedData;
     delete neuralNetworkManager;
@@ -79,7 +73,7 @@ void NeuralNetworkManager::InitializeNetwork(NetworkTask task) {
     if (RenderingManager::GetInstance()->objectRenderer->pointLights[0] == nullptr) return;
 
     if (task == NetworkTask::TrainNetwork) {
-        Train(100000, 1, 1, 25, 0.001);
+        Train(10000, 5000, 25, 10, 0.0001, 0.00000001);
     }
     else if (task == NetworkTask::ProcessImage) {
         ProcessImage();
@@ -91,15 +85,8 @@ void NeuralNetworkManager::FinalizeNetwork() {
         Save();
     }
 
-    for (int i = 0; i < layers.size(); ++i) {
-        delete layers[i];
-    }
-    layers.clear();
-
-    for (int i = 0; i < poolingLayers.size(); ++i) {
-        delete poolingLayers[i];
-    }
-    poolingLayers.clear();
+    DELETE_VECTOR_VALUES(layers)
+    DELETE_VECTOR_VALUES(poolingLayers)
 
     currentTask = None;
     state = Idle;
@@ -125,16 +112,19 @@ void NeuralNetworkManager::ProcessImage() {
     renderingManager->objectRenderer->pointLights[0]->parent->transform->SetLocalPosition(lightPosition);
 }
 
-void NeuralNetworkManager::Train(int epoch, int trainingSize, int batchSize, int patience, float learningStep) {
+void NeuralNetworkManager::Train(int epoch, int trainingSize, int batchSize, int patience, float learningStep,
+                                                                                            float minLearningRate) {
     if (thread != nullptr) {
         if (thread->joinable()) thread->join();
         delete thread;
     }
 
-    thread = new std::thread(&NeuralNetworkManager::ThreadTrain, epoch, trainingSize, batchSize, patience, learningStep);
+    thread = new std::thread(&NeuralNetworkManager::ThreadTrain, epoch, trainingSize, batchSize, patience, learningStep,
+                                                                                                        minLearningRate);
 }
 
-void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSize, int patience, float learningRate) {
+void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSize, int patience, float learningRate,
+                                                                                            float minLearningRate) {
     NeuralNetworkManager* manager = NeuralNetworkManager::GetInstance();
     manager->state = NetworkState::Training;
 
@@ -151,54 +141,35 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
     texture->SetID(renderingManager->objectRenderer->renderingCameraTexture);
     texture->SetResolution(glm::ivec2(width, height));
 
-    // Generate data set
+    // Save Camera initial values
+    Transform* renderingCameraTransform = Camera::GetRenderingCamera()->transform;
+    glm::vec3 cPosition = renderingCameraTransform->GetLocalPosition();
+    glm::vec3 cRotation = renderingCameraTransform->GetLocalRotation();
+
+    // Generate or read data set
     int dataSetSize = trainingSize * manager->outputSize;
     float* dataSet = new float[dataSetSize];
-
     glm::vec3* cameraPositions = new glm::vec3[trainingSize];
     glm::vec3* lightPositions = new glm::vec3[trainingSize];
 
-    for (int i = 0; i < trainingSize; ++i) {
-        cameraPositions[i] = glm::normalize(glm::vec3(RNG(-1.0f, 1.0f), RNG(0.0f, 1.0f), RNG(-1.0f, 1.0f))) * 20.0f;
-        lightPositions[i] = glm::normalize(glm::vec3(RNG(-1.0f, 1.0f), RNG(0.0f, 1.0f), RNG(-1.0f, 1.0f))) * 20.0f;
+    FillDataSet(dataSet, cameraPositions, lightPositions, dataSetSize, trainingSize);
 
-        float* cameraSphericalCoords = CUM::CartesianToSphericalCoordinates(cameraPositions[i]);
-        float* lightSphericalCoords = CUM::CartesianToSphericalCoordinates(lightPositions[i]);
+    // Init variables
+    std::vector<std::vector<Gradient*>> gradients;
+    gradients.reserve(batchSize);
 
-        float phi = lightSphericalCoords[0] - cameraSphericalCoords[0];
-        float theta = lightSphericalCoords[1] - cameraSphericalCoords[1];
-
-        if (phi > (float)M_PI) phi = phi - 2.0f * (float)M_PI;
-        if (phi < -(float)M_PI) phi = phi + 2.0f * (float)M_PI;
-
-        dataSet[i * 2] = phi;
-        dataSet[i * 2 + 1] = theta;
-
-        delete[] cameraSphericalCoords;
-        delete[] lightSphericalCoords;
-
-        printf("TCamera: %f, %f, %f | TLight: %f, %f, %f  | TAngles: %f, %f \n", cameraPositions[i].x, cameraPositions[i].y,
-               cameraPositions[i].z, lightPositions[i].x, lightPositions[i].y, lightPositions[i].z,
-               dataSet[i * 2], dataSet[i * 2 + 1]);
-    }
-
-    float prevEpochAvgLoss = FLT_MAX;
+    float epochLoss;
+    float bestEpochLoss = FLT_MAX;
     int patienceCounter = 0;
 
+    // Training loop
     for (int i = 0; i < epoch; ++i) {
-        float epochLoss = 0;
+        epochLoss = 0;
 
-        std::vector<std::vector<Gradient*>> gradients;
         gradients.resize(batchSize);
 
         for (int j = 0; j < batchSize; ++j) {
-            int idx;
-            if (batchSize == trainingSize) {
-                idx = j;
-            }
-            else {
-                idx = RNG(0, trainingSize - 1);
-            }
+            int idx = RNG(0, trainingSize - 1);
 
             // Calculate camera looking direction and rotate it to look at point(0,0,0)
             glm::vec3 direction = glm::normalize(glm::vec3(0, 0, 0) - cameraPositions[idx]);
@@ -209,33 +180,24 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
             Camera::GetRenderingCamera()->transform->SetLocalPosition(cameraPositions[idx]);
 
             renderingManager->objectRenderer->pointLights[0]->parent->transform->SetLocalPosition(lightPositions[idx]);
-
             renderingManager->DrawOtherViewports();
 
+            // Wait until frame is rendered
             while (manager->waitForUpdate);
 
             manager->Forward();
 
             float predictedValues[2] = {dataSet[idx * 2], dataSet[idx * 2 + 1]};
-            spdlog::info("Output: " + std::to_string(manager->layers[15]->maps[0]) + ", " +
-                std::to_string(manager->layers[15]->maps[1]) + ", Target: " +
-                std::to_string(predictedValues[0]) + ", " + std::to_string(predictedValues[1]));
-
+            ILR_INFO_MSG("Output: " + STRING(manager->layers[15]->maps[0]) + ", " + STRING(manager->layers[15]->maps[1]) +
+                         ", Target: " + STRING(predictedValues[0]) + ", " + STRING(predictedValues[1]));
 
             float loss = MSELossFunction(manager->layers[15]->maps, predictedValues, manager->outputSize);
             epochLoss += loss;
 
             manager->Backward(predictedValues, gradients[j]);
 
-            for (int k = 0; k < manager->layers.size(); ++k) {
-                delete manager->layers[k];
-            }
-            manager->layers.clear();
-
-            for (int k = 0; k < manager->poolingLayers.size(); ++k) {
-                delete manager->poolingLayers[k];
-            }
-            manager->poolingLayers.clear();
+            DELETE_VECTOR_VALUES(manager->layers)
+            DELETE_VECTOR_VALUES(manager->poolingLayers)
 
             delete manager->loadedData;
             manager->loadedData = nullptr;
@@ -245,42 +207,39 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
             }
         }
 
-        float averageEpochLoss = epochLoss / (float)batchSize;
-
-        spdlog::info("Epoch: " + std::to_string(i) + ", Loss: " + std::to_string(averageEpochLoss) + ", Rate: " +
-                        std::to_string(learningRate));
-
         if (!Application::GetInstance()->isStarted) {
+            for (int g = 0; g < gradients.size(); ++g) {
+                DELETE_VECTOR_VALUES(gradients[g])
+            }
+            gradients.clear();
             break;
         }
 
-        if ((i + 1) % 10000 == 0) {
-            learningRate *= 0.1f;
-        }
-        patience++;
 
-        if (prevEpochAvgLoss <= averageEpochLoss + learningRate) {
+        float averageEpochLoss = epochLoss / (float)batchSize;
+
+        ILR_WARN_MSG("**********************************");
+        ILR_WARN_MSG("Epoch: " + STRING(i) + ", Loss: " + STRING(averageEpochLoss) + ", Rate: " + STRING(learningRate));
+        ILR_WARN_MSG("**********************************");
+
+        if (bestEpochLoss <= averageEpochLoss) {
             ++patienceCounter;
             if (patienceCounter == patience) {
-                learningRate *= 0.5f;
+                learningRate *= 0.1f;
+                if (learningRate < minLearningRate) learningRate = minLearningRate;
                 patienceCounter = 0;
             }
         }
-
-        if (prevEpochAvgLoss > averageEpochLoss + learningRate) {
+        else if (bestEpochLoss > averageEpochLoss) {
             patienceCounter = 0;
+            bestEpochLoss = averageEpochLoss;
         }
 
-//        MiniBatch(gradients, manager->weights, manager->biases, learningRate);
-        UpdateWeightsAndBiases(gradients[0], manager->weights, manager->biases, learningRate);
-
-        prevEpochAvgLoss = averageEpochLoss;
+        MiniBatch(gradients, manager->weights, manager->biases, learningRate);
         ThreadSave(false);
 
         for (int g = 0; g < gradients.size(); ++g) {
-            for (int gradient = 0; gradient < gradients[g].size(); ++gradient) {
-                delete gradients[g][gradient];
-            }
+            DELETE_VECTOR_VALUES(gradients[g])
         }
         gradients.clear();
     }
@@ -289,14 +248,75 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
     delete[] lightPositions;
     delete[] dataSet;
 
+    // Set old values for texture and camera
     texture->SetID(prevImage);
     texture->SetResolution(prevImageResolution);
+    renderingCameraTransform->SetLocalPosition(cPosition);
+    renderingCameraTransform->SetLocalRotation(cRotation);
 
     if (Application::GetInstance()->isStarted) {
         Application::GetInstance()->isStarted = false;
         manager->finalize = true;
     }
 }
+
+void NeuralNetworkManager::FillDataSet(float *dataSet, glm::vec3* cameraPositions, glm::vec3* lightPositions, int dataSize,
+                                                                                                    int trainingSize) {
+
+    FILE* stream;
+    fopen_s(&stream, "resources/Resources/NeuralNetworkResources/Data.json", "rb");
+    if (stream != nullptr) {
+        fread(dataSet, sizeof(float), dataSize, stream);
+        fseek(stream, (long)(dataSize * sizeof(float)), SEEK_CUR);
+
+        fread(cameraPositions, sizeof(glm::vec3), trainingSize, stream);
+        fseek(stream, (long)(dataSize * sizeof(glm::vec3)), SEEK_CUR);
+
+        fread(lightPositions, sizeof(glm::vec3), trainingSize, stream);
+        fclose(stream);
+    }
+    else {
+        std::shared_ptr<spdlog::logger> logger = spdlog::basic_logger_mt("logger", "resources/Resources/NeuralNetworkResources/DataLog.txt");
+        logger->set_level(spdlog::level::info);
+        logger->flush_on(spdlog::level::info);
+
+        for (int i = 0; i < trainingSize; ++i) {
+            cameraPositions[i] = glm::normalize(glm::vec3(RNG(-1.0f, 1.0f), RNG(0.0f, 1.0f), RNG(-1.0f, 1.0f))) * 20.0f;
+            lightPositions[i] = glm::normalize(glm::vec3(RNG(-1.0f, 1.0f), RNG(0.0f, 1.0f), RNG(-1.0f, 1.0f))) * 20.0f;
+
+            float* cameraSphericalCoords = CUM::CartesianToSphericalCoordinates(cameraPositions[i]);
+            float* lightSphericalCoords = CUM::CartesianToSphericalCoordinates(lightPositions[i]);
+
+            float phi = lightSphericalCoords[0] - cameraSphericalCoords[0];
+            float theta = lightSphericalCoords[1] - cameraSphericalCoords[1];
+
+            if (phi > (float)M_PI) phi = phi - 2.0f * (float)M_PI;
+            if (phi < -(float)M_PI) phi = phi + 2.0f * (float)M_PI;
+
+            dataSet[i * 2] = phi;
+            dataSet[i * 2 + 1] = theta;
+
+            logger->info("Camera: " + STRING_VEC3(cameraPositions[i]) + " Light: " + STRING_VEC3(lightPositions[i]) +
+                         " Angles: " + STRING(phi) + ", " + STRING(theta));
+
+            delete[] cameraSphericalCoords;
+            delete[] lightSphericalCoords;
+        }
+        spdlog::drop("logger");
+        logger.reset();
+
+        fopen_s(&stream, "resources/Resources/NeuralNetworkResources/Data.json", "wb");
+
+        fwrite(dataSet, sizeof(float), dataSize, stream);
+        fseek(stream, (long)(dataSize * sizeof(float)), SEEK_CUR);
+
+        fwrite(cameraPositions, sizeof(glm::vec3), trainingSize, stream);
+        fseek(stream, (long)(dataSize * sizeof(glm::vec3)), SEEK_CUR);
+
+        fwrite(lightPositions, sizeof(glm::vec3), trainingSize, stream);
+
+        fclose(stream);
+    }}
 
 void NeuralNetworkManager::Forward() {
     glm::ivec2 imageDim = glm::ivec2(224, 224);
@@ -650,4 +670,5 @@ void NeuralNetworkManager::ThreadSave(bool changeState) {
     }
     if(changeState) manager->state = Idle;
 }
+
 #pragma endregion
