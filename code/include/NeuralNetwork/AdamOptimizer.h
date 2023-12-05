@@ -6,7 +6,6 @@
 class AdamOptimizer {
 private:
     inline static AdamOptimizer* adamOptimizer = nullptr;
-    std::vector<float> m, v;  // First and second moment estimates
     float beta1, beta2;       // Exponential decay rates
     float learningRate;       // Learning rate
     float epsilon;            // Small constant to avoid division by zero

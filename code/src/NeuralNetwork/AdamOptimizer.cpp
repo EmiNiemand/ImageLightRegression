@@ -21,6 +21,7 @@ void AdamOptimizer::Shutdown() {
 }
 
 void AdamOptimizer::UpdateParameters(float* parameters, int size, const std::vector<float>& gradients) {
+    std::vector<float> m, v;
     m.resize(size, 0.0f);
     v.resize(size, 0.0f);
 
@@ -38,6 +39,9 @@ void AdamOptimizer::UpdateParameters(float* parameters, int size, const std::vec
 
         parameters[i] -= (learningRate / ((float)sqrt((double)vOut) + epsilon)) * mOut;
     }
+    
+    m.clear();
+    v.clear();
 }
 
 void AdamOptimizer::IncrementTimeStep() {

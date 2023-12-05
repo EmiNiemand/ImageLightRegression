@@ -73,7 +73,7 @@ void NeuralNetworkManager::InitializeNetwork(NetworkTask task) {
     if (RenderingManager::GetInstance()->objectRenderer->pointLights[0] == nullptr) return;
 
     if (task == NetworkTask::TrainNetwork) {
-        Train(10000, 5000, 25, 10, 0.0001, 0.00000001);
+        Train(10000, 5000, 20, 1000, 0.00001, 0.000001);
     }
     else if (task == NetworkTask::ProcessImage) {
         ProcessImage();
