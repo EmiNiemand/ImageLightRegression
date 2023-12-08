@@ -31,18 +31,18 @@ void Inspector::ShowPopUp() {
             EditorManager::GetInstance()->selectedNode->AddComponent<Renderer>();
             ImGui::CloseCurrentPopup();
         }
-        if (ImGui::MenuItem("Add Directional Light Component")) {
-            EditorManager::GetInstance()->selectedNode->AddComponent<DirectionalLight>();
-            ImGui::CloseCurrentPopup();
-        }
+//        if (ImGui::MenuItem("Add Directional Light Component")) {
+//            EditorManager::GetInstance()->selectedNode->AddComponent<DirectionalLight>();
+//            ImGui::CloseCurrentPopup();
+//        }
         if (ImGui::MenuItem("Add Point Light Component")) {
             EditorManager::GetInstance()->selectedNode->AddComponent<PointLight>();
             ImGui::CloseCurrentPopup();
         }
-        if (ImGui::MenuItem("Add Spot Light Component")) {
-            EditorManager::GetInstance()->selectedNode->AddComponent<SpotLight>();
-            ImGui::CloseCurrentPopup();
-        }
+//        if (ImGui::MenuItem("Add Spot Light Component")) {
+//            EditorManager::GetInstance()->selectedNode->AddComponent<SpotLight>();
+//            ImGui::CloseCurrentPopup();
+//        }
         if (ImGui::MenuItem("Add Skybox Component")) {
             EditorManager::GetInstance()->selectedNode->AddComponent<Skybox>();
             ImGui::CloseCurrentPopup();
@@ -87,15 +87,15 @@ void Inspector::ShowComponentProperties(Component* component) {
     else if (dynamic_cast<Renderer*>(component) != nullptr) {
         ShowRenderer();
     }
-    else if (dynamic_cast<DirectionalLight*>(component) != nullptr) {
-        ShowDirectionalLight();
-    }
+//    else if (dynamic_cast<DirectionalLight*>(component) != nullptr) {
+//        ShowDirectionalLight();
+//    }
     else if (dynamic_cast<PointLight*>(component) != nullptr) {
         ShowPointLight();
     }
-    else if (dynamic_cast<SpotLight*>(component) != nullptr) {
-        ShowSpotLight();
-    }
+//    else if (dynamic_cast<SpotLight*>(component) != nullptr) {
+//        ShowSpotLight();
+//    }
     else if (dynamic_cast<Skybox*>(component) != nullptr) {
         ShowSkybox();
     }

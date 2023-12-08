@@ -37,7 +37,8 @@ void AdamOptimizer::UpdateParameters(float* parameters, int size, const std::vec
         float mOut = m[i] / biasCorrection1;
         float vOut = v[i] / biasCorrection2;
 
-        parameters[i] -= (learningRate / ((float)sqrt((double)vOut) + epsilon)) * mOut;
+//        parameters[i] -= (learningRate / ((float)sqrt((double)vOut) + epsilon) * mOut);
+        parameters[i] -= (learningRate * gradients[i]);
     }
     
     m.clear();

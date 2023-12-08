@@ -70,10 +70,8 @@ void NeuralNetworkManager::InitializeNetwork(NetworkTask task) {
 
     currentTask = task;
 
-    if (RenderingManager::GetInstance()->objectRenderer->pointLights[0] == nullptr) return;
-
     if (task == NetworkTask::TrainNetwork) {
-        Train(10000, 5000, 20, 1000, 0.00001, 0.000001);
+        Train(10000, 1000, 10, 100, 0.0001, 0.0000000001);
     }
     else if (task == NetworkTask::ProcessImage) {
         ProcessImage();
@@ -414,7 +412,6 @@ void NeuralNetworkManager::Forward() {
 
     // Output neurons
     layers.emplace_back(FullyConnectedLayer(layers[14], weights[15]->filters[0].maps, 4096, outputSize, biases[15]->maps));
-    TanhLayer(layers[15]);
 }
 
 void NeuralNetworkManager::Backward(const float* target, std::vector<Gradient*>& gradients) {

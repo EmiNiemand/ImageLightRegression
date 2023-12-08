@@ -115,6 +115,10 @@ void ToolBar::ShowToolBar() {
     }
     if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
         if (!application->isStarted && !editorManager->loadedImage) return;
+        if (RenderingManager::GetInstance()->objectRenderer->pointLights[0] == nullptr) {
+            ImGui::OpenPopup("MessagePopup");
+            return;
+        }
 
         application->isStarted = !application->isStarted;
 
@@ -131,11 +135,45 @@ void ToolBar::ShowToolBar() {
     }
     if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
         if (!application->isStarted && !editorManager->loadedImage) return;
+        if (RenderingManager::GetInstance()->objectRenderer->pointLights[0] == nullptr) {
+            ImGui::OpenPopup("MessagePopup");
+            return;
+        }
 
         application->isStarted = !application->isStarted;
 
         if (application->isStarted) NeuralNetworkManager::GetInstance()->InitializeNetwork(NetworkTask::ProcessImage);
         if (!application->isStarted) NeuralNetworkManager::GetInstance()->FinalizeNetwork();
+    }
+    if (ImGui::BeginPopupModal("MessagePopup", 0, ImGuiWindowFlags_Popup | ImGuiWindowFlags_NoTitleBar |
+                                                  ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImVec2 windowSize = ImVec2((float)Application::resolution.x * 0.15f, (float)Application::resolution.y * 0.15f);
+        ImVec2 windowPosition = ImVec2((float)Application::resolution.x * 0.5f - windowSize.x / 2,
+                                       (float)Application::resolution.y * 0.5f - windowSize.y / 2);
+
+        ImGui::SetWindowSize(windowSize);
+        ImGui::SetWindowPos(windowPosition);
+
+        ImFont* font = ImGui::GetFont();
+        float oldScale = font->Scale;
+        font->Scale = 1.5f;
+        ImGui::PushFont(font);
+
+        float textWidth = ImGui::CalcTextSize("No light on the scene").x;
+
+        ImGui::SetCursorPosY(windowSize.y * 0.15f);
+        ImGui::Text("No light on the scene");
+
+        font->Scale = oldScale;
+        ImGui::PopFont();
+
+        ImGui::SetCursorPosX((windowSize.x - textWidth) * 0.5f);
+        ImGui::SetCursorPosY(windowSize.y * 0.45f);
+
+        if (ImGui::Button("Ok", ImVec2(windowSize.x * 0.5f, 0.0f))) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
     }
 
     ImGui::EndChild();
