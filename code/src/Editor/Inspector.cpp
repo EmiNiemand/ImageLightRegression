@@ -2,6 +2,7 @@
 #include "Editor/Inspector.h"
 #include "Managers/ResourceManager.h"
 #include "Managers/EditorManager.h"
+#include "Managers/RenderingManager.h"
 #include "Core/Object.h"
 #include "Components/Transform.h"
 #include "Components/Rendering/Camera.h"
@@ -11,6 +12,7 @@
 #include "Components/Rendering/Lights/PointLight.h"
 #include "Components/Rendering/Lights/Spotlight.h"
 #include "Components/Rendering/Skybox.h"
+#include "Rendering/ObjectRenderer.h"
 #include "Resources/Model.h"
 #include "Resources/CubeMap.h"
 #pragma endregion
@@ -35,9 +37,11 @@ void Inspector::ShowPopUp() {
 //            EditorManager::GetInstance()->selectedNode->AddComponent<DirectionalLight>();
 //            ImGui::CloseCurrentPopup();
 //        }
-        if (ImGui::MenuItem("Add Point Light Component")) {
-            EditorManager::GetInstance()->selectedNode->AddComponent<PointLight>();
-            ImGui::CloseCurrentPopup();
+        if (RenderingManager::GetInstance()->objectRenderer->pointLights[0] == nullptr) {
+            if (ImGui::MenuItem("Add Point Light Component")) {
+                EditorManager::GetInstance()->selectedNode->AddComponent<PointLight>();
+                ImGui::CloseCurrentPopup();
+            }
         }
 //        if (ImGui::MenuItem("Add Spot Light Component")) {
 //            EditorManager::GetInstance()->selectedNode->AddComponent<SpotLight>();
