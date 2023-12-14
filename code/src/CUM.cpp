@@ -72,9 +72,6 @@ glm::vec3 CUM::SphericalToCartesianCoordinates(float phi, float theta, float rad
 void CUM::SaveJsonToFile(const std::string& filePath, const nlohmann::json& json) {
     std::filesystem::path path(filePath);
     if (std::filesystem::exists(path)) {
-#ifdef DEBUG
-        ILR_INFO_MSG("Remove file");
-#endif
         std::filesystem::remove(path);
     }
     std::ofstream file(filePath);

@@ -454,12 +454,6 @@ Gradient* FullyConnectedLayerBackward(Layer* currentLayer, Group* weights, Layer
     return output;
 }
 
-void TanhLayer(Layer* filter) {
-    for (int i = 0; i < filter->width * filter->height * filter->depth; ++i) {
-        filter->maps[i] = tanh(filter->maps[i]) * (float)M_PI;
-    }
-}
-
 float MSELossFunction(const float* input, const float* predictedResult, int size) {
     float loss = 0;
 
@@ -524,7 +518,7 @@ void MiniBatch(const std::vector<std::vector<Gradient*>>& gradients, std::vector
 void UpdateWeightsAndBiases(const std::vector<Gradient*>& gradients, std::vector<Group*>& weights,
                             std::vector<Layer*>& biases, float learningRate) {
     AdamOptimizer* adamOptimizer = AdamOptimizer::GetInstance();
-    adamOptimizer->SetLearningRate(learningRate);
+    adamOptimizer->learningRate = learningRate;
 
     for (int layer = 0; layer < gradients.size(); ++layer) {
         int idx = 15 - layer;

@@ -17,6 +17,8 @@
 #include "stb_image_write.h"
 #include <spdlog/sinks/basic_file_sink.h>
 
+#include <chrono>
+
 NeuralNetworkManager::NeuralNetworkManager() = default;
 
 NeuralNetworkManager::~NeuralNetworkManager() = default;
@@ -71,7 +73,7 @@ void NeuralNetworkManager::InitializeNetwork(NetworkTask task) {
     currentTask = task;
 
     if (task == NetworkTask::TrainNetwork) {
-        Train(10000, 1000, 10, 100, 0.0001, 0.0000000001);
+        Train();
     }
     else if (task == NetworkTask::ProcessImage) {
         ProcessImage();
@@ -79,9 +81,14 @@ void NeuralNetworkManager::InitializeNetwork(NetworkTask task) {
 }
 
 void NeuralNetworkManager::FinalizeNetwork() {
+    waitForUpdate = false;
+    waitForRender = false;
+
     if (currentTask == NetworkTask::TrainNetwork) {
         Save();
     }
+
+    AdamOptimizer::GetInstance()->Reset();
 
     DELETE_VECTOR_VALUES(layers)
     DELETE_VECTOR_VALUES(poolingLayers)
@@ -110,15 +117,14 @@ void NeuralNetworkManager::ProcessImage() {
     renderingManager->objectRenderer->pointLights[0]->parent->transform->SetLocalPosition(lightPosition);
 }
 
-void NeuralNetworkManager::Train(int epoch, int trainingSize, int batchSize, int patience, float learningStep,
-                                                                                            float minLearningRate) {
+void NeuralNetworkManager::Train() {
     if (thread != nullptr) {
         if (thread->joinable()) thread->join();
         delete thread;
     }
 
-    thread = new std::thread(&NeuralNetworkManager::ThreadTrain, epoch, trainingSize, batchSize, patience, learningStep,
-                                                                                                        minLearningRate);
+    thread = new std::thread(&NeuralNetworkManager::ThreadTrain, (int)trainingParameters[0], (int)trainingParameters[1],
+                (int)trainingParameters[2], (int)trainingParameters[3], trainingParameters[4], trainingParameters[5]);
 }
 
 void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSize, int patience, float learningRate,
@@ -172,16 +178,21 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
             // Calculate camera looking direction and rotate it to look at point(0,0,0)
             glm::vec3 direction = glm::normalize(glm::vec3(0, 0, 0) - cameraPositions[idx]);
 
+            renderingManager->objectRenderer->pointLights[0]->parent->transform->SetLocalPosition(lightPositions[idx]);
+
             float angleX = (float)(asin(direction.y) * 180.0f / M_PI);
             float angleY = (float)(-atan2(direction.x, -direction.z) * 180.0f / M_PI);
             Camera::GetRenderingCamera()->transform->SetLocalRotation(glm::vec3(angleX, angleY, 0));
             Camera::GetRenderingCamera()->transform->SetLocalPosition(cameraPositions[idx]);
 
-            renderingManager->objectRenderer->pointLights[0]->parent->transform->SetLocalPosition(lightPositions[idx]);
-            renderingManager->DrawOtherViewports();
-
-            // Wait until frame is rendered
-            while (manager->waitForUpdate);
+            manager->waitForUpdate = true;
+            manager->waitForRender = true;
+            while(true) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                if (!manager->waitForUpdate && !manager->waitForRender) {
+                    break;
+                }
+            }
 
             manager->Forward();
 
@@ -252,6 +263,7 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
     renderingCameraTransform->SetLocalPosition(cPosition);
     renderingCameraTransform->SetLocalRotation(cRotation);
 
+
     if (Application::GetInstance()->isStarted) {
         Application::GetInstance()->isStarted = false;
         manager->finalize = true;
@@ -264,46 +276,59 @@ void NeuralNetworkManager::FillDataSet(float *dataSet, glm::vec3* cameraPosition
     FILE* stream;
     fopen_s(&stream, "resources/Resources/NeuralNetworkResources/Data.json", "rb");
     if (stream != nullptr) {
-        fread(dataSet, sizeof(float), dataSize, stream);
-        fseek(stream, (long)(dataSize * sizeof(float)), SEEK_CUR);
+        int size;
+        fread(&size, sizeof(int), 1, stream);
 
-        fread(cameraPositions, sizeof(glm::vec3), trainingSize, stream);
-        fseek(stream, (long)(dataSize * sizeof(glm::vec3)), SEEK_CUR);
+        if (size == dataSize) {
+            fseek(stream, (long)sizeof(int), SEEK_CUR);
+            fread(dataSet, sizeof(float), dataSize, stream);
+            fseek(stream, (long)(dataSize * sizeof(float)), SEEK_CUR);
 
-        fread(lightPositions, sizeof(glm::vec3), trainingSize, stream);
+            fread(cameraPositions, sizeof(glm::vec3), trainingSize, stream);
+            fseek(stream, (long)(dataSize * sizeof(glm::vec3)), SEEK_CUR);
+
+            fread(lightPositions, sizeof(glm::vec3), trainingSize, stream);
+            fclose(stream);
+            return;
+        }
         fclose(stream);
     }
-    else {
-        std::shared_ptr<spdlog::logger> logger = spdlog::basic_logger_mt("logger", "resources/Resources/NeuralNetworkResources/DataLog.txt");
-        logger->set_level(spdlog::level::info);
-        logger->flush_on(spdlog::level::info);
+    
+    std::filesystem::remove("resources/Resources/NeuralNetworkResources/DataLog.txt");
 
-        for (int i = 0; i < trainingSize; ++i) {
-            cameraPositions[i] = glm::normalize(glm::vec3(RNG(-1.0f, 1.0f), RNG(0.0f, 1.0f), RNG(-1.0f, 1.0f))) * 20.0f;
-            lightPositions[i] = glm::normalize(glm::vec3(RNG(-1.0f, 1.0f), RNG(0.0f, 1.0f), RNG(-1.0f, 1.0f))) * 20.0f;
+    std::shared_ptr<spdlog::logger> logger = spdlog::basic_logger_mt("logger", "resources/Resources/NeuralNetworkResources/DataLog.txt");
+    logger->set_level(spdlog::level::info);
+    logger->flush_on(spdlog::level::info);
 
-            float* cameraSphericalCoords = CUM::CartesianToSphericalCoordinates(cameraPositions[i]);
-            float* lightSphericalCoords = CUM::CartesianToSphericalCoordinates(lightPositions[i]);
+    for (int i = 0; i < trainingSize; ++i) {
+        cameraPositions[i] = glm::normalize(glm::vec3(RNG(-1.0f, 1.0f), RNG(0.0f, 1.0f), RNG(-1.0f, 1.0f))) * 20.0f;
+        lightPositions[i] = glm::normalize(glm::vec3(RNG(-1.0f, 1.0f), RNG(0.0f, 1.0f), RNG(-1.0f, 1.0f))) * 20.0f;
 
-            float phi = lightSphericalCoords[0] - cameraSphericalCoords[0];
-            float theta = lightSphericalCoords[1] - cameraSphericalCoords[1];
+        float* cameraSphericalCoords = CUM::CartesianToSphericalCoordinates(cameraPositions[i]);
+        float* lightSphericalCoords = CUM::CartesianToSphericalCoordinates(lightPositions[i]);
 
-            if (phi > (float)M_PI) phi = phi - 2.0f * (float)M_PI;
-            if (phi < -(float)M_PI) phi = phi + 2.0f * (float)M_PI;
+        float phi = lightSphericalCoords[0] - cameraSphericalCoords[0];
+        float theta = lightSphericalCoords[1] - cameraSphericalCoords[1];
 
-            dataSet[i * 2] = phi;
-            dataSet[i * 2 + 1] = theta;
+        if (phi > (float)M_PI) phi = phi - 2.0f * (float)M_PI;
+        if (phi < -(float)M_PI) phi = phi + 2.0f * (float)M_PI;
 
-            logger->info("Camera: " + STRING_VEC3(cameraPositions[i]) + " Light: " + STRING_VEC3(lightPositions[i]) +
-                         " Angles: " + STRING(phi) + ", " + STRING(theta));
+        dataSet[i * 2] = phi;
+        dataSet[i * 2 + 1] = theta;
 
-            delete[] cameraSphericalCoords;
-            delete[] lightSphericalCoords;
-        }
-        spdlog::drop("logger");
-        logger.reset();
+        logger->info("Camera: " + STRING_VEC3(cameraPositions[i]) + " Light: " + STRING_VEC3(lightPositions[i]) +
+                     " Angles: " + STRING(phi) + ", " + STRING(theta));
 
-        fopen_s(&stream, "resources/Resources/NeuralNetworkResources/Data.json", "wb");
+        delete[] cameraSphericalCoords;
+        delete[] lightSphericalCoords;
+    }
+    spdlog::drop("logger");
+    logger.reset();
+
+    fopen_s(&stream, "resources/Resources/NeuralNetworkResources/Data.json", "wb");
+    if (stream != nullptr) {
+        fwrite(&dataSize, sizeof(int), 1, stream);
+        fseek(stream, (long)sizeof(int), SEEK_CUR);
 
         fwrite(dataSet, sizeof(float), dataSize, stream);
         fseek(stream, (long)(dataSize * sizeof(float)), SEEK_CUR);
@@ -314,7 +339,8 @@ void NeuralNetworkManager::FillDataSet(float *dataSet, glm::vec3* cameraPosition
         fwrite(lightPositions, sizeof(glm::vec3), trainingSize, stream);
 
         fclose(stream);
-    }}
+    }
+}
 
 void NeuralNetworkManager::Forward() {
     glm::ivec2 imageDim = glm::ivec2(224, 224);
@@ -424,67 +450,66 @@ void NeuralNetworkManager::Backward(const float* target, std::vector<Gradient*>&
         if (outputGradients[i] > max) max = outputGradients[i];
     }
 
-    printf("FCB ");
     gradients.push_back(FullyConnectedLayerBackward(layers[15], weights[15], layers[14], outputGradients));
     outputGradients.clear();
-    printf("FCB ");
+    printf("[]");
     gradients.push_back(FullyConnectedLayerBackward(layers[14], weights[14], layers[13], gradients[0]->inputsGradients));
     gradients[0]->inputsGradients.clear();
-    printf("FCB ");
+    printf("[]");
     gradients.push_back(FullyConnectedLayerBackward(layers[13], weights[13], poolingLayers[4], gradients[1]->inputsGradients));
     gradients[1]->inputsGradients.clear();
 
-    printf("MPB ");
+    printf("[]");
     MaxPoolingBackward(poolingLayers[4], layers[12], gradients[2]->inputsGradients, ivec2(2, 2), ivec2(2, 2));
-    printf("CLB ");
+    printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[12], weights[12], layers[11], gradients[2]->inputsGradients));
     gradients[2]->inputsGradients.clear();
-    printf("CLB ");
+    printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[11], weights[11], layers[10], gradients[3]->inputsGradients));
     gradients[3]->inputsGradients.clear();
-    printf("CLB ");
+    printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[10], weights[10], poolingLayers[3], gradients[4]->inputsGradients));
     gradients[4]->inputsGradients.clear();
 
-    printf("MPB ");
+    printf("[]");
     MaxPoolingBackward(poolingLayers[3], layers[9], gradients[5]->inputsGradients, ivec2(2, 2), ivec2(2, 2));
-    printf("CLB ");
+    printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[9], weights[9], layers[8], gradients[5]->inputsGradients));
     gradients[5]->inputsGradients.clear();
-    printf("CLB ");
+    printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[8], weights[8], layers[7], gradients[6]->inputsGradients));
     gradients[6]->inputsGradients.clear();
-    printf("CLB ");
+    printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[7], weights[7], poolingLayers[2], gradients[7]->inputsGradients));
     gradients[7]->inputsGradients.clear();
 
-    printf("MPB ");
+    printf("[]");
     MaxPoolingBackward(poolingLayers[2], layers[6], gradients[8]->inputsGradients, ivec2(2, 2), ivec2(2, 2));
-    printf("CLB ");
+    printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[6], weights[6], layers[5], gradients[8]->inputsGradients));
     gradients[8]->inputsGradients.clear();
-    printf("CLB ");
+    printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[5], weights[5], layers[4], gradients[9]->inputsGradients));
     gradients[9]->inputsGradients.clear();
-    printf("CLB ");
+    printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[4], weights[4], poolingLayers[1], gradients[10]->inputsGradients));
     gradients[10]->inputsGradients.clear();
 
-    printf("MPB ");
+    printf("[]");
     MaxPoolingBackward(poolingLayers[1], layers[3], gradients[11]->inputsGradients, ivec2(2, 2), ivec2(2, 2));
-    printf("CLB ");
+    printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[3], weights[3], layers[2], gradients[11]->inputsGradients));
     gradients[11]->inputsGradients.clear();
-    printf("CLB ");
+    printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[2], weights[2], poolingLayers[0], gradients[12]->inputsGradients));
     gradients[12]->inputsGradients.clear();
 
-    printf("MPB ");
+    printf("[]");
     MaxPoolingBackward(poolingLayers[0], layers[1], gradients[13]->inputsGradients, ivec2(2, 2), ivec2(2, 2));
-    printf("CLB ");
+    printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[1], weights[1], layers[0], gradients[13]->inputsGradients));
     gradients[13]->inputsGradients.clear();
-    printf("CLB ");
+    printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[0], weights[0], loadedData, gradients[14]->inputsGradients));
     gradients[14]->inputsGradients.clear();
 

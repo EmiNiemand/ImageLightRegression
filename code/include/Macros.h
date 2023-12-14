@@ -40,9 +40,9 @@
 
 #define RNG(min, max) effolkronium::random_static::get(min, max)
 
-#define STRING(val) std::to_string(val)
-#define STRING_VEC2(val) std::to_string(val.x) + ", " + std::to_string(val.y)
-#define STRING_VEC3(val) std::to_string(val.x) + ", " + std::to_string(val.y) + ", " + std::to_string(val.z)
+#define STRING(val) std::format("{:g}", (float)val)
+#define STRING_VEC2(val) STRING(val.x) + ", " + STRING(val.y)
+#define STRING_VEC3(val) STRING(val.x) + ", " + STRING(val.y) + ", " + STRING(val.z)
 
 #define DELETE_VECTOR_VALUES(vector)                                  \
     for (int iterator = 0; iterator < vector.size(); ++iterator) {    \

@@ -136,8 +136,6 @@ Layer* FullyConnectedLayer(const Layer* neurons, const float* weights, int input
 
 Gradient* FullyConnectedLayerBackward(Layer* currentLayer, Group* weights, Layer* previousLayer, std::vector<float>& gradient);
 
-void TanhLayer(Layer* filter);
-
 float MSELossFunction(const float* input, const float* predictedResult, int size);
 
 void MiniBatch(const std::vector<std::vector<Gradient*>>& gradients, std::vector<Group*>& weights,

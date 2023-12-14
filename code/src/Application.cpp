@@ -103,16 +103,18 @@ void Application::Run() {
 }
 
 void Application::Shutdown() {
+    glfwDestroyWindow(window);
+
+    NeuralNetworkManager::GetInstance()->Shutdown();
     EditorManager::GetInstance()->Shutdown();
     SceneManager::GetInstance()->Shutdown();
     RenderingManager::GetInstance()->Shutdown();
     InputManager::GetInstance()->Shutdown();
     ResourceManager::GetInstance()->Shutdown();
 
-    glfwDestroyWindow(window);
     glfwTerminate();
 
-    NeuralNetworkManager::GetInstance()->Shutdown();
+
 
     delete application;
 }

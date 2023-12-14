@@ -1,6 +1,7 @@
 #include "Managers/RenderingManager.h"
 #include "Managers/ResourceManager.h"
 #include "Managers/EditorManager.h"
+#include "Managers/NeuralNetworkManager.h"
 #include "Rendering/ShadowRenderer.h"
 #include "Rendering/ObjectRenderer.h"
 #include "Rendering/SkyboxRenderer.h"
@@ -221,6 +222,7 @@ void RenderingManager::DrawPostProcesses() {
 
 void RenderingManager::DrawOtherViewports() {
     EditorManager* editorManager = EditorManager::GetInstance();
+    NeuralNetworkManager::GetInstance()->waitForRender = false;
 
     glViewport(Application::viewports[1].position.x, Application::viewports[1].position.y,
                Application::viewports[1].resolution.x, Application::viewports[1].resolution.y);

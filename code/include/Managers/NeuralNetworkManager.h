@@ -6,6 +6,7 @@
 #include "glm/glm.hpp"
 
 #include <vector>
+#include <mutex>
 #include <thread>
 
 class DirectionalLight;
@@ -29,7 +30,10 @@ class NeuralNetworkManager {
 public:
     NetworkState state = Idle;
 
+    float trainingParameters[6] = {200, 50000, 20, 10, 0.001, 0};
+
     bool waitForUpdate = false;
+    bool waitForRender = false;
 
 private:
     inline static NeuralNetworkManager* neuralNetworkManager;
@@ -46,7 +50,6 @@ private:
     NetworkTask currentTask = None;
 
     int iteration = 0;
-
     int outputSize = 0;
 
     bool finalize = false;
@@ -69,7 +72,7 @@ private:
 
     void ProcessImage();
 
-    void Train(int epoch, int trainingSize, int batchSize, int patience, float learningRate = 0.001f, float minLearningRate = 0.00001f);
+    void Train();
     static void ThreadTrain(int epoch, int trainingSize, int batchSize, int patience, float learningRate, float minLearningRate);
 
     static void FillDataSet(float* dataSet, glm::vec3* cameraPositions, glm::vec3* lightPositions, int dataSize, int trainingSize);

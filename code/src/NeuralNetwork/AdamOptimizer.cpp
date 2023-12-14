@@ -1,7 +1,6 @@
 #include "NeuralNetwork/AdamOptimizer.h"
 
-AdamOptimizer::AdamOptimizer(float beta1, float beta2, float learningRate, float epsilon)
-        : beta1(beta1), beta2(beta2), learningRate(learningRate), epsilon(epsilon) {}
+AdamOptimizer::AdamOptimizer() = default;
 
 AdamOptimizer::~AdamOptimizer() = default;
 
@@ -18,6 +17,10 @@ void AdamOptimizer::Startup() {
 
 void AdamOptimizer::Shutdown() {
     delete adamOptimizer;
+}
+
+void AdamOptimizer::Reset() {
+    t = 0;
 }
 
 void AdamOptimizer::UpdateParameters(float* parameters, int size, const std::vector<float>& gradients) {
@@ -37,8 +40,7 @@ void AdamOptimizer::UpdateParameters(float* parameters, int size, const std::vec
         float mOut = m[i] / biasCorrection1;
         float vOut = v[i] / biasCorrection2;
 
-//        parameters[i] -= (learningRate / ((float)sqrt((double)vOut) + epsilon) * mOut);
-        parameters[i] -= (learningRate * gradients[i]);
+        parameters[i] -= (learningRate / ((float)sqrt((double)vOut) + epsilon) * mOut);
     }
     
     m.clear();
@@ -47,8 +49,4 @@ void AdamOptimizer::UpdateParameters(float* parameters, int size, const std::vec
 
 void AdamOptimizer::IncrementTimeStep() {
     ++t;
-}
-
-void AdamOptimizer::SetLearningRate(float inLearningRate) {
-    learningRate = inLearningRate;
 }

@@ -4,11 +4,15 @@
 #include <vector>
 
 class AdamOptimizer {
+public:
+    float beta1 = 0.5;
+    float beta2 = 0.999;       // Exponential decay rates
+    float learningRate = 0.001;       // Learning rate
+
 private:
     inline static AdamOptimizer* adamOptimizer = nullptr;
-    float beta1, beta2;       // Exponential decay rates
-    float learningRate;       // Learning rate
-    float epsilon;            // Small constant to avoid division by zero
+
+    float epsilon = 1e-8;            // Small constant to avoid division by zero
     int t = 0;                // Time step
 
 public:
@@ -21,13 +25,14 @@ public:
     void Startup();
     void Shutdown();
 
+    void Reset();
+
     void UpdateParameters(float* parameters, int size, const std::vector<float>& gradients);
 
     void IncrementTimeStep();
-    void SetLearningRate(float inLearningRate);
 
 private:
-    explicit AdamOptimizer(float beta1 = 0.9, float beta2 = 0.999, float learningRate = 0.001, float epsilon = 1e-8);
+    explicit AdamOptimizer();
 
 };
 

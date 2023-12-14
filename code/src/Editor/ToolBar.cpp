@@ -23,6 +23,7 @@ void ToolBar::ShowToolBar() {
     Application* application = Application::GetInstance();
     SceneManager* sceneManager = SceneManager::GetInstance();
     EditorManager* editorManager = EditorManager::GetInstance();
+    NeuralNetworkManager* neuralNetworkManager = NeuralNetworkManager::GetInstance();
 
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (ImGui::GetContentRegionAvail().y - 50.0f) * 0.5f);
 
@@ -71,9 +72,68 @@ void ToolBar::ShowToolBar() {
         sceneManager->SaveScene(sceneManager->loadedPath);
     }
 
-    NeuralNetworkManager* neuralNetworkManager = NeuralNetworkManager::GetInstance();
-
     ImGui::SameLine(ImGui::GetWindowContentRegionWidth() - 180.0f);
+    if (!application->isStarted || (application->isStarted && neuralNetworkManager->state != NetworkState::Training)) {
+        ShowButton("TrainButton", editorManager->trainTexture->GetID(), neuralNetworkManager->state == NetworkState::Idle);
+    }
+    else if (application->isStarted && neuralNetworkManager->state == NetworkState::Training) {
+        ShowButton("StopTrainButton", editorManager->stopTexture->GetID());
+    }
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
+        if (!application->isStarted && !editorManager->loadedImage) return;
+        if (RenderingManager::GetInstance()->objectRenderer->pointLights[0] == nullptr) {
+            ImGui::OpenPopup("MessagePopup");
+            return;
+        }
+
+        if (!application->isStarted) {
+            ImGui::OpenPopup("TrainPopup");
+        }
+        if (application->isStarted) {
+            application->isStarted = false;
+            neuralNetworkManager->FinalizeNetwork();
+        }
+    }
+    if (ImGui::BeginPopupModal("TrainPopup", 0, ImGuiWindowFlags_Popup | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImVec2 windowSize = ImVec2((float)Application::resolution.x * 0.25f, (float)Application::resolution.y * 0.25f);
+        ImVec2 windowPosition = ImVec2((float)Application::resolution.x * 0.5f - windowSize.x / 2,
+                                       (float)Application::resolution.y * 0.5f - windowSize.y / 2);
+
+        ImGui::SetWindowSize(windowSize);
+        ImGui::SetWindowPos(windowPosition);
+
+        if(ImGui::BeginTable("Train Parameters", 2)) {
+            ImGui::TableSetupColumn("##Col0", ImGuiTableColumnFlags_WidthFixed, windowSize.x * 0.5f);
+            ImGui::TableSetupColumn("##Col1", ImGuiTableColumnFlags_WidthFixed, windowSize.x * 0.5f);
+
+            ShowParameter("Epoch", &neuralNetworkManager->trainingParameters[0]);
+            ShowParameter("Data Training Size", &neuralNetworkManager->trainingParameters[1]);
+            ShowParameter("Batch Size", &neuralNetworkManager->trainingParameters[2], 1.0f, 1, 32);
+            ShowParameter("Patience", &neuralNetworkManager->trainingParameters[3]);
+            ShowParameter("Learning Rate", &neuralNetworkManager->trainingParameters[4], 0.000000001f, 0, 1);
+            ShowParameter("Min Learning Rate", &neuralNetworkManager->trainingParameters[5], 0.000000001f, 0,
+                          neuralNetworkManager->trainingParameters[4]);
+
+            ImGui::EndTable();
+        }
+
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetWindowSize().x * 0.05f);
+
+        if (ImGui::Button("Cancel", ImVec2(ImGui::GetWindowSize().x*0.40f, 0.0f))) {
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::SameLine();
+        if (ImGui::Button("Accept", ImVec2(ImGui::GetWindowSize().x*0.40f, 0.0f))) {
+            application->isStarted = true;
+            neuralNetworkManager->InitializeNetwork(NetworkTask::TrainNetwork);
+
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
+    ImGui::SameLine();
     ShowButton("RenderToFileButton", editorManager->renderToFileTexture->GetID());
     if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
         ImGui::OpenPopup("RenderToFilePopup");
@@ -104,26 +164,6 @@ void ToolBar::ShowToolBar() {
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
-    }
-
-    ImGui::SameLine();
-    if (!application->isStarted || (application->isStarted && neuralNetworkManager->state != NetworkState::Training)) {
-        ShowButton("TrainButton", editorManager->trainTexture->GetID(), neuralNetworkManager->state == NetworkState::Idle);
-    }
-    else if (application->isStarted && neuralNetworkManager->state == NetworkState::Training) {
-        ShowButton("StopTrainButton", editorManager->stopTexture->GetID());
-    }
-    if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
-        if (!application->isStarted && !editorManager->loadedImage) return;
-        if (RenderingManager::GetInstance()->objectRenderer->pointLights[0] == nullptr) {
-            ImGui::OpenPopup("MessagePopup");
-            return;
-        }
-
-        application->isStarted = !application->isStarted;
-
-        if (application->isStarted) NeuralNetworkManager::GetInstance()->InitializeNetwork(NetworkTask::TrainNetwork);
-        if (!application->isStarted) NeuralNetworkManager::GetInstance()->FinalizeNetwork();
     }
 
     ImGui::SameLine();
@@ -224,4 +264,23 @@ void ToolBar::SaveRenderToFile(const std::string& path) {
 
     delete[] data;
     delete[] flippedData;
+}
+
+void ToolBar::ShowParameter(const std::string &label, float* param, float step, float min, float max) {
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+    ImGui::Text("%s", (label + ": ").c_str());
+
+    ImGui::TableSetColumnIndex(1);
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    ImGui::DragFloat(label.c_str(), param, step, min, max, "%g");
+    if (*param > max) {
+        *param = max;
+    }
+    else if (*param < min) {
+        *param = min;
+    }
+    if (step == 1.0f) {
+        *param = std::roundf(*param);
+    }
 }
