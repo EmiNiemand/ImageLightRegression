@@ -5,7 +5,7 @@
 
 class AdamOptimizer {
 public:
-    float beta1 = 0.5;
+    float beta1 = 0.9;
     float beta2 = 0.999;       // Exponential decay rates
     float learningRate = 0.001;       // Learning rate
 

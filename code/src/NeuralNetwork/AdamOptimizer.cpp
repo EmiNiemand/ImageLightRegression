@@ -33,12 +33,15 @@ void AdamOptimizer::UpdateParameters(float* parameters, int size, const std::vec
         v[i] = beta2 * v[i] + (1 - beta2) * (float)pow(gradients[i], 2);
     }
 
-    float biasCorrection1 = 1.0f - (float)pow(beta1, t);
-    float biasCorrection2 = 1.0f - (float)pow(beta2, t);
+    float mCorrection = 1.0f - (float)pow(beta1, t);
+    float vCorrection = 1.0f - (float)pow(beta2, t);
+
+    if (mCorrection == 0) mCorrection = 1.0f;
+    if (vCorrection == 0) vCorrection = 1.0f;
 
     for (int i = 0; i < size; ++i) {
-        float mOut = m[i] / biasCorrection1;
-        float vOut = v[i] / biasCorrection2;
+        float mOut = m[i] / mCorrection;
+        float vOut = v[i] / vCorrection;
 
         parameters[i] -= (learningRate / ((float)sqrt((double)vOut) + epsilon) * mOut);
     }

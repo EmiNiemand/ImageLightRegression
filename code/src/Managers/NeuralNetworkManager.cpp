@@ -67,7 +67,7 @@ void NeuralNetworkManager::Shutdown() {
 }
 
 void NeuralNetworkManager::InitializeNetwork(NetworkTask task) {
-    layers.reserve(16);
+    layers.reserve(12);
     poolingLayers.reserve(4);
 
     currentTask = task;
@@ -133,6 +133,9 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
     manager->state = NetworkState::Training;
 
     RenderingManager* renderingManager = RenderingManager::GetInstance();
+
+    AdamOptimizer* adamOptimizer = AdamOptimizer::GetInstance();
+    adamOptimizer->learningRate = learningRate;
 
     // Save texture values
     Texture* texture = EditorManager::GetInstance()->loadedImage->GetComponentByClass<Image>()->GetTexture();
@@ -230,11 +233,13 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
         ILR_WARN_MSG("**********************************");
         ILR_WARN_MSG("Epoch: " + STRING(i) + ", Loss: " + STRING(averageEpochLoss) + ", Rate: " + STRING(learningRate));
         ILR_WARN_MSG("**********************************");
+        adamOptimizer->IncrementTimeStep();
 
         if (bestEpochLoss <= averageEpochLoss) {
             ++patienceCounter;
             if (patienceCounter == patience) {
                 learningRate *= 0.1f;
+                adamOptimizer->learningRate = learningRate;
                 if (learningRate < minLearningRate) learningRate = minLearningRate;
                 patienceCounter = 0;
             }
@@ -442,12 +447,10 @@ void NeuralNetworkManager::Forward() {
 
 void NeuralNetworkManager::Backward(const float* target, std::vector<Gradient*>& gradients) {
     std::vector<float> outputGradients;
-    outputGradients.reserve(2);
+    outputGradients.reserve(outputSize);
 
-    float max = -FLT_MAX;
     for (int i = 0; i < layers[15]->width; ++i) {
         outputGradients.push_back(2 * (layers[15]->maps[i] - target[i]));
-        if (outputGradients[i] > max) max = outputGradients[i];
     }
 
     gradients.push_back(FullyConnectedLayerBackward(layers[15], weights[15], layers[14], outputGradients));

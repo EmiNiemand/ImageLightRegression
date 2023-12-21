@@ -518,11 +518,9 @@ void MiniBatch(const std::vector<std::vector<Gradient*>>& gradients, std::vector
 void UpdateWeightsAndBiases(const std::vector<Gradient*>& gradients, std::vector<Group*>& weights,
                             std::vector<Layer*>& biases, float learningRate) {
     AdamOptimizer* adamOptimizer = AdamOptimizer::GetInstance();
-    adamOptimizer->learningRate = learningRate;
 
     for (int layer = 0; layer < gradients.size(); ++layer) {
         int idx = 15 - layer;
-        adamOptimizer->IncrementTimeStep();
         adamOptimizer->UpdateParameters(biases[idx]->maps,  biases[idx]->width * biases[idx]->height * biases[idx]->depth,
                                         gradients[layer]->biasesGradients);
 
