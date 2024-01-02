@@ -119,30 +119,30 @@ extern __global__ void CUDAConvLayerBiasGradients(float* biasGradients, const fl
 extern __global__ void CUDAClipGradient(float* gradient, int size, float maxValue);
 #pragma endregion
 
-Layer* ConvolutionLayer(const Layer* input, const Group* filters, const ivec2& stride = {1, 1},
+Layer* ConvolutionLayer(const Layer* currentLayer, const Group* filters, const ivec2& stride = {1, 1},
                         const ivec2& padding = {0, 0}, const float* biases = nullptr);
 
 Gradient* ConvolutionLayerBackward(Layer* currentLayer, Group* weights, Layer* previousLayer, std::vector<float>& gradient);
 
-void ReLULayer(Layer* filter);
+void ReLULayer(Layer* currentLayer);
 
-Layer* PoolingLayer(const Layer* input, const ivec2& poolDim, const ivec2& stride);
+Layer* PoolingLayer(const Layer* currentLayer, const ivec2& poolDim, const ivec2& stride);
 
 void MaxPoolingBackward(const Layer* currentLayer, const Layer* previousLayer, std::vector<float>& gradient,
                                       ivec2 poolDim, ivec2 strideDim);
 
-Layer* FullyConnectedLayer(const Layer* neurons, const float* weights, int inputSize, int outputSize,
+Layer* FullyConnectedLayer(const Layer* currentLayer, const float* weights, int currentLayerSize, int nextLayerSize,
                            const float* biases = nullptr);
 
 Gradient* FullyConnectedLayerBackward(Layer* currentLayer, Group* weights, Layer* previousLayer, std::vector<float>& gradient);
 
+void DropoutLayer(Layer* currentLayer, float probability);
+
 float MSELossFunction(const float* input, const float* predictedResult, int size);
 
-void MiniBatch(const std::vector<std::vector<Gradient*>>& gradients, std::vector<Group*>& weights,
-               std::vector<Layer*>& biases, float learningRate);
+void MiniBatch(const std::vector<std::vector<Gradient*>>& gradients, std::vector<Group*>& weights, std::vector<Layer*>& biases);
 
-void UpdateWeightsAndBiases(const std::vector<Gradient*>& gradients, std::vector<Group*>& weights,
-               std::vector<Layer*>& biases, float learningRate);
+void UpdateWeightsAndBiases(const std::vector<Gradient*>& gradients, std::vector<Group*>& weights, std::vector<Layer*>& biases);
 
 void ClipGradient(std::vector<float>& gradient);
 

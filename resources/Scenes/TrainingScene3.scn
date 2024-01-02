@@ -75,7 +75,7 @@
                             0.0,
                             0.0
                         ],
-                        "Model": "resources/models/BasicShapes/Cube/Cube.obj",
+                        "Model": "resources/Models/BasicShapes/Cylinder/Cylinder.obj",
                         "TextureScale": [
                             1.0,
                             1.0

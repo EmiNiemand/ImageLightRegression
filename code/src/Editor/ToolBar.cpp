@@ -39,11 +39,11 @@ void ToolBar::ShowToolBar() {
         ImGui::Text("resources/");
 
         ImGui::SameLine();
-        static char text[126] = "Scene Path And Name";
+        static char text[126] = "Scene_Path_And_Name";
         ImGui::InputText("##ScenePathAndName", &text[0], sizeof(char) * 126);
 
         ImGui::SameLine();
-        ImGui::Text(".jpg");
+        ImGui::Text(".scn");
 
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetWindowSize().x * 0.05f);
 
@@ -56,9 +56,9 @@ void ToolBar::ShowToolBar() {
             EditorManager::GetInstance()->selectedNode = nullptr;
             sceneManager->ClearScene();
 
-            std::filesystem::path newScenePath(editorManager->fileExplorerCurrentPath);
-            newScenePath /= text;
-            sceneManager->SaveScene(newScenePath.string() + ".scn");
+            std::filesystem::path filePath("resources/");
+            filePath /= text;
+            sceneManager->SaveScene(filePath.string() + ".scn");
 
 
             ImGui::CloseCurrentPopup();

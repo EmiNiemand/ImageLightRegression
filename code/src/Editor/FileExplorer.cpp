@@ -125,6 +125,7 @@ void FileExplorer::ShowFiles() {
                     SceneManager::GetInstance()->ClearScene();
                     SceneManager::GetInstance()->LoadScene(entry.path().string());
                     EditorManager::GetInstance()->editorCamera->transform->SetLocalPosition({0, 1, 10});
+                    EditorManager::GetInstance()->editorCamera->transform->SetLocalRotation({0, 0, 0});
                 }
             }
         }

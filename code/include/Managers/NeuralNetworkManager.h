@@ -77,15 +77,17 @@ private:
 
     static void FillDataSet(float* dataSet, glm::vec3* cameraPositions, glm::vec3* lightPositions, int dataSize, int trainingSize);
 
-    void Forward();
+    void Forward(bool drop);
     void Backward(const float* target, std::vector<Gradient*>& gradients);
 
     static Layer* GetLoadedImageWithSize(int outWidth, int outHeight);
 
+    // Loads weights and biases
     void Load();
     static void ThreadLoad();
+    // Saves weights and biases to file
     void Save();
-    static void ThreadSave(bool changeState);
+    static void ThreadSave();
 };
 
 

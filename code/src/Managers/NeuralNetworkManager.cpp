@@ -103,7 +103,7 @@ void NeuralNetworkManager::ProcessImage() {
 
     if (renderingManager->objectRenderer->pointLights[0] == nullptr) FinalizeNetwork();
 
-    Forward();
+    Forward(false);
 
     glm::vec3 cameraPosition = Camera::GetRenderingCamera()->transform->GetGlobalPosition();
     float* cameraSphericalCoords = CUM::CartesianToSphericalCoordinates(cameraPosition);
@@ -188,6 +188,7 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
             Camera::GetRenderingCamera()->transform->SetLocalRotation(glm::vec3(angleX, angleY, 0));
             Camera::GetRenderingCamera()->transform->SetLocalPosition(cameraPositions[idx]);
 
+            // Wait until new frame is drawn and updated
             manager->waitForUpdate = true;
             manager->waitForRender = true;
             while(true) {
@@ -197,7 +198,7 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
                 }
             }
 
-            manager->Forward();
+            manager->Forward(true);
 
             float predictedValues[2] = {dataSet[idx * 2], dataSet[idx * 2 + 1]};
             ILR_INFO_MSG("Output: " + STRING(manager->layers[15]->maps[0]) + ", " + STRING(manager->layers[15]->maps[1]) +
@@ -249,8 +250,7 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
             bestEpochLoss = averageEpochLoss;
         }
 
-        MiniBatch(gradients, manager->weights, manager->biases, learningRate);
-        ThreadSave(false);
+        MiniBatch(gradients, manager->weights, manager->biases);
 
         for (int g = 0; g < gradients.size(); ++g) {
             DELETE_VECTOR_VALUES(gradients[g])
@@ -277,7 +277,7 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
 
 void NeuralNetworkManager::FillDataSet(float *dataSet, glm::vec3* cameraPositions, glm::vec3* lightPositions, int dataSize,
                                                                                                     int trainingSize) {
-
+    // Load values from file
     FILE* stream;
     fopen_s(&stream, "resources/Resources/NeuralNetworkResources/Data.json", "rb");
     if (stream != nullptr) {
@@ -298,7 +298,8 @@ void NeuralNetworkManager::FillDataSet(float *dataSet, glm::vec3* cameraPosition
         }
         fclose(stream);
     }
-    
+
+    // Create new values if file does not exist or number of data was changed
     std::filesystem::remove("resources/Resources/NeuralNetworkResources/DataLog.txt");
 
     std::shared_ptr<spdlog::logger> logger = spdlog::basic_logger_mt("logger", "resources/Resources/NeuralNetworkResources/DataLog.txt");
@@ -306,8 +307,8 @@ void NeuralNetworkManager::FillDataSet(float *dataSet, glm::vec3* cameraPosition
     logger->flush_on(spdlog::level::info);
 
     for (int i = 0; i < trainingSize; ++i) {
-        cameraPositions[i] = glm::normalize(glm::vec3(RNG(-1.0f, 1.0f), RNG(0.0f, 1.0f), RNG(-1.0f, 1.0f))) * 20.0f;
-        lightPositions[i] = glm::normalize(glm::vec3(RNG(-1.0f, 1.0f), RNG(0.0f, 1.0f), RNG(-1.0f, 1.0f))) * 20.0f;
+        cameraPositions[i] = glm::normalize(glm::vec3(RNG(-1.0f, 1.0f), RNG(0.0f, 1.0f), RNG(-1.0f, 1.0f))) * 10.0f;
+        lightPositions[i] = glm::normalize(glm::vec3(RNG(-1.0f, 1.0f), RNG(0.0f, 1.0f), RNG(-1.0f, 1.0f))) * 10.0f;
 
         float* cameraSphericalCoords = CUM::CartesianToSphericalCoordinates(cameraPositions[i]);
         float* lightSphericalCoords = CUM::CartesianToSphericalCoordinates(lightPositions[i]);
@@ -330,6 +331,7 @@ void NeuralNetworkManager::FillDataSet(float *dataSet, glm::vec3* cameraPosition
     spdlog::drop("logger");
     logger.reset();
 
+    // Save new generated data to file
     fopen_s(&stream, "resources/Resources/NeuralNetworkResources/Data.json", "wb");
     if (stream != nullptr) {
         fwrite(&dataSize, sizeof(int), 1, stream);
@@ -347,11 +349,11 @@ void NeuralNetworkManager::FillDataSet(float *dataSet, glm::vec3* cameraPosition
     }
 }
 
-void NeuralNetworkManager::Forward() {
+void NeuralNetworkManager::Forward(bool drop) {
     glm::ivec2 imageDim = glm::ivec2(224, 224);
+    // Get image data in 0 - 1 range
     loadedData = GetLoadedImageWithSize(imageDim.x, imageDim.y);
 
-#pragma region Classify
     // Group 1
     // Conv 1
     layers.emplace_back(ConvolutionLayer(loadedData, weights[0], {1, 1}, {1, 1}, biases[0]->maps));
@@ -434,12 +436,16 @@ void NeuralNetworkManager::Forward() {
     ReLULayer(layers[12]);
     // Max Pooling [4]
     poolingLayers.emplace_back(PoolingLayer(layers[12], {2, 2}, {2, 2}));
-#pragma endregion
+
     // Neurons of Hidden Layer 1
     layers.emplace_back(FullyConnectedLayer(poolingLayers[4], weights[13]->filters[0].maps, 25088, 4096, biases[13]->maps));
+    // Deactivate half of the neurons during training
+    if(drop) DropoutLayer(layers[13], 0.25f);
 
     // Neurons of Hidden Layer 2
     layers.emplace_back(FullyConnectedLayer(layers[13], weights[14]->filters[0].maps, 4096, 4096, biases[14]->maps));
+    // Deactivate half of the neurons during training
+    if(drop) DropoutLayer(layers[14], 0.25f);
 
     // Output neurons
     layers.emplace_back(FullyConnectedLayer(layers[14], weights[15]->filters[0].maps, 4096, outputSize, biases[15]->maps));
@@ -664,13 +670,13 @@ void NeuralNetworkManager::Save() {
         delete thread;
     }
 
-    thread = new std::thread(&NeuralNetworkManager::ThreadSave, true);
+    thread = new std::thread(&NeuralNetworkManager::ThreadSave);
 }
 
-void NeuralNetworkManager::ThreadSave(bool changeState) {
+void NeuralNetworkManager::ThreadSave() {
     NeuralNetworkManager* manager = NeuralNetworkManager::GetInstance();
 
-    if(changeState) manager->state = LoadingSaving;
+    manager->state = LoadingSaving;
 
     FILE* stream;
     fopen_s(&stream, "resources/Resources/NeuralNetworkResources/Model.json", "wb");
@@ -693,7 +699,7 @@ void NeuralNetworkManager::ThreadSave(bool changeState) {
         }
         fclose(stream);
     }
-    if(changeState) manager->state = Idle;
+    manager->state = Idle;
 }
 
 #pragma endregion

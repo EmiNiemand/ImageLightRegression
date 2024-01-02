@@ -5,111 +5,6 @@
                 "Children": [],
                 "Components": [
                     {
-                        "CallOnAwake": true,
-                        "CallOnStart": true,
-                        "ComponentType": "Camera",
-                        "Enabled": true,
-                        "FOV": 45.0,
-                        "zFar": 100.0,
-                        "zNear": 0.10000000149011612
-                    },
-                    {
-                        "CallOnAwake": true,
-                        "CallOnStart": true,
-                        "ComponentType": "Renderer",
-                        "DrawShadows": false,
-                        "Enabled": true,
-                        "Material": [
-                            1.0,
-                            1.0,
-                            1.0,
-                            32.0,
-                            0.0,
-                            0.0
-                        ],
-                        "Model": "resources/models/Camera/Camera.obj",
-                        "TextureScale": [
-                            1.0,
-                            1.0
-                        ]
-                    }
-                ],
-                "Enabled": true,
-                "Name": "Camera",
-                "Transform": {
-                    "CallOnAwake": true,
-                    "CallOnStart": true,
-                    "Enabled": true,
-                    "Position": [
-                        -10.0,
-                        5.0,
-                        15.0
-                    ],
-                    "Rotation": [
-                        -15.0,
-                        -33.0,
-                        0.0
-                    ],
-                    "Scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                },
-                "VisibleInEditor": true
-            },
-            {
-                "Children": [],
-                "Components": [
-                    {
-                        "CallOnAwake": true,
-                        "CallOnStart": true,
-                        "ComponentType": "Renderer",
-                        "DrawShadows": true,
-                        "Enabled": true,
-                        "Material": [
-                            1.0,
-                            1.0,
-                            1.0,
-                            32.0,
-                            0.0,
-                            0.0
-                        ],
-                        "Model": "resources/models/BasicShapes/Cube/Cube.obj",
-                        "TextureScale": [
-                            1.0,
-                            1.0
-                        ]
-                    }
-                ],
-                "Enabled": true,
-                "Name": "Block\u0000ing",
-                "Transform": {
-                    "CallOnAwake": true,
-                    "CallOnStart": true,
-                    "Enabled": true,
-                    "Position": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "Rotation": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "Scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                },
-                "VisibleInEditor": true
-            },
-            {
-                "Children": [],
-                "Components": [
-                    {
                         "Ambient": [
                             1.0,
                             1.0,
@@ -207,6 +102,111 @@
                         50.0,
                         2.0,
                         50.0
+                    ]
+                },
+                "VisibleInEditor": true
+            },
+            {
+                "Children": [],
+                "Components": [
+                    {
+                        "CallOnAwake": true,
+                        "CallOnStart": true,
+                        "ComponentType": "Camera",
+                        "Enabled": true,
+                        "FOV": 45.0,
+                        "zFar": 100.0,
+                        "zNear": 0.10000000149011612
+                    },
+                    {
+                        "CallOnAwake": true,
+                        "CallOnStart": true,
+                        "ComponentType": "Renderer",
+                        "DrawShadows": false,
+                        "Enabled": true,
+                        "Material": [
+                            1.0,
+                            1.0,
+                            1.0,
+                            32.0,
+                            0.0,
+                            0.0
+                        ],
+                        "Model": "resources/models/Camera/Camera.obj",
+                        "TextureScale": [
+                            1.0,
+                            1.0
+                        ]
+                    }
+                ],
+                "Enabled": true,
+                "Name": "Camera",
+                "Transform": {
+                    "CallOnAwake": true,
+                    "CallOnStart": true,
+                    "Enabled": true,
+                    "Position": [
+                        -10.0,
+                        5.0,
+                        15.0
+                    ],
+                    "Rotation": [
+                        -15.0,
+                        -33.0,
+                        0.0
+                    ],
+                    "Scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "VisibleInEditor": true
+            },
+            {
+                "Children": [],
+                "Components": [
+                    {
+                        "CallOnAwake": true,
+                        "CallOnStart": true,
+                        "ComponentType": "Renderer",
+                        "DrawShadows": true,
+                        "Enabled": true,
+                        "Material": [
+                            1.0,
+                            1.0,
+                            1.0,
+                            32.0,
+                            0.0,
+                            0.0
+                        ],
+                        "Model": "resources/Models/BasicShapes/Sphere/Sphere.obj",
+                        "TextureScale": [
+                            1.0,
+                            1.0
+                        ]
+                    }
+                ],
+                "Enabled": true,
+                "Name": "Block\u0000ing",
+                "Transform": {
+                    "CallOnAwake": true,
+                    "CallOnStart": true,
+                    "Enabled": true,
+                    "Position": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "Rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "Scale": [
+                        1.0,
+                        1.0,
+                        1.0
                     ]
                 },
                 "VisibleInEditor": true

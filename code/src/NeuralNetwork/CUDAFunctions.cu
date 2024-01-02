@@ -149,31 +149,31 @@ __global__ void CUDAClipGradient(float* gradient, int size) {
 #pragma endregion
 
 
-Layer* ConvolutionLayer(const Layer* input, const Group* filters, const ivec2 &stride,
+Layer* ConvolutionLayer(const Layer* currentLayer, const Group* filters, const ivec2 &stride,
                         const ivec2 &padding, const float* biases) {
 
-    int width = (input->width - filters->filters[0].width + 2 * padding.x) / stride.x + 1;
-    int height = (input->height - filters->filters[0].height + 2 * padding.y) / stride.y + 1;
+    int width = (currentLayer->width - filters->filters[0].width + 2 * padding.x) / stride.x + 1;
+    int height = (currentLayer->height - filters->filters[0].height + 2 * padding.y) / stride.y + 1;
 
-    int inputSize = input->width * input->height * input->depth;
-    int outputSize = width * height * filters->count;
+    int currentLayerSize = currentLayer->width * currentLayer->height * currentLayer->depth;
+    int nextLayerSize = width * height * filters->count;
 
-    Layer* output = new Layer();
-    output->depth = filters->count;
-    output->width = width;
-    output->height = height;
-    output->maps = new float[outputSize];
+    Layer* nextLayer = new Layer();
+    nextLayer->depth = filters->count;
+    nextLayer->width = width;
+    nextLayer->height = height;
+    nextLayer->maps = new float[nextLayerSize];
 
-    int numByteInputSize = inputSize * sizeof(float);
-    int numByteOutputSize = outputSize * sizeof(float);
+    int numBytesCurrentLayerSize = (int)(currentLayerSize * sizeof(float));
+    int numBytesNextLayerSize = (int)(nextLayerSize * sizeof(float));
 
-    float* deviceInput;
-    cudaMalloc((void**)&deviceInput, numByteInputSize);
-    cudaMemcpy(deviceInput, input->maps, numByteInputSize, cudaMemcpyHostToDevice);
+    float* deviceCurrentLayer;
+    cudaMalloc((void**)&deviceCurrentLayer, numBytesCurrentLayerSize);
+    cudaMemcpy(deviceCurrentLayer, currentLayer->maps, numBytesCurrentLayerSize, cudaMemcpyHostToDevice);
 
-    float* deviceOutput;
-    cudaMalloc((void**)&deviceOutput, numByteOutputSize);
-    cudaMemset(deviceOutput, 0, numByteOutputSize);
+    float* deviceNextLayer;
+    cudaMalloc((void**)&deviceNextLayer, numBytesNextLayerSize);
+    cudaMemset(deviceNextLayer, 0, numBytesNextLayerSize);
 
     float* deviceBiases = nullptr;
     if (biases != nullptr) {
@@ -181,45 +181,47 @@ Layer* ConvolutionLayer(const Layer* input, const Group* filters, const ivec2 &s
         cudaMemcpy(deviceBiases, biases, filters->count * sizeof(float), cudaMemcpyHostToDevice);
     }
 
-    int numByteKernelSize = filters->filters[0].width * filters->filters[0].height * filters->filters[0].depth * sizeof(float);
+    int numBytesKernelSize = (int)(filters->filters[0].width * filters->filters[0].height * filters->filters[0].depth *
+            sizeof(float));
 
     int blockSize = 512;
-    int gridSize = (input->width * input->height * filters->filters[0].width * filters->filters[0].height + blockSize - 1) / blockSize;
+    int gridSize = (currentLayer->width * currentLayer->height * filters->filters[0].width * filters->filters[0].height +
+            blockSize - 1) / blockSize;
 
     float* deviceKernels;
-    cudaMalloc((void**)&deviceKernels, numByteKernelSize);
+    cudaMalloc((void**)&deviceKernels, numBytesKernelSize);
 
     for (int i = 0; i < filters->count; ++i) {
-        cudaMemcpy(deviceKernels, filters->filters[i].maps, numByteKernelSize, cudaMemcpyHostToDevice);
+        cudaMemcpy(deviceKernels, filters->filters[i].maps, numBytesKernelSize, cudaMemcpyHostToDevice);
 
-        CUDAConvLayer<<<gridSize, blockSize>>>(deviceInput, deviceOutput, deviceKernels, deviceBiases, input->width,
-                                               input->height, output->width, output->height, filters->filters[i].width,
-                                               filters->filters[i].height, filters->filters[i].depth,
-                                               stride.x, stride.y, padding.x, padding.y, i);
+        CUDAConvLayer<<<gridSize, blockSize>>>(deviceCurrentLayer, deviceNextLayer, deviceKernels, deviceBiases,
+                                               currentLayer->width, currentLayer->height, nextLayer->width,
+                                               nextLayer->height, filters->filters[i].width, filters->filters[i].height,
+                                               filters->filters[i].depth, stride.x, stride.y, padding.x, padding.y, i);
     }
     cudaFree(deviceKernels);
 
-    cudaMemcpy(output->maps, deviceOutput, numByteOutputSize, cudaMemcpyDeviceToHost);
-    cudaFree(deviceInput);
-    cudaFree(deviceOutput);
+    cudaMemcpy(nextLayer->maps, deviceNextLayer, numBytesNextLayerSize, cudaMemcpyDeviceToHost);
+    cudaFree(deviceCurrentLayer);
+    cudaFree(deviceNextLayer);
 
     if (biases != nullptr) {
         cudaFree(deviceBiases);
     }
 
-    return output;
+    return nextLayer;
 }
 
 Gradient* ConvolutionLayerBackward(Layer *currentLayer, Group *weights, Layer *previousLayer, std::vector<float>& gradient) {
-    int currGradientSize = (int)gradient.size();
-    int outGradientSize = previousLayer->width * previousLayer->height * previousLayer->depth;
+    int currentGradientSize = (int)gradient.size();
+    int previousGradientSize = previousLayer->width * previousLayer->height * previousLayer->depth;
     int weightMapSize = weights->filters[0].width * weights->filters[0].height * weights->filters[0].depth;
     int weightSize = weights->count * weightMapSize;
 
-    Gradient* output = new Gradient();
-    output->inputsGradients.resize(outGradientSize, 0.0f);
-    output->weightsGradients.resize(weightSize, 0.0f);
-    output->biasesGradients.resize(weights->count);
+    Gradient* previousGradient = new Gradient();
+    previousGradient->inputsGradients.resize(previousGradientSize, 0.0f);
+    previousGradient->weightsGradients.resize(weightSize, 0.0f);
+    previousGradient->biasesGradients.resize(weights->count);
 
     std::vector<float> squashedWeights(weightSize, 0.0f);
 
@@ -227,17 +229,17 @@ Gradient* ConvolutionLayerBackward(Layer *currentLayer, Group *weights, Layer *p
         std::memcpy(&squashedWeights[0] + i * weightMapSize, weights->filters[i].maps, weightMapSize * sizeof(float));
     }
 
-    int numBytesGradientSize = (int)(currGradientSize * sizeof(float));
-    int numBytesOutGradientSize = (int)(outGradientSize * sizeof(float));
+    int numBytesCurrentGradientSize = (int)(currentGradientSize * sizeof(float));
+    int numBytesPreviousGradientSize = (int)(previousGradientSize * sizeof(float));
     int numBytesWeightsSize = (int)(weightSize * sizeof(float));
 
     float* deviceGradient;
-    cudaMalloc((void**)&deviceGradient, numBytesGradientSize);
-    cudaMemcpy(deviceGradient, gradient.data(), numBytesGradientSize, cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&deviceGradient, numBytesCurrentGradientSize);
+    cudaMemcpy(deviceGradient, gradient.data(), numBytesCurrentGradientSize, cudaMemcpyHostToDevice);
 
-    float* deviceOutputGradient;
-    cudaMalloc((void**)&deviceOutputGradient, numBytesOutGradientSize);
-    cudaMemset(deviceOutputGradient, 0, numBytesOutGradientSize);
+    float* devicePreviousGradient;
+    cudaMalloc((void**)&devicePreviousGradient, numBytesPreviousGradientSize);
+    cudaMemset(devicePreviousGradient, 0, numBytesPreviousGradientSize);
 
     float* deviceWeightGradient;
     cudaMalloc((void**)&deviceWeightGradient, numBytesWeightsSize);
@@ -248,98 +250,98 @@ Gradient* ConvolutionLayerBackward(Layer *currentLayer, Group *weights, Layer *p
     cudaMemset(deviceBiasesGradient, 0, weights->count * sizeof(float));
 
     float* devicePreviousLayer;
-    cudaMalloc((void**)&devicePreviousLayer, numBytesOutGradientSize);
-    cudaMemcpy(devicePreviousLayer, previousLayer->maps, numBytesOutGradientSize, cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&devicePreviousLayer, numBytesPreviousGradientSize);
+    cudaMemcpy(devicePreviousLayer, previousLayer->maps, numBytesPreviousGradientSize, cudaMemcpyHostToDevice);
 
     float* deviceWeights;
     cudaMalloc((void**)&deviceWeights, numBytesWeightsSize);
     cudaMemcpy(deviceWeights, squashedWeights.data(), numBytesWeightsSize, cudaMemcpyHostToDevice);
 
     int blockSize = 512;
-    int gridSize = (outGradientSize + blockSize - 1) / blockSize;
+    int gridSize = (previousGradientSize + blockSize - 1) / blockSize;
 
-    CUDAConvLayerGradients<<<gridSize, blockSize>>>(deviceOutputGradient, deviceWeightGradient, deviceGradient,
+    CUDAConvLayerGradients<<<gridSize, blockSize>>>(devicePreviousGradient, deviceWeightGradient, deviceGradient,
                                                     devicePreviousLayer, deviceWeights, previousLayer->width,
                                                     previousLayer->height, previousLayer->depth, currentLayer->width,
                                                     currentLayer->height, currentLayer->depth,
                                                     weights->filters[0].width,
                                                     weights->filters[0].height);
 
-    gridSize = (currGradientSize + blockSize - 1) / blockSize;
+    gridSize = (currentGradientSize + blockSize - 1) / blockSize;
 
     CUDAConvLayerBiasGradients<<<gridSize, blockSize>>>(deviceBiasesGradient, deviceGradient, currentLayer->width,
                                                         currentLayer->height, currentLayer->depth);
 
-    cudaMemcpy(output->inputsGradients.data(), deviceOutputGradient, numBytesOutGradientSize, cudaMemcpyDeviceToHost);
-    cudaMemcpy(output->weightsGradients.data(), deviceWeightGradient, numBytesWeightsSize, cudaMemcpyDeviceToHost);
-    cudaMemcpy(output->biasesGradients.data(), deviceBiasesGradient, weights->count * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(previousGradient->inputsGradients.data(), devicePreviousGradient, numBytesPreviousGradientSize, cudaMemcpyDeviceToHost);
+    cudaMemcpy(previousGradient->weightsGradients.data(), deviceWeightGradient, numBytesWeightsSize, cudaMemcpyDeviceToHost);
+    cudaMemcpy(previousGradient->biasesGradients.data(), deviceBiasesGradient, weights->count * sizeof(float), cudaMemcpyDeviceToHost);
 
     cudaFree(deviceWeightGradient);
     cudaFree(deviceGradient);
     cudaFree(deviceBiasesGradient);
-    cudaFree(deviceOutputGradient);
+    cudaFree(devicePreviousGradient);
     cudaFree(devicePreviousLayer);
     cudaFree(deviceWeights);
 
-    ClipGradient(output->inputsGradients);
-    ClipGradient(output->weightsGradients);
-    ClipGradient(output->biasesGradients);
+    ClipGradient(previousGradient->inputsGradients);
+    ClipGradient(previousGradient->weightsGradients);
+    ClipGradient(previousGradient->biasesGradients);
 
-    return output;
+    return previousGradient;
 }
 
-void ReLULayer(Layer* input) {
-    int dataSize = input->width * input->height * input->depth;
-    int numBytesDataSize = dataSize * sizeof(float);
+void ReLULayer(Layer* currentLayer) {
+    int currentLayerSize = currentLayer->width * currentLayer->height * currentLayer->depth;
+    int numBytesCurrentLayerSize = (int)(currentLayerSize * sizeof(float));
 
     int blockSize = 256;
-    int gridSize = (dataSize + blockSize - 1) / blockSize;
+    int gridSize = (currentLayerSize + blockSize - 1) / blockSize;
 
-    float* deviceData;
-    cudaMalloc((void**)&deviceData, numBytesDataSize);
-    cudaMemcpy(deviceData, input->maps, numBytesDataSize, cudaMemcpyHostToDevice);
+    float* deviceCurrentLayer;
+    cudaMalloc((void**)&deviceCurrentLayer, numBytesCurrentLayerSize);
+    cudaMemcpy(deviceCurrentLayer, currentLayer->maps, numBytesCurrentLayerSize, cudaMemcpyHostToDevice);
 
-    CUDAReLULayer<<<gridSize, blockSize>>>(deviceData, dataSize);
+    CUDAReLULayer<<<gridSize, blockSize>>>(deviceCurrentLayer, currentLayerSize);
 
-    cudaMemcpy(input->maps, deviceData, numBytesDataSize, cudaMemcpyDeviceToHost);
-    cudaFree(deviceData);
+    cudaMemcpy(currentLayer->maps, deviceCurrentLayer, numBytesCurrentLayerSize, cudaMemcpyDeviceToHost);
+    cudaFree(deviceCurrentLayer);
 }
 
-Layer* PoolingLayer(const Layer* input, const ivec2& poolDim, const ivec2& stride) {
-    int width = (input->width - poolDim.x) / stride.x + 1;
-    int height = (input->height - poolDim.y) / stride.y + 1;
+Layer* PoolingLayer(const Layer* currentLayer, const ivec2& poolDim, const ivec2& stride) {
+    int width = (currentLayer->width - poolDim.x) / stride.x + 1;
+    int height = (currentLayer->height - poolDim.y) / stride.y + 1;
 
-    int inputDataSize = input->width * input->height * input->depth;
-    int outputDataSize = width * height * input->depth;
+    int currentLayerSize = currentLayer->width * currentLayer->height * currentLayer->depth;
+    int nextLayerSize = width * height * currentLayer->depth;
 
-    Layer* output = new Layer();
-    output->depth = input->depth;
-    output->width = width;
-    output->height = height;
-    output->maps = new float[outputDataSize];
+    Layer* nextLayer = new Layer();
+    nextLayer->depth = currentLayer->depth;
+    nextLayer->width = width;
+    nextLayer->height = height;
+    nextLayer->maps = new float[nextLayerSize];
 
     int blockSize = 256;
-    int gridSize = (outputDataSize + blockSize - 1) / blockSize;
+    int gridSize = (nextLayerSize + blockSize - 1) / blockSize;
 
-    int numBytesInputData = inputDataSize * sizeof(float);
-    int numBytesOutputData = outputDataSize * sizeof(float);
+    int numBytesCurrentLayerSize = (int)(currentLayerSize * sizeof(float));
+    int numBytesNextLayerSize = (int)(nextLayerSize * sizeof(float));
 
-    float* deviceInputData;
-    cudaMalloc((void**)&deviceInputData, numBytesInputData);
-    cudaMemcpy(deviceInputData, input->maps, numBytesInputData, cudaMemcpyHostToDevice);
+    float* deviceCurrentLayer;
+    cudaMalloc((void**)&deviceCurrentLayer, numBytesCurrentLayerSize);
+    cudaMemcpy(deviceCurrentLayer, currentLayer->maps, numBytesCurrentLayerSize, cudaMemcpyHostToDevice);
 
-    float* deviceOutputData;
-    cudaMalloc((void**)&deviceOutputData, numBytesOutputData);
+    float* deviceNextLayer;
+    cudaMalloc((void**)&deviceNextLayer, numBytesNextLayerSize);
 
-    CUDAPoolingLayer<<<gridSize, blockSize>>>(deviceInputData, deviceOutputData, width, height, output->depth,
+    CUDAPoolingLayer<<<gridSize, blockSize>>>(deviceCurrentLayer, deviceNextLayer, width, height, nextLayer->depth,
                                               poolDim.x, poolDim.y, stride.x, stride.y);
 
-    cudaMemcpy(output->maps, deviceOutputData, numBytesOutputData, cudaMemcpyDeviceToHost);
+    cudaMemcpy(nextLayer->maps, deviceNextLayer, numBytesNextLayerSize, cudaMemcpyDeviceToHost);
 
-    cudaFree(deviceInputData);
-    cudaFree(deviceOutputData);
+    cudaFree(deviceCurrentLayer);
+    cudaFree(deviceNextLayer);
 
-    return output;
+    return nextLayer;
 }
 
 void MaxPoolingBackward(const Layer* currentLayer, const Layer* previousLayer, std::vector<float>& gradient,
@@ -377,81 +379,98 @@ void MaxPoolingBackward(const Layer* currentLayer, const Layer* previousLayer, s
     gradient = previousGradient;
 }
 
-Layer* FullyConnectedLayer(const Layer* input, const float* weights, int inputSize, int outputSize,
+Layer* FullyConnectedLayer(const Layer* currentLayer, const float* weights, int currentLayerSize, int nextLayerSize,
                            const float* biases) {
-    Layer* output = new Layer();
-    output->depth = 1;
-    output->height = 1;
-    output->width = outputSize;
-    output->maps = new float[outputSize];
+    Layer* nextLayer = new Layer();
+    nextLayer->depth = 1;
+    nextLayer->height = 1;
+    nextLayer->width = nextLayerSize;
+    nextLayer->maps = new float[nextLayerSize];
 
-    int numBytesInput = inputSize * sizeof(float);
-    int numBytesOutput = outputSize * sizeof(float);
+    int numBytesCurrentLayerSize = (int)(currentLayerSize * sizeof(float));
+    int numBytesNexLayerSize = (int)(nextLayerSize * sizeof(float));
 
     // Allocate memory on the device (GPU)
-    float* deviceInputNeurons;
+    float* deviceCurrentLayerNeurons;
     float* deviceWeights;
     float* deviceBiases = nullptr;
-    float* deviceOutputNeurons;
-    cudaMalloc((void**)&deviceInputNeurons, numBytesInput);
-    cudaMalloc((void**)&deviceWeights, numBytesInput * outputSize);
-    cudaMalloc((void**)&deviceOutputNeurons, numBytesOutput);
-    cudaMemset((void**)&deviceOutputNeurons, 0, numBytesOutput);
+    float* deviceNextLayerNeurons;
+    cudaMalloc((void**)&deviceCurrentLayerNeurons, numBytesCurrentLayerSize);
+    cudaMalloc((void**)&deviceWeights, numBytesCurrentLayerSize * nextLayerSize);
+    cudaMalloc((void**)&deviceNextLayerNeurons, numBytesNexLayerSize);
+    cudaMemset((void**)&deviceNextLayerNeurons, 0, numBytesNexLayerSize);
 
     if (biases != nullptr) {
-        cudaMalloc((void**)&deviceBiases, numBytesOutput);
-        cudaMemcpy(deviceBiases, biases, numBytesOutput, cudaMemcpyHostToDevice);
+        cudaMalloc((void**)&deviceBiases, numBytesNexLayerSize);
+        cudaMemcpy(deviceBiases, biases, numBytesNexLayerSize, cudaMemcpyHostToDevice);
     }
 
     // Copy input neurons and weights from host to device
-    cudaMemcpy(deviceInputNeurons, input->maps, numBytesInput, cudaMemcpyHostToDevice);
-    cudaMemcpy(deviceWeights, weights, numBytesInput * outputSize, cudaMemcpyHostToDevice);
+    cudaMemcpy(deviceCurrentLayerNeurons, currentLayer->maps, numBytesCurrentLayerSize, cudaMemcpyHostToDevice);
+    cudaMemcpy(deviceWeights, weights, numBytesCurrentLayerSize * nextLayerSize, cudaMemcpyHostToDevice);
 
     int blockSize = 512;
-    int gridSize = (inputSize * outputSize + blockSize - 1) / blockSize;
+    int gridSize = (currentLayerSize * nextLayerSize + blockSize - 1) / blockSize;
 
     // Launch the kernel to calculate the neuron values on the GPU
-    CUDAFullyConnectedLayer<<<gridSize, blockSize>>>(deviceInputNeurons, deviceWeights, deviceBiases, deviceOutputNeurons,
-                                                     inputSize, outputSize);
+    CUDAFullyConnectedLayer<<<gridSize, blockSize>>>(deviceCurrentLayerNeurons, deviceWeights, deviceBiases, deviceNextLayerNeurons,
+                                                     currentLayerSize, nextLayerSize);
 
     // Copy the result array from device to host
-    cudaMemcpy(output->maps, deviceOutputNeurons, numBytesOutput, cudaMemcpyDeviceToHost);
+    cudaMemcpy(nextLayer->maps, deviceNextLayerNeurons, numBytesNexLayerSize, cudaMemcpyDeviceToHost);
 
     // Free memory on the device
-    cudaFree(deviceInputNeurons);
+    cudaFree(deviceCurrentLayerNeurons);
     cudaFree(deviceWeights);
-    cudaFree(deviceOutputNeurons);
+    cudaFree(deviceNextLayerNeurons);
 
     if (deviceBiases != nullptr) {
         cudaFree(deviceBiases);
     }
 
-    return output;
+    return nextLayer;
 }
 
 Gradient* FullyConnectedLayerBackward(Layer* currentLayer, Group* weights, Layer* previousLayer, std::vector<float>& gradient) {
-    Gradient* output = new Gradient();
+    Gradient* previousGradient = new Gradient();
 
-    int currLayerSize = currentLayer->width * currentLayer->height * currentLayer->depth;
-    int prevLayerSize = previousLayer->width * previousLayer->height * previousLayer->depth;
-    output->inputsGradients.resize(prevLayerSize, 0.0f);
-    output->weightsGradients.resize(prevLayerSize * currLayerSize, 0.0f);
-    output->biasesGradients.resize(currLayerSize, 0.0f);
+    int currentLayerSize = currentLayer->width * currentLayer->height * currentLayer->depth;
+    int previousLayerSize = previousLayer->width * previousLayer->height * previousLayer->depth;
+    previousGradient->inputsGradients.resize(previousLayerSize, 0.0f);
+    previousGradient->weightsGradients.resize(previousLayerSize * currentLayerSize, 0.0f);
+    previousGradient->biasesGradients.resize(currentLayerSize, 0.0f);
 
-    for (int i = 0; i < currLayerSize; ++i) {
-        for (int j = 0; j < prevLayerSize; ++j) {
-            output->inputsGradients[j] += gradient[i] * weights->filters[0].maps[j + i * gradient.size()];
-            output->weightsGradients[j + i * currLayerSize] += gradient[i] * previousLayer->maps[j];
+    for (int i = 0; i < currentLayerSize; ++i) {
+        for (int j = 0; j < previousLayerSize; ++j) {
+            previousGradient->inputsGradients[j] += gradient[i] * weights->filters[0].maps[j + i * gradient.size()];
+            previousGradient->weightsGradients[j + i * currentLayerSize] += gradient[i] * previousLayer->maps[j];
         }
     }
 
-    std::memcpy(output->biasesGradients.data(), gradient.data(), gradient.size() * sizeof(float));
+    std::memcpy(previousGradient->biasesGradients.data(), gradient.data(), gradient.size() * sizeof(float));
 
-    ClipGradient(output->inputsGradients);
-    ClipGradient(output->weightsGradients);
-    ClipGradient(output->biasesGradients);
+    ClipGradient(previousGradient->inputsGradients);
+    ClipGradient(previousGradient->weightsGradients);
+    ClipGradient(previousGradient->biasesGradients);
 
-    return output;
+    return previousGradient;
+}
+
+
+void DropoutLayer(Layer *currentLayer, float probability) {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<float> distribution(0, 1);
+
+    for (int i = 0; i < currentLayer->width * currentLayer->height * currentLayer->depth; ++i) {
+        float randomValue = distribution(gen);
+        if (randomValue < probability) {
+            currentLayer->maps[i] = 0;
+        }
+        else {
+            currentLayer->maps[i] *= 1 / (1 - probability);
+        }
+    }
 }
 
 float MSELossFunction(const float* input, const float* predictedResult, int size) {
@@ -485,8 +504,7 @@ void ClipGradient(std::vector<float>& gradient) {
 }
 
 
-void MiniBatch(const std::vector<std::vector<Gradient*>>& gradients, std::vector<Group*>& weights,
-               std::vector<Layer*>& biases, float learningRate) {
+void MiniBatch(const std::vector<std::vector<Gradient*>>& gradients, std::vector<Group*>& weights, std::vector<Layer*>& biases) {
     std::vector<Gradient*> avgGradients;
     avgGradients.reserve(gradients[0].size());
 
@@ -508,15 +526,14 @@ void MiniBatch(const std::vector<std::vector<Gradient*>>& gradients, std::vector
         }
     }
 
-    UpdateWeightsAndBiases(avgGradients, weights, biases, learningRate);
+    UpdateWeightsAndBiases(avgGradients, weights, biases);
 
     for (int i = 0; i < avgGradients.size(); ++i) {
         delete avgGradients[i];
     }
 }
 
-void UpdateWeightsAndBiases(const std::vector<Gradient*>& gradients, std::vector<Group*>& weights,
-                            std::vector<Layer*>& biases, float learningRate) {
+void UpdateWeightsAndBiases(const std::vector<Gradient*>& gradients, std::vector<Group*>& weights, std::vector<Layer*>& biases) {
     AdamOptimizer* adamOptimizer = AdamOptimizer::GetInstance();
 
     for (int layer = 0; layer < gradients.size(); ++layer) {
