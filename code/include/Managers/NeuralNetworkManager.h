@@ -30,7 +30,7 @@ class NeuralNetworkManager {
 public:
     NetworkState state = Idle;
 
-    float trainingParameters[6] = {5000, 1000, 5, 250, 0.0001, 0};
+    float trainingParameters[6] = {5000, 10000, 20, 25, 0.0001, 0.000001};
 
     bool waitForUpdate = false;
     bool waitForRender = false;
