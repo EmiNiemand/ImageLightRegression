@@ -220,15 +220,6 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
             }
         }
 
-        if (!Application::GetInstance()->isStarted) {
-            for (int g = 0; g < gradients.size(); ++g) {
-                DELETE_VECTOR_VALUES(gradients[g])
-            }
-            gradients.clear();
-            break;
-        }
-
-
         float averageEpochLoss = epochLoss / (float)batchSize;
 
         ILR_WARN_MSG("**********************************");
@@ -256,6 +247,10 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
             DELETE_VECTOR_VALUES(gradients[g])
         }
         gradients.clear();
+
+        if (!Application::GetInstance()->isStarted) {
+            break;
+        }
     }
 
     delete[] cameraPositions;
@@ -607,22 +602,22 @@ void NeuralNetworkManager::ThreadLoad() {
     fopen_s(&stream, "resources/Resources/NeuralNetworkResources/Model.json", "rb");
     if (stream != nullptr) {
 #pragma region Weights Inits
-        manager->weights.emplace_back(new Group(64, 0, 0, ivec3(3, 3, 3)));
-        manager->weights.emplace_back(new Group(64, 0, 0, ivec3(3, 3, 64)));
-        manager->weights.emplace_back(new Group(128, 0, 0, ivec3(3, 3, 64)));
-        manager->weights.emplace_back(new Group(128, 0, 0, ivec3(3, 3, 128)));
-        manager->weights.emplace_back(new Group(256, 0, 0, ivec3(3, 3, 128)));
-        manager->weights.emplace_back(new Group(256, 0, 0, ivec3(3, 3, 256)));
-        manager->weights.emplace_back(new Group(256, 0, 0, ivec3(3, 3, 256)));
-        manager->weights.emplace_back(new Group(512, 0, 0, ivec3(3, 3, 256)));
-        manager->weights.emplace_back(new Group(512, 0, 0, ivec3(3, 3, 512)));
-        manager->weights.emplace_back(new Group(512, 0, 0, ivec3(3, 3, 512)));
-        manager->weights.emplace_back(new Group(512, 0, 0, ivec3(3, 3, 512)));
-        manager->weights.emplace_back(new Group(512, 0, 0, ivec3(3, 3, 512)));
-        manager->weights.emplace_back(new Group(512, 0, 0, ivec3(3, 3, 512)));
-        manager->weights.emplace_back(new Group(1, 0, 0, ivec3(102760448, 1, 1)));
-        manager->weights.emplace_back(new Group(1, 0, 0, ivec3(16777216, 1, 1)));
-        manager->weights.emplace_back(new Group(1, 0, 0, ivec3(4096 * manager->outputSize, 1, 1)));
+        manager->weights.emplace_back(new Group(64, 0, ivec3(3, 3, 3)));
+        manager->weights.emplace_back(new Group(64, 0, ivec3(3, 3, 64)));
+        manager->weights.emplace_back(new Group(128, 0, ivec3(3, 3, 64)));
+        manager->weights.emplace_back(new Group(128, 0, ivec3(3, 3, 128)));
+        manager->weights.emplace_back(new Group(256, 0, ivec3(3, 3, 128)));
+        manager->weights.emplace_back(new Group(256, 0, ivec3(3, 3, 256)));
+        manager->weights.emplace_back(new Group(256, 0, ivec3(3, 3, 256)));
+        manager->weights.emplace_back(new Group(512, 0, ivec3(3, 3, 256)));
+        manager->weights.emplace_back(new Group(512, 0, ivec3(3, 3, 512)));
+        manager->weights.emplace_back(new Group(512, 0, ivec3(3, 3, 512)));
+        manager->weights.emplace_back(new Group(512, 0, ivec3(3, 3, 512)));
+        manager->weights.emplace_back(new Group(512, 0, ivec3(3, 3, 512)));
+        manager->weights.emplace_back(new Group(512, 0, ivec3(3, 3, 512)));
+        manager->weights.emplace_back(new Group(1, 0, ivec3(102760448, 1, 1)));
+        manager->weights.emplace_back(new Group(1, 0, ivec3(16777216, 1, 1)));
+        manager->weights.emplace_back(new Group(1, 0, ivec3(4096 * manager->outputSize, 1, 1)));
 #pragma endregion
 
         for (int w = 0; w < manager->weights.size(); ++w) {
@@ -644,22 +639,22 @@ void NeuralNetworkManager::ThreadLoad() {
         fclose(stream);
     }
     else {
-        manager->weights.emplace_back(new Group(64, 27, 3211264, ivec3(3, 3, 3), true));
-        manager->weights.emplace_back(new Group(64, 3211264, 3211264, ivec3(3, 3, 64), true));
-        manager->weights.emplace_back(new Group(128, 802816, 1605632, ivec3(3, 3, 64), true));
-        manager->weights.emplace_back(new Group(128, 1605632, 1605632, ivec3(3, 3, 128), true));
-        manager->weights.emplace_back(new Group(256, 401408, 802816, ivec3(3, 3, 128), true));
-        manager->weights.emplace_back(new Group(256, 802816, 802816, ivec3(3, 3, 256), true));
-        manager->weights.emplace_back(new Group(256, 802816, 802816, ivec3(3, 3, 256), true));
-        manager->weights.emplace_back(new Group(512, 200704, 401408, ivec3(3, 3, 256), true));
-        manager->weights.emplace_back(new Group(512, 401408, 401408, ivec3(3, 3, 512), true));
-        manager->weights.emplace_back(new Group(512, 401408, 401408, ivec3(3, 3, 512), true));
-        manager->weights.emplace_back(new Group(512, 100352, 100352, ivec3(3, 3, 512), true));
-        manager->weights.emplace_back(new Group(512, 100352, 100352, ivec3(3, 3, 512), true));
-        manager->weights.emplace_back(new Group(512, 100352, 100352, ivec3(3, 3, 512), true));
-        manager->weights.emplace_back(new Group(1, 25088, 4096, ivec3(102760448, 1, 1), true));
-        manager->weights.emplace_back(new Group(1, 4096, 4096, ivec3(16777216, 1, 1), true));
-        manager->weights.emplace_back(new Group(1, 4096, 2, ivec3(4096 * manager->outputSize, 1, 1), true));
+        manager->weights.emplace_back(new Group(64, 3211264, ivec3(3, 3, 3), true));
+        manager->weights.emplace_back(new Group(64, 3211264, ivec3(3, 3, 64), true));
+        manager->weights.emplace_back(new Group(128, 1605632, ivec3(3, 3, 64), true));
+        manager->weights.emplace_back(new Group(128, 1605632, ivec3(3, 3, 128), true));
+        manager->weights.emplace_back(new Group(256, 802816, ivec3(3, 3, 128), true));
+        manager->weights.emplace_back(new Group(256, 802816, ivec3(3, 3, 256), true));
+        manager->weights.emplace_back(new Group(256, 802816, ivec3(3, 3, 256), true));
+        manager->weights.emplace_back(new Group(512, 401408, ivec3(3, 3, 256), true));
+        manager->weights.emplace_back(new Group(512, 401408, ivec3(3, 3, 512), true));
+        manager->weights.emplace_back(new Group(512, 401408, ivec3(3, 3, 512), true));
+        manager->weights.emplace_back(new Group(512, 100352, ivec3(3, 3, 512), true));
+        manager->weights.emplace_back(new Group(512, 100352, ivec3(3, 3, 512), true));
+        manager->weights.emplace_back(new Group(512, 100352, ivec3(3, 3, 512), true));
+        manager->weights.emplace_back(new Group(1, 4096, ivec3(102760448, 1, 1), true));
+        manager->weights.emplace_back(new Group(1, 4096, ivec3(16777216, 1, 1), true));
+        manager->weights.emplace_back(new Group(1, 2, ivec3(4096 * manager->outputSize, 1, 1), true));
     }
     manager->state = Idle;
 }

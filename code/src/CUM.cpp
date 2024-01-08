@@ -17,19 +17,31 @@ bool CUM::IsInViewport(glm::ivec2 position, Viewport* viewport) {
 }
 
 unsigned char* CUM::ResizeImage(const unsigned char *image, int width, int height, int newWidth, int newHeight) {
-    unsigned char* resizedImage = new unsigned char[width * height * 3];
+    unsigned char* resizedImage = new unsigned char[newWidth * newHeight * 3];
 
     float widthRatio = (float)(width - 1) / (float)(newWidth - 1);
     float heightRatio = (float)(height - 1) / (float)(newHeight - 1);
 
-    for (int y = 0; y < newHeight; ++y) {
-        for (int x = 0; x < newWidth; ++x) {
-            int srcX = (int)((float)x * widthRatio);
-            int srcY = (int)((float)y * heightRatio);
+    // Bilinear interpolation
+    for (int y = 0; y < newHeight; y++) {
+        for (int x = 0; x < newWidth; x++) {
+            float xFloor = floor(widthRatio * (float)x);
+            float yFloor = floor(heightRatio * (float)y);
+            float xCeil = ceil(widthRatio * (float)x);
+            float yCeil = ceil(heightRatio * (float)y);
 
-            resizedImage[(y * newWidth + x) * 3] = image[(srcY * width + srcX) * 3];           // Red component
-            resizedImage[(y * newWidth + x) * 3 + 1] = image[(srcY * width + srcX) * 3 + 1];   // Green component
-            resizedImage[(y * newWidth + x) * 3 + 2] = image[(srcY * width + srcX) * 3 + 2];   // Blue component
+            float xWeight = (widthRatio * (float)x) - xFloor;
+            float yWeight = (heightRatio * (float)y) - yFloor;
+
+            float a = image[(int)yFloor * width + (int)xFloor];
+            float b = image[(int)yFloor * width + (int)xCeil];
+            float c = image[(int)yCeil * width + (int)xFloor];
+            float d = image[(int)yCeil * width + (int)xCeil];
+
+            resizedImage[y * newWidth + x] = a * (1.0 - xWeight) * (1.0 - yWeight) +
+                                             b * xWeight * (1.0 - yWeight) +
+                                             c * yWeight * (1.0 - xWeight) +
+                                             d * xWeight * yWeight;
         }
     }
 

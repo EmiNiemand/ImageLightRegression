@@ -457,18 +457,18 @@ Gradient* FullyConnectedLayerBackward(Layer* currentLayer, Group* weights, Layer
 }
 
 
-void DropoutLayer(Layer *currentLayer, float probability) {
+void DropoutLayer(Layer *currentLayer, float dropoutRate) {
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<float> distribution(0, 1);
 
     for (int i = 0; i < currentLayer->width * currentLayer->height * currentLayer->depth; ++i) {
         float randomValue = distribution(gen);
-        if (randomValue < probability) {
+        if (randomValue < dropoutRate) {
             currentLayer->maps[i] = 0;
         }
         else {
-            currentLayer->maps[i] *= 1 / (1 - probability);
+            currentLayer->maps[i] *= 1 / (1 - dropoutRate);
         }
     }
 }

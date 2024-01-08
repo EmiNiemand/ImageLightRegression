@@ -59,12 +59,12 @@ struct Group {
         filters = nullptr;
     }
 
-    Group(int filtersCount, float prevLayerSize, float currLayerSize, ivec3 filterDim, bool fillData = false) {
+    Group(int filtersCount, float currLayerSize, ivec3 filterDim, bool fillData = false) {
         count = filtersCount;
 
         filters = new Layer[count];
 
-
+    // He Initialization
     for (int i = 0; i < count; ++i) {
             filters[i].width = filterDim.x;
             filters[i].height = filterDim.y;
@@ -77,9 +77,10 @@ struct Group {
             if (fillData) {
                 std::random_device rd;
                 std::mt19937 gen(rd());
-                float a = std::sqrt(6 / (prevLayerSize + currLayerSize));
 
-                std::uniform_real_distribution<float> distribution(-a, a);
+                float variance = 2 / currLayerSize;
+
+                std::normal_distribution<float> distribution(0.0, std::sqrt(variance));
 
                 for (int j = 0; j < filterSize; ++j) {
                     filters[i].maps[j] = distribution(gen);
@@ -136,7 +137,7 @@ Layer* FullyConnectedLayer(const Layer* currentLayer, const float* weights, int 
 
 Gradient* FullyConnectedLayerBackward(Layer* currentLayer, Group* weights, Layer* previousLayer, std::vector<float>& gradient);
 
-void DropoutLayer(Layer* currentLayer, float probability);
+void DropoutLayer(Layer* currentLayer, float dropoutRate);
 
 float MSELossFunction(const float* input, const float* predictedResult, int size);
 
