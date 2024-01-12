@@ -113,6 +113,7 @@ void ToolBar::ShowToolBar() {
             ShowParameter("Learning Rate", &neuralNetworkManager->trainingParameters[4], 0.000000001f, 0, 1);
             ShowParameter("Min Learning Rate", &neuralNetworkManager->trainingParameters[5], 0.000000001f, 0,
                           neuralNetworkManager->trainingParameters[4]);
+            ShowParameter("Dropout Rate", &neuralNetworkManager->trainingParameters[6], 0.01f, 0.0f, 1.0f);
 
             ImGui::EndTable();
         }

@@ -435,12 +435,12 @@ void NeuralNetworkManager::Forward(bool drop) {
     // Neurons of Hidden Layer 1
     layers.emplace_back(FullyConnectedLayer(poolingLayers[4], weights[13]->filters[0].maps, 25088, 4096, biases[13]->maps));
     // Deactivate half of the neurons during training
-    if(drop) DropoutLayer(layers[13], 0.25f);
+    if(drop) DropoutLayer(layers[13], trainingParameters[6]);
 
     // Neurons of Hidden Layer 2
     layers.emplace_back(FullyConnectedLayer(layers[13], weights[14]->filters[0].maps, 4096, 4096, biases[14]->maps));
     // Deactivate half of the neurons during training
-    if(drop) DropoutLayer(layers[14], 0.25f);
+    if(drop) DropoutLayer(layers[14], trainingParameters[6]);
 
     // Output neurons
     layers.emplace_back(FullyConnectedLayer(layers[14], weights[15]->filters[0].maps, 4096, outputSize, biases[15]->maps));
