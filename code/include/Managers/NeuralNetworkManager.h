@@ -40,7 +40,7 @@ private:
 
     std::thread* thread = nullptr;
 
-    Layer* loadedData = nullptr;
+    Layer* loadedImage = nullptr;
 
     std::vector<Layer*> layers;
     std::vector<Layer*> poolingLayers;

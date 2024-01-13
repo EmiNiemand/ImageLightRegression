@@ -62,12 +62,12 @@ void NeuralNetworkManager::Shutdown() {
 
     AdamOptimizer::GetInstance()->Shutdown();
 
-    delete loadedData;
+    delete loadedImage;
     delete neuralNetworkManager;
 }
 
 void NeuralNetworkManager::InitializeNetwork(NetworkTask task) {
-    layers.reserve(12);
+    layers.reserve(16);
     poolingLayers.reserve(4);
 
     currentTask = task;
@@ -111,8 +111,8 @@ void NeuralNetworkManager::ProcessImage() {
         layers[15]->maps[1] + cameraSphericalCoords[1], glm::length(cameraPosition));
 
     delete[] cameraSphericalCoords;
-    delete loadedData;
-    loadedData = nullptr;
+    delete loadedImage;
+    loadedImage = nullptr;
 
     renderingManager->objectRenderer->pointLights[0]->parent->transform->SetLocalPosition(lightPosition);
 }
@@ -212,8 +212,8 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
             DELETE_VECTOR_VALUES(manager->layers)
             DELETE_VECTOR_VALUES(manager->poolingLayers)
 
-            delete manager->loadedData;
-            manager->loadedData = nullptr;
+            delete manager->loadedImage;
+            manager->loadedImage = nullptr;
 
             if (!Application::GetInstance()->isStarted) {
                 break;
@@ -347,11 +347,11 @@ void NeuralNetworkManager::FillDataSet(float *dataSet, glm::vec3* cameraPosition
 void NeuralNetworkManager::Forward(bool drop) {
     glm::ivec2 imageDim = glm::ivec2(224, 224);
     // Get image data in 0 - 1 range
-    loadedData = GetLoadedImageWithSize(imageDim.x, imageDim.y);
+    loadedImage = GetLoadedImageWithSize(imageDim.x, imageDim.y);
 
     // Group 1
     // Conv 1
-    layers.emplace_back(ConvolutionLayer(loadedData, weights[0], {1, 1}, {1, 1}, biases[0]->maps));
+    layers.emplace_back(ConvolutionLayer(loadedImage, weights[0], {1, 1}, {1, 1}, biases[0]->maps));
     //ReLU
     ReLULayer(layers[0]);
 
@@ -514,7 +514,7 @@ void NeuralNetworkManager::Backward(const float* target, std::vector<Gradient*>&
     gradients.push_back(ConvolutionLayerBackward(layers[1], weights[1], layers[0], gradients[13]->inputsGradients));
     gradients[13]->inputsGradients.clear();
     printf("[]");
-    gradients.push_back(ConvolutionLayerBackward(layers[0], weights[0], loadedData, gradients[14]->inputsGradients));
+    gradients.push_back(ConvolutionLayerBackward(layers[0], weights[0], loadedImage, gradients[14]->inputsGradients));
     gradients[14]->inputsGradients.clear();
 
     printf("\n");
