@@ -30,6 +30,10 @@ NeuralNetworkManager* NeuralNetworkManager::GetInstance() {
     return neuralNetworkManager;
 }
 
+NetworkState NeuralNetworkManager::GetState() const {
+    return state;
+}
+
 void NeuralNetworkManager::Startup() {
     AdamOptimizer::GetInstance()->Startup();
 

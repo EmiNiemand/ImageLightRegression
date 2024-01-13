@@ -73,10 +73,10 @@ void ToolBar::ShowToolBar() {
     }
 
     ImGui::SameLine(ImGui::GetWindowContentRegionWidth() - 180.0f);
-    if (!application->isStarted || (application->isStarted && neuralNetworkManager->state != NetworkState::Training)) {
-        ShowButton("TrainButton", editorManager->trainTexture->GetID(), neuralNetworkManager->state == NetworkState::Idle);
+    if (!application->isStarted || (application->isStarted && neuralNetworkManager->GetState() != NetworkState::Training)) {
+        ShowButton("TrainButton", editorManager->trainTexture->GetID(), neuralNetworkManager->GetState() == NetworkState::Idle);
     }
-    else if (application->isStarted && neuralNetworkManager->state == NetworkState::Training) {
+    else if (application->isStarted && neuralNetworkManager->GetState() == NetworkState::Training) {
         ShowButton("StopTrainButton", editorManager->stopTexture->GetID());
     }
     if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
@@ -168,10 +168,10 @@ void ToolBar::ShowToolBar() {
     }
 
     ImGui::SameLine();
-    if (!application->isStarted || (application->isStarted && neuralNetworkManager->state != NetworkState::Processing)) {
-        ShowButton("StartButton", editorManager->startTexture->GetID(), neuralNetworkManager->state == NetworkState::Idle);
+    if (!application->isStarted || (application->isStarted && neuralNetworkManager->GetState() != NetworkState::Processing)) {
+        ShowButton("StartButton", editorManager->startTexture->GetID(), neuralNetworkManager->GetState() == NetworkState::Idle);
     }
-    else if (application->isStarted && neuralNetworkManager->state == NetworkState::Processing) {
+    else if (application->isStarted && neuralNetworkManager->GetState() == NetworkState::Processing) {
         ShowButton("StopButton", editorManager->stopTexture->GetID());
     }
     if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {

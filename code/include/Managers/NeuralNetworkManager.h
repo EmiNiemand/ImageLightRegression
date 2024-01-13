@@ -28,8 +28,6 @@ enum NetworkTask {
 
 class NeuralNetworkManager {
 public:
-    NetworkState state = Idle;
-
     float trainingParameters[7] = {2000, 100000, 20, 25, 0.0001, 0.00000001, 0.25};
 
     bool waitForUpdate = false;
@@ -48,17 +46,19 @@ private:
     std::vector<Layer*> biases;
 
     NetworkTask currentTask = None;
+    NetworkState state = Idle;
 
-    int iteration = 0;
     int outputSize = 0;
 
     bool finalize = false;
+    
 public:
     NeuralNetworkManager(NeuralNetworkManager &other) = delete;
     void operator=(const NeuralNetworkManager&) = delete;
     virtual ~NeuralNetworkManager();
 
     static NeuralNetworkManager* GetInstance();
+    [[nodiscard]] NetworkState GetState() const;
 
     void Startup();
     void Run();
