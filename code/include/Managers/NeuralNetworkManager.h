@@ -51,7 +51,7 @@ private:
     int outputSize = 0;
 
     bool finalize = false;
-    
+
 public:
     NeuralNetworkManager(NeuralNetworkManager &other) = delete;
     void operator=(const NeuralNetworkManager&) = delete;

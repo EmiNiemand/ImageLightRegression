@@ -10,9 +10,9 @@
 
 #pragma region Structs
 struct Gradient {
-    std::vector<float> weightsGradients;
-    std::vector<float> biasesGradients;
-    std::vector<float> inputsGradients;
+    std::vector<float> weightGradients;
+    std::vector<float> biasGradients;
+    std::vector<float> inputGradients;
 };
 
 struct ivec2 {
@@ -109,15 +109,13 @@ extern __global__ void CUDAPoolingLayer(const float* input, float* output, int o
 extern __global__ void CUDAFullyConnectedLayer(const float* input, const float* weights, const float* biases,
                                                float* output, int inputSize, int outputSize);
 
-extern __global__ void CUDAConvLayerGradients(float* prevGradients, float* weightGradients, const float* currentGradients,
-                                              const float* prevLayer, const float* weights, int prevWidth, int prevHeight,
-                                              int prevDepth, int currentWidth, int currentHeight, int currentDepth,
+extern __global__ void CUDAConvLayerGradients(float* prevGradients, float* weightGradients, float* biasGradients,
+                                              const float* currentGradients, const float* prevLayer,
+                                              const float* weights, int prevWidth, int prevHeight, int prevDepth,
+                                              int currentWidth, int currentHeight, int currentDepth,
                                               int kernelWidth, int kernelHeight);
 
-extern __global__ void CUDAConvLayerBiasGradients(float* biasGradients, const float* currentGradients, int currentWidth,
-                                                  int currentHeight, int currentDepth);
-
-extern __global__ void CUDAClipGradient(float* gradient, int size, float maxValue);
+extern __global__ void CUDAClipGradient(float* gradient, int size);
 #pragma endregion
 
 Layer* ConvolutionLayer(const Layer* currentLayer, const Group* filters, const ivec2& stride = {1, 1},

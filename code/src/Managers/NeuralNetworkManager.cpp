@@ -178,7 +178,6 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
         epochLoss = 0;
 
         gradients.resize(batchSize);
-
         for (int j = 0; j < batchSize; ++j) {
             int idx = RNG(0, trainingSize - 1);
 
@@ -229,7 +228,6 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
         ILR_WARN_MSG("**********************************");
         ILR_WARN_MSG("Epoch: " + STRING(i) + ", Loss: " + STRING(averageEpochLoss) + ", Rate: " + STRING(learningRate));
         ILR_WARN_MSG("**********************************");
-        adamOptimizer->IncrementTimeStep();
 
         if (bestEpochLoss <= averageEpochLoss) {
             ++patienceCounter;
@@ -237,6 +235,7 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
                 learningRate *= 0.1f;
                 adamOptimizer->learningRate = learningRate;
                 if (learningRate < minLearningRate) learningRate = minLearningRate;
+                bestEpochLoss = averageEpochLoss;
                 patienceCounter = 0;
             }
         }
@@ -246,6 +245,7 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
         }
 
         MiniBatch(gradients, manager->weights, manager->biases);
+        adamOptimizer->IncrementTimeStep();
 
         for (int g = 0; g < gradients.size(); ++g) {
             DELETE_VECTOR_VALUES(gradients[g])
@@ -438,11 +438,13 @@ void NeuralNetworkManager::Forward(bool drop) {
 
     // Neurons of Hidden Layer 1
     layers.emplace_back(FullyConnectedLayer(poolingLayers[4], weights[13]->filters[0].maps, 25088, 4096, biases[13]->maps));
+    ReLULayer(layers[13]);
     // Deactivate half of the neurons during training
     if(drop) DropoutLayer(layers[13], trainingParameters[6]);
 
     // Neurons of Hidden Layer 2
     layers.emplace_back(FullyConnectedLayer(layers[13], weights[14]->filters[0].maps, 4096, 4096, biases[14]->maps));
+    ReLULayer(layers[14]);
     // Deactivate half of the neurons during training
     if(drop) DropoutLayer(layers[14], trainingParameters[6]);
 
@@ -455,71 +457,71 @@ void NeuralNetworkManager::Backward(const float* target, std::vector<Gradient*>&
     outputGradients.reserve(outputSize);
 
     for (int i = 0; i < layers[15]->width; ++i) {
-        outputGradients.push_back(2 * (layers[15]->maps[i] - target[i]));
+        outputGradients.push_back((2.0f / (float)outputSize) * (layers[15]->maps[i] - target[i]));
     }
 
     gradients.push_back(FullyConnectedLayerBackward(layers[15], weights[15], layers[14], outputGradients));
     outputGradients.clear();
     printf("[]");
-    gradients.push_back(FullyConnectedLayerBackward(layers[14], weights[14], layers[13], gradients[0]->inputsGradients));
-    gradients[0]->inputsGradients.clear();
+    gradients.push_back(FullyConnectedLayerBackward(layers[14], weights[14], layers[13], gradients[0]->inputGradients));
+    gradients[0]->inputGradients.clear();
     printf("[]");
-    gradients.push_back(FullyConnectedLayerBackward(layers[13], weights[13], poolingLayers[4], gradients[1]->inputsGradients));
-    gradients[1]->inputsGradients.clear();
+    gradients.push_back(FullyConnectedLayerBackward(layers[13], weights[13], poolingLayers[4], gradients[1]->inputGradients));
+    gradients[1]->inputGradients.clear();
 
     printf("[]");
-    MaxPoolingBackward(poolingLayers[4], layers[12], gradients[2]->inputsGradients, ivec2(2, 2), ivec2(2, 2));
+    MaxPoolingBackward(poolingLayers[4], layers[12], gradients[2]->inputGradients, ivec2(2, 2), ivec2(2, 2));
     printf("[]");
-    gradients.push_back(ConvolutionLayerBackward(layers[12], weights[12], layers[11], gradients[2]->inputsGradients));
-    gradients[2]->inputsGradients.clear();
+    gradients.push_back(ConvolutionLayerBackward(layers[12], weights[12], layers[11], gradients[2]->inputGradients));
+    gradients[2]->inputGradients.clear();
     printf("[]");
-    gradients.push_back(ConvolutionLayerBackward(layers[11], weights[11], layers[10], gradients[3]->inputsGradients));
-    gradients[3]->inputsGradients.clear();
+    gradients.push_back(ConvolutionLayerBackward(layers[11], weights[11], layers[10], gradients[3]->inputGradients));
+    gradients[3]->inputGradients.clear();
     printf("[]");
-    gradients.push_back(ConvolutionLayerBackward(layers[10], weights[10], poolingLayers[3], gradients[4]->inputsGradients));
-    gradients[4]->inputsGradients.clear();
+    gradients.push_back(ConvolutionLayerBackward(layers[10], weights[10], poolingLayers[3], gradients[4]->inputGradients));
+    gradients[4]->inputGradients.clear();
 
     printf("[]");
-    MaxPoolingBackward(poolingLayers[3], layers[9], gradients[5]->inputsGradients, ivec2(2, 2), ivec2(2, 2));
+    MaxPoolingBackward(poolingLayers[3], layers[9], gradients[5]->inputGradients, ivec2(2, 2), ivec2(2, 2));
     printf("[]");
-    gradients.push_back(ConvolutionLayerBackward(layers[9], weights[9], layers[8], gradients[5]->inputsGradients));
-    gradients[5]->inputsGradients.clear();
+    gradients.push_back(ConvolutionLayerBackward(layers[9], weights[9], layers[8], gradients[5]->inputGradients));
+    gradients[5]->inputGradients.clear();
     printf("[]");
-    gradients.push_back(ConvolutionLayerBackward(layers[8], weights[8], layers[7], gradients[6]->inputsGradients));
-    gradients[6]->inputsGradients.clear();
+    gradients.push_back(ConvolutionLayerBackward(layers[8], weights[8], layers[7], gradients[6]->inputGradients));
+    gradients[6]->inputGradients.clear();
     printf("[]");
-    gradients.push_back(ConvolutionLayerBackward(layers[7], weights[7], poolingLayers[2], gradients[7]->inputsGradients));
-    gradients[7]->inputsGradients.clear();
+    gradients.push_back(ConvolutionLayerBackward(layers[7], weights[7], poolingLayers[2], gradients[7]->inputGradients));
+    gradients[7]->inputGradients.clear();
 
     printf("[]");
-    MaxPoolingBackward(poolingLayers[2], layers[6], gradients[8]->inputsGradients, ivec2(2, 2), ivec2(2, 2));
+    MaxPoolingBackward(poolingLayers[2], layers[6], gradients[8]->inputGradients, ivec2(2, 2), ivec2(2, 2));
     printf("[]");
-    gradients.push_back(ConvolutionLayerBackward(layers[6], weights[6], layers[5], gradients[8]->inputsGradients));
-    gradients[8]->inputsGradients.clear();
+    gradients.push_back(ConvolutionLayerBackward(layers[6], weights[6], layers[5], gradients[8]->inputGradients));
+    gradients[8]->inputGradients.clear();
     printf("[]");
-    gradients.push_back(ConvolutionLayerBackward(layers[5], weights[5], layers[4], gradients[9]->inputsGradients));
-    gradients[9]->inputsGradients.clear();
+    gradients.push_back(ConvolutionLayerBackward(layers[5], weights[5], layers[4], gradients[9]->inputGradients));
+    gradients[9]->inputGradients.clear();
     printf("[]");
-    gradients.push_back(ConvolutionLayerBackward(layers[4], weights[4], poolingLayers[1], gradients[10]->inputsGradients));
-    gradients[10]->inputsGradients.clear();
+    gradients.push_back(ConvolutionLayerBackward(layers[4], weights[4], poolingLayers[1], gradients[10]->inputGradients));
+    gradients[10]->inputGradients.clear();
 
     printf("[]");
-    MaxPoolingBackward(poolingLayers[1], layers[3], gradients[11]->inputsGradients, ivec2(2, 2), ivec2(2, 2));
+    MaxPoolingBackward(poolingLayers[1], layers[3], gradients[11]->inputGradients, ivec2(2, 2), ivec2(2, 2));
     printf("[]");
-    gradients.push_back(ConvolutionLayerBackward(layers[3], weights[3], layers[2], gradients[11]->inputsGradients));
-    gradients[11]->inputsGradients.clear();
+    gradients.push_back(ConvolutionLayerBackward(layers[3], weights[3], layers[2], gradients[11]->inputGradients));
+    gradients[11]->inputGradients.clear();
     printf("[]");
-    gradients.push_back(ConvolutionLayerBackward(layers[2], weights[2], poolingLayers[0], gradients[12]->inputsGradients));
-    gradients[12]->inputsGradients.clear();
+    gradients.push_back(ConvolutionLayerBackward(layers[2], weights[2], poolingLayers[0], gradients[12]->inputGradients));
+    gradients[12]->inputGradients.clear();
 
     printf("[]");
-    MaxPoolingBackward(poolingLayers[0], layers[1], gradients[13]->inputsGradients, ivec2(2, 2), ivec2(2, 2));
+    MaxPoolingBackward(poolingLayers[0], layers[1], gradients[13]->inputGradients, ivec2(2, 2), ivec2(2, 2));
     printf("[]");
-    gradients.push_back(ConvolutionLayerBackward(layers[1], weights[1], layers[0], gradients[13]->inputsGradients));
-    gradients[13]->inputsGradients.clear();
+    gradients.push_back(ConvolutionLayerBackward(layers[1], weights[1], layers[0], gradients[13]->inputGradients));
+    gradients[13]->inputGradients.clear();
     printf("[]");
-    gradients.push_back(ConvolutionLayerBackward(layers[0], weights[0], loadedImage, gradients[14]->inputsGradients));
-    gradients[14]->inputsGradients.clear();
+    gradients.push_back(ConvolutionLayerBackward(layers[0], weights[0], loadedImage, gradients[14]->inputGradients));
+    gradients[14]->inputGradients.clear();
 
     printf("\n");
 }
@@ -547,9 +549,9 @@ Layer* NeuralNetworkManager::GetLoadedImageWithSize(int outWidth, int outHeight)
 
     int counter = 0;
     for (int i = 0; i < outWidth * outHeight * 3; i+=3) {
-        output->maps[counter] = (float)image[i] / 127.5f - 1;
-        output->maps[counter + outWidth * outHeight] = (float)image[i + 1] / 127.5f - 1;
-        output->maps[counter + 2 * outWidth * outHeight] = (float)image[i + 2] / 127.5f - 1;
+        output->maps[counter] = (float)image[i] / 255;
+        output->maps[counter + outWidth * outHeight] = (float)image[i + 1] / 255;
+        output->maps[counter + 2 * outWidth * outHeight] = (float)image[i + 2] / 255;
         ++counter;
     }
 
