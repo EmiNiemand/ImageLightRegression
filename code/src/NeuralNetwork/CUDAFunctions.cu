@@ -109,12 +109,13 @@ __global__ void CUDAConvLayerBackward(float* prevGradients, float* weightGradien
         unsigned int y = (idx / prevWidth) % prevHeight;
         unsigned int z = idx / (prevWidth * prevHeight);
 
-        for (int d = 0; d < currentDepth; ++d) {
-            int currentIdx = x + y * currentWidth + d * currentWidth * currentHeight;
-            for (int kh = 0; kh < kernelHeight; ++kh) {
-                for (int kw = 0; kw < kernelWidth; ++kw) {
+        for (int kh = 0; kh < kernelHeight; ++kh) {
+            for (int kw = 0; kw < kernelWidth; ++kw) {
+                for (int d = 0; d < currentDepth; ++d) {
+                    int currentIdx = x + y * currentWidth + d * currentWidth * currentHeight;
                     int weightIdx = kw + kh * kernelWidth + d * kernelWidth * kernelHeight +
                             z * kernelWidth * kernelHeight * currentDepth;
+
                     // Input Gradients
                     atomicAdd(&prevGradients[idx], currentGradients[currentIdx] * weights[weightIdx]);
                     // Weight Gradients
@@ -128,9 +129,9 @@ __global__ void CUDAConvLayerBackward(float* prevGradients, float* weightGradien
     }
 }
 
-__global__ void CUDAPoolingLayerBackward(float* prevGradients, const float* currentGradients, const float* prevLayer,
-                                         int currWidth, int currHeight, int currDepth, int prevWidth, int prevHeight,
-                                         int poolDimX, int poolDimY, int strideDimX, int strideDimY) {
+__global__ void CUDAMaxPoolingLayerBackward(float* prevGradients, const float* currentGradients, const float* prevLayer,
+                                            int currWidth, int currHeight, int currDepth, int prevWidth, int prevHeight,
+                                            int poolDimX, int poolDimY, int strideDimX, int strideDimY) {
     unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (idx < currWidth * currHeight * currDepth) {
@@ -223,8 +224,7 @@ Layer* ConvolutionLayer(const Layer* currentLayer, const Group* filters, const i
                                    sizeof(float));
 
     int blockSize = 512;
-    int gridSize = (currentLayer->width * currentLayer->height * filters->filters[0].width * filters->filters[0].height +
-                    blockSize - 1) / blockSize;
+    int gridSize = (currentLayer->width * currentLayer->height + blockSize - 1) / blockSize;
 
     float* deviceKernels;
     cudaMalloc((void**)&deviceKernels, numBytesKernelSize);
@@ -339,7 +339,7 @@ void ReLULayer(Layer* currentLayer) {
     cudaFree(deviceCurrentLayer);
 }
 
-Layer* PoolingLayer(const Layer* currentLayer, const ivec2& poolDim, const ivec2& stride) {
+Layer* MaxPoolingLayer(const Layer* currentLayer, const ivec2& poolDim, const ivec2& stride) {
     int width = (currentLayer->width - poolDim.x) / stride.x + 1;
     int height = (currentLayer->height - poolDim.y) / stride.y + 1;
 
@@ -396,10 +396,11 @@ void MaxPoolingBackward(const Layer* currentLayer, const Layer* previousLayer, s
     int blockSize = 512;
     int gridSize = (currentLayer->width * currentLayer->height * currentLayer->depth + blockSize - 1) / blockSize;
 
-    CUDAPoolingLayerBackward<<<gridSize, blockSize>>>(devicePrevGradients, deviceGradients, devicePrevLayer,
-                                                      currentLayer->width, currentLayer->height, currentLayer->depth,
-                                                      previousLayer->width, previousLayer->height, poolDim.x, poolDim.y,
-                                                      strideDim.x, strideDim.y);
+    CUDAMaxPoolingLayerBackward<<<gridSize, blockSize>>>(devicePrevGradients, deviceGradients, devicePrevLayer,
+                                                         currentLayer->width, currentLayer->height, currentLayer->depth,
+                                                         previousLayer->width, previousLayer->height, poolDim.x,
+                                                         poolDim.y,
+                                                         strideDim.x, strideDim.y);
 
     gradient.clear();
     gradient.resize(prevLayerSize, 0.0f);

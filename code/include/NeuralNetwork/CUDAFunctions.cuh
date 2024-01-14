@@ -115,9 +115,9 @@ extern __global__ void CUDAConvLayerBackward(float* prevGradients, float* weight
                                              int currentWidth, int currentHeight, int currentDepth,
                                              int kernelWidth, int kernelHeight);
 
-extern __global__ void CUDAPoolingLayerBackward(float* prevGradients, const float* currentGradients, const float* prevLayer,
-                                                int currWidth, int currHeight, int currDepth, int prevWidth, int prevHeight,
-                                                int poolDimX, int poolDimY, int strideDimX, int strideDimY);
+extern __global__ void CUDAMaxPoolingLayerBackward(float* prevGradients, const float* currentGradients, const float* prevLayer,
+                                                   int currWidth, int currHeight, int currDepth, int prevWidth, int prevHeight,
+                                                   int poolDimX, int poolDimY, int strideDimX, int strideDimY);
 
 extern __global__ void CUDAFullyConnectedLayerBackward(float* prevGradients, float* weightGradients, const float* prevLayer,
                                                        const float* weights, const float* currentGradients, int prevSize, int currentSize);
@@ -132,7 +132,7 @@ Gradient* ConvolutionLayerBackward(Layer* currentLayer, Group* weights, Layer* p
 
 void ReLULayer(Layer* currentLayer);
 
-Layer* PoolingLayer(const Layer* currentLayer, const ivec2& poolDim, const ivec2& stride);
+Layer* MaxPoolingLayer(const Layer* currentLayer, const ivec2& poolDim, const ivec2& stride);
 
 void MaxPoolingBackward(const Layer* currentLayer, const Layer* previousLayer, std::vector<float>& gradient,
                                       ivec2 poolDim, ivec2 strideDim);

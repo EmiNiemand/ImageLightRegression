@@ -364,7 +364,7 @@ void NeuralNetworkManager::Forward(bool drop) {
     // ReLU
     ReLULayer(layers[1]);
     // Max Pooling [0]
-    poolingLayers.emplace_back(PoolingLayer(layers[1], {2, 2}, {2, 2}));
+    poolingLayers.emplace_back(MaxPoolingLayer(layers[1], {2, 2}, {2, 2}));
 
     // Group 2
     // Conv 3
@@ -377,7 +377,7 @@ void NeuralNetworkManager::Forward(bool drop) {
     // ReLU
     ReLULayer(layers[3]);
     // Max Pooling [1]
-    poolingLayers.emplace_back(PoolingLayer(layers[3], {2, 2}, {2, 2}));
+    poolingLayers.emplace_back(MaxPoolingLayer(layers[3], {2, 2}, {2, 2}));
 
 
     // Group 3
@@ -396,7 +396,7 @@ void NeuralNetworkManager::Forward(bool drop) {
     // ReLU
     ReLULayer(layers[6]);
     // Max Pooling [2]
-    poolingLayers.emplace_back(PoolingLayer(layers[6], {2, 2}, {2, 2}));
+    poolingLayers.emplace_back(MaxPoolingLayer(layers[6], {2, 2}, {2, 2}));
 
 
     // Group 4
@@ -415,7 +415,7 @@ void NeuralNetworkManager::Forward(bool drop) {
     // ReLU
     ReLULayer(layers[9]);
     // Max Pooling [3]
-    poolingLayers.emplace_back(PoolingLayer(layers[9], {2, 2}, {2, 2}));
+    poolingLayers.emplace_back(MaxPoolingLayer(layers[9], {2, 2}, {2, 2}));
 
 
     // Group 5
@@ -434,7 +434,7 @@ void NeuralNetworkManager::Forward(bool drop) {
     // ReLU
     ReLULayer(layers[12]);
     // Max Pooling [4]
-    poolingLayers.emplace_back(PoolingLayer(layers[12], {2, 2}, {2, 2}));
+    poolingLayers.emplace_back(MaxPoolingLayer(layers[12], {2, 2}, {2, 2}));
 
     // Neurons of Hidden Layer 1
     layers.emplace_back(FullyConnectedLayer(poolingLayers[4], weights[13]->filters[0].maps, 25088, 4096, biases[13]->maps));
