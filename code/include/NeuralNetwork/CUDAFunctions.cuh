@@ -97,9 +97,9 @@ struct Group {
 
 #pragma region CUDA functions
 extern __global__ void CUDAConvLayer(const float* input, float* output, const float* kernel, const float* biases,
-                                     int inputDimX, int inputDimY, int outputDimX, int outputDimY, int kernelDimX,
-                                     int kernelDimY, int kernelDimZ, int strideDimX, int strideDimY, int paddingDimX,
-                                     int paddingDimY, int kernelNumber);
+                              int inputDimX, int inputDimY, int outputDimX, int outputDimY, int kernelDimX,
+                              int kernelDimY, int kernelDimZ, int strideDimX, int strideDimY, int paddingDimX,
+                              int paddingDimY, int kernelNumber);
 
 extern __global__ void CUDAReLULayer(float* input, int size);
 

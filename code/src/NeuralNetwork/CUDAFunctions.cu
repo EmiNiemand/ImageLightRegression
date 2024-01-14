@@ -9,12 +9,11 @@ __global__ void CUDAConvLayer(const float* input, float* output, const float* ke
                               int paddingDimY, int kernelNumber) {
     unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (idx < outputDimX * outputDimY * kernelDimZ) {
-        unsigned int outputIdx = idx % (outputDimX * outputDimY);
-        unsigned int x = outputIdx % outputDimX;
-        unsigned int y = outputIdx / outputDimX;
+    if (idx < outputDimX * outputDimY) {
+        unsigned int x = idx % outputDimX;
+        unsigned int y = idx / outputDimX;
 
-        float result = 0.0f;
+        unsigned int outputIdx = idx + kernelNumber * outputDimX * outputDimY;
 
         for (int kz = 0; kz < kernelDimZ; ++kz) {
             for (int ky = 0; ky < kernelDimY; ++ky) {
@@ -26,17 +25,15 @@ __global__ void CUDAConvLayer(const float* input, float* output, const float* ke
                         int inputIdx = inputX + inputY * inputDimX + kz * inputDimX * inputDimY;
                         int kernelIdx = kx + ky * kernelDimX + kz * kernelDimX * kernelDimY;
 
-                        result += input[inputIdx] * kernel[kernelIdx];
+                        output[outputIdx] += input[inputIdx] * kernel[kernelIdx];
                     }
                 }
             }
         }
 
         if (biases != nullptr) {
-            result += biases[kernelNumber];
+            output[outputIdx] += biases[kernelNumber];
         }
-
-        output[outputIdx + kernelNumber * outputDimX * outputDimY] = result;
     }
 }
 
@@ -91,11 +88,12 @@ __global__ void CUDAFullyConnectedLayer(const float* input, const float* weights
         for (int i = 0; i < inputSize; i++) {
             neuronValue += input[i] * weights[i + idx * inputSize];
         }
-        output[idx] = neuronValue;
 
         if (biases != nullptr) {
-            atomicAdd(&output[idx], biases[idx]);
+            neuronValue += biases[idx];
         }
+
+        output[idx] = neuronValue;
     }
 }
 
@@ -180,11 +178,11 @@ Layer* ConvolutionLayer(const Layer* currentLayer, const Group* filters, const i
     }
 
     int numBytesKernelSize = (int)(filters->filters[0].width * filters->filters[0].height * filters->filters[0].depth *
-            sizeof(float));
+                                   sizeof(float));
 
     int blockSize = 512;
     int gridSize = (currentLayer->width * currentLayer->height * filters->filters[0].width * filters->filters[0].height +
-            blockSize - 1) / blockSize;
+                    blockSize - 1) / blockSize;
 
     float* deviceKernels;
     cudaMalloc((void**)&deviceKernels, numBytesKernelSize);
@@ -197,9 +195,8 @@ Layer* ConvolutionLayer(const Layer* currentLayer, const Group* filters, const i
                                                nextLayer->height, filters->filters[i].width, filters->filters[i].height,
                                                filters->filters[i].depth, stride.x, stride.y, padding.x, padding.y, i);
     }
-    cudaFree(deviceKernels);
-
     cudaMemcpy(nextLayer->maps, deviceNextLayer, numBytesNextLayerSize, cudaMemcpyDeviceToHost);
+    cudaFree(deviceKernels);
     cudaFree(deviceCurrentLayer);
     cudaFree(deviceNextLayer);
 
@@ -231,21 +228,21 @@ Gradient* ConvolutionLayerBackward(Layer *currentLayer, Group *weights, Layer *p
     int numBytesPreviousGradientSize = (int)(previousGradientSize * sizeof(float));
     int numBytesWeightsSize = (int)(weightSize * sizeof(float));
 
-    float* deviceGradient;
-    cudaMalloc((void**)&deviceGradient, numBytesCurrentGradientSize);
-    cudaMemcpy(deviceGradient, gradient.data(), numBytesCurrentGradientSize, cudaMemcpyHostToDevice);
+    float* deviceCurrentGradients;
+    cudaMalloc((void**)&deviceCurrentGradients, numBytesCurrentGradientSize);
+    cudaMemcpy(deviceCurrentGradients, gradient.data(), numBytesCurrentGradientSize, cudaMemcpyHostToDevice);
 
     float* devicePreviousGradient;
     cudaMalloc((void**)&devicePreviousGradient, numBytesPreviousGradientSize);
     cudaMemset(devicePreviousGradient, 0, numBytesPreviousGradientSize);
 
-    float* deviceWeightGradient;
-    cudaMalloc((void**)&deviceWeightGradient, numBytesWeightsSize);
-    cudaMemset(deviceWeightGradient, 0, numBytesWeightsSize);
+    float* deviceWeightGradients;
+    cudaMalloc((void**)&deviceWeightGradients, numBytesWeightsSize);
+    cudaMemset(deviceWeightGradients, 0, numBytesWeightsSize);
 
-    float* deviceBiasesGradient;
-    cudaMalloc((void**)&deviceBiasesGradient, weights->count * sizeof(float));
-    cudaMemset(deviceBiasesGradient, 0, weights->count * sizeof(float));
+    float* deviceBiasGradients;
+    cudaMalloc((void**)&deviceBiasGradients, weights->count * sizeof(float));
+    cudaMemset(deviceBiasGradients, 0, weights->count * sizeof(float));
 
     float* devicePreviousLayer;
     cudaMalloc((void**)&devicePreviousLayer, numBytesPreviousGradientSize);
@@ -258,19 +255,20 @@ Gradient* ConvolutionLayerBackward(Layer *currentLayer, Group *weights, Layer *p
     int blockSize = 512;
     int gridSize = (previousGradientSize + blockSize - 1) / blockSize;
 
-    CUDAConvLayerGradients<<<gridSize, blockSize>>>(devicePreviousGradient, deviceWeightGradient, deviceBiasesGradient,
-                                                    deviceGradient, devicePreviousLayer, deviceWeights, previousLayer->width,
-                                                    previousLayer->height, previousLayer->depth, currentLayer->width,
-                                                    currentLayer->height, currentLayer->depth,
+    CUDAConvLayerGradients<<<gridSize, blockSize>>>(devicePreviousGradient, deviceWeightGradients, deviceBiasGradients,
+                                                    deviceCurrentGradients, devicePreviousLayer, deviceWeights,
+                                                    previousLayer->width, previousLayer->height, previousLayer->depth,
+                                                    currentLayer->width, currentLayer->height, currentLayer->depth,
                                                     weights->filters[0].width, weights->filters[0].height);
 
-    cudaMemcpy(previousGradient->inputGradients.data(), devicePreviousGradient, numBytesPreviousGradientSize, cudaMemcpyDeviceToHost);
-    cudaMemcpy(previousGradient->weightGradients.data(), deviceWeightGradient, numBytesWeightsSize, cudaMemcpyDeviceToHost);
-    cudaMemcpy(previousGradient->biasGradients.data(), deviceBiasesGradient, weights->count * sizeof(float), cudaMemcpyDeviceToHost);
 
-    cudaFree(deviceWeightGradient);
-    cudaFree(deviceGradient);
-    cudaFree(deviceBiasesGradient);
+    cudaMemcpy(previousGradient->inputGradients.data(), devicePreviousGradient, numBytesPreviousGradientSize, cudaMemcpyDeviceToHost);
+    cudaMemcpy(previousGradient->weightGradients.data(), deviceWeightGradients, numBytesWeightsSize, cudaMemcpyDeviceToHost);
+    cudaMemcpy(previousGradient->biasGradients.data(), deviceBiasGradients, weights->count * sizeof(float), cudaMemcpyDeviceToHost);
+
+    cudaFree(deviceWeightGradients);
+    cudaFree(deviceCurrentGradients);
+    cudaFree(deviceBiasGradients);
     cudaFree(devicePreviousGradient);
     cudaFree(devicePreviousLayer);
     cudaFree(deviceWeights);
@@ -431,8 +429,8 @@ Gradient* FullyConnectedLayerBackward(Layer* currentLayer, Group* weights, Layer
 
     for (int i = 0; i < currentLayerSize; ++i) {
         for (int j = 0; j < previousLayerSize; ++j) {
-            previousGradient->inputGradients[j] += gradient[i] * weights->filters[0].maps[j + i * gradient.size()];
-            previousGradient->weightGradients[j + i * currentLayerSize] += gradient[i] * previousLayer->maps[j];
+            previousGradient->inputGradients[j] += gradient[i] * weights->filters[0].maps[j + i * previousLayerSize];
+            previousGradient->weightGradients[j + i * previousLayerSize] += gradient[i] * previousLayer->maps[j];
         }
     }
 

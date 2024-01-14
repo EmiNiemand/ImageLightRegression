@@ -244,8 +244,8 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
             bestEpochLoss = averageEpochLoss;
         }
 
-        MiniBatch(gradients, manager->weights, manager->biases);
         adamOptimizer->IncrementTimeStep();
+        MiniBatch(gradients, manager->weights, manager->biases);
 
         for (int g = 0; g < gradients.size(); ++g) {
             DELETE_VECTOR_VALUES(gradients[g])
@@ -522,7 +522,7 @@ void NeuralNetworkManager::Backward(const float* target, std::vector<Gradient*>&
     printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[0], weights[0], loadedImage, gradients[14]->inputGradients));
     gradients[14]->inputGradients.clear();
-
+    gradients[15]->inputGradients.clear();
     printf("\n");
 }
 
