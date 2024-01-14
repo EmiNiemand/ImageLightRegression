@@ -436,19 +436,19 @@ void NeuralNetworkManager::Forward(bool drop) {
     // Max Pooling [4]
     poolingLayers.emplace_back(MaxPoolingLayer(layers[12], {2, 2}, {2, 2}));
 
-    // Neurons of Hidden Layer 1
+    // Neurons of FCL Layer 1
     layers.emplace_back(FullyConnectedLayer(poolingLayers[4], weights[13]->filters[0].maps, 25088, 4096, biases[13]->maps));
     ReLULayer(layers[13]);
-    // Deactivate half of the neurons during training
+    // Deactivates neurons during training
     if(drop) DropoutLayer(layers[13], trainingParameters[6]);
 
-    // Neurons of Hidden Layer 2
+    // Neurons of FCL Layer 2
     layers.emplace_back(FullyConnectedLayer(layers[13], weights[14]->filters[0].maps, 4096, 4096, biases[14]->maps));
     ReLULayer(layers[14]);
-    // Deactivate half of the neurons during training
+    // Deactivates neurons during training
     if(drop) DropoutLayer(layers[14], trainingParameters[6]);
 
-    // Output neurons
+    // Neurons of FCL Layer 3 (Output neurons)
     layers.emplace_back(FullyConnectedLayer(layers[14], weights[15]->filters[0].maps, 4096, outputSize, biases[15]->maps));
 }
 
@@ -460,70 +460,55 @@ void NeuralNetworkManager::Backward(const float* target, std::vector<Gradient*>&
         outputGradients.push_back((2.0f / (float)outputSize) * (layers[15]->maps[i] - target[i]));
     }
 
+    // FCL Layers
     gradients.push_back(FullyConnectedLayerBackward(layers[15], weights[15], layers[14], outputGradients));
     outputGradients.clear();
-    printf("[]");
     gradients.push_back(FullyConnectedLayerBackward(layers[14], weights[14], layers[13], gradients[0]->inputGradients));
     gradients[0]->inputGradients.clear();
-    printf("[]");
     gradients.push_back(FullyConnectedLayerBackward(layers[13], weights[13], poolingLayers[4], gradients[1]->inputGradients));
     gradients[1]->inputGradients.clear();
 
-    printf("[]");
+    // Group 5
     MaxPoolingBackward(poolingLayers[4], layers[12], gradients[2]->inputGradients, ivec2(2, 2), ivec2(2, 2));
-    printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[12], weights[12], layers[11], gradients[2]->inputGradients));
     gradients[2]->inputGradients.clear();
-    printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[11], weights[11], layers[10], gradients[3]->inputGradients));
     gradients[3]->inputGradients.clear();
-    printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[10], weights[10], poolingLayers[3], gradients[4]->inputGradients));
     gradients[4]->inputGradients.clear();
 
-    printf("[]");
+    // Group 4
     MaxPoolingBackward(poolingLayers[3], layers[9], gradients[5]->inputGradients, ivec2(2, 2), ivec2(2, 2));
-    printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[9], weights[9], layers[8], gradients[5]->inputGradients));
     gradients[5]->inputGradients.clear();
-    printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[8], weights[8], layers[7], gradients[6]->inputGradients));
     gradients[6]->inputGradients.clear();
-    printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[7], weights[7], poolingLayers[2], gradients[7]->inputGradients));
     gradients[7]->inputGradients.clear();
 
-    printf("[]");
+    // Group 3
     MaxPoolingBackward(poolingLayers[2], layers[6], gradients[8]->inputGradients, ivec2(2, 2), ivec2(2, 2));
-    printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[6], weights[6], layers[5], gradients[8]->inputGradients));
     gradients[8]->inputGradients.clear();
-    printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[5], weights[5], layers[4], gradients[9]->inputGradients));
     gradients[9]->inputGradients.clear();
-    printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[4], weights[4], poolingLayers[1], gradients[10]->inputGradients));
     gradients[10]->inputGradients.clear();
 
-    printf("[]");
+    // Group 2
     MaxPoolingBackward(poolingLayers[1], layers[3], gradients[11]->inputGradients, ivec2(2, 2), ivec2(2, 2));
-    printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[3], weights[3], layers[2], gradients[11]->inputGradients));
     gradients[11]->inputGradients.clear();
-    printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[2], weights[2], poolingLayers[0], gradients[12]->inputGradients));
     gradients[12]->inputGradients.clear();
 
-    printf("[]");
+    // Group 1
     MaxPoolingBackward(poolingLayers[0], layers[1], gradients[13]->inputGradients, ivec2(2, 2), ivec2(2, 2));
-    printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[1], weights[1], layers[0], gradients[13]->inputGradients));
     gradients[13]->inputGradients.clear();
-    printf("[]");
     gradients.push_back(ConvolutionLayerBackward(layers[0], weights[0], loadedImage, gradients[14]->inputGradients));
     gradients[14]->inputGradients.clear();
     gradients[15]->inputGradients.clear();
-    printf("\n");
 }
 
 Layer* NeuralNetworkManager::GetLoadedImageWithSize(int outWidth, int outHeight) {
