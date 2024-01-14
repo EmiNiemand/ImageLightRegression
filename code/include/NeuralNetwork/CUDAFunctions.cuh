@@ -109,11 +109,18 @@ extern __global__ void CUDAPoolingLayer(const float* input, float* output, int o
 extern __global__ void CUDAFullyConnectedLayer(const float* input, const float* weights, const float* biases,
                                                float* output, int inputSize, int outputSize);
 
-extern __global__ void CUDAConvLayerGradients(float* prevGradients, float* weightGradients, float* biasGradients,
-                                              const float* currentGradients, const float* prevLayer,
-                                              const float* weights, int prevWidth, int prevHeight, int prevDepth,
-                                              int currentWidth, int currentHeight, int currentDepth,
-                                              int kernelWidth, int kernelHeight);
+extern __global__ void CUDAConvLayerBackward(float* prevGradients, float* weightGradients, float* biasGradients,
+                                             const float* currentGradients, const float* prevLayer,
+                                             const float* weights, int prevWidth, int prevHeight, int prevDepth,
+                                             int currentWidth, int currentHeight, int currentDepth,
+                                             int kernelWidth, int kernelHeight);
+
+extern __global__ void CUDAPoolingLayerBackward(float* prevGradients, const float* currentGradients, const float* prevLayer,
+                                                int currWidth, int currHeight, int currDepth, int prevWidth, int prevHeight,
+                                                int poolDimX, int poolDimY, int strideDimX, int strideDimY);
+
+extern __global__ void CUDAFullyConnectedLayerBackward(float* prevGradients, float* weightGradients, const float* prevLayer,
+                                                       const float* weights, const float* currentGradients, int prevSize, int currentSize);
 
 extern __global__ void CUDAClipGradient(float* gradient, int size);
 #pragma endregion

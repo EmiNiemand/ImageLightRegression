@@ -18,8 +18,8 @@ __global__ void CUDAConvLayer(const float* input, float* output, const float* ke
         for (int kz = 0; kz < kernelDimZ; ++kz) {
             for (int ky = 0; ky < kernelDimY; ++ky) {
                 for (int kx = 0; kx < kernelDimX; ++kx) {
-                    int inputX = x * strideDimX - paddingDimX + kx;
-                    int inputY = y * strideDimY - paddingDimY + ky;
+                    int inputX = kx + x * strideDimX - paddingDimX;
+                    int inputY = ky + y * strideDimY - paddingDimY;
 
                     if (inputX >= 0 && inputX < inputDimX && inputY >= 0 && inputY < inputDimY) {
                         int inputIdx = inputX + inputY * inputDimX + kz * inputDimX * inputDimY;
@@ -63,8 +63,8 @@ __global__ void CUDAPoolingLayer(const float* input, float* output, int outputDi
 
         for (int ky = 0; ky < poolDimY; ++ky) {
             for (int kx = 0; kx < poolDimX; ++kx) {
-                unsigned int inputX = x * strideDimX + kx;
-                unsigned int inputY = y * strideDimY + ky;
+                unsigned int inputX = kx + x * strideDimX;
+                unsigned int inputY = ky + y * strideDimY;
                 unsigned int inputZ = z;
 
                 int index = inputX + inputY * inputWidth + inputZ * inputWidth * inputHeight;
@@ -97,11 +97,11 @@ __global__ void CUDAFullyConnectedLayer(const float* input, const float* weights
     }
 }
 
-__global__ void CUDAConvLayerGradients(float* prevGradients, float* weightGradients, float* biasGradients,
-                                       const float* currentGradients, const float* prevLayer,
-                                       const float* weights, int prevWidth, int prevHeight, int prevDepth,
-                                       int currentWidth, int currentHeight, int currentDepth,
-                                       int kernelWidth, int kernelHeight) {
+__global__ void CUDAConvLayerBackward(float* prevGradients, float* weightGradients, float* biasGradients,
+                                      const float* currentGradients, const float* prevLayer,
+                                      const float* weights, int prevWidth, int prevHeight, int prevDepth,
+                                      int currentWidth, int currentHeight, int currentDepth,
+                                      int kernelWidth, int kernelHeight) {
     unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (idx < prevWidth * prevHeight * prevDepth) {
@@ -110,13 +110,11 @@ __global__ void CUDAConvLayerGradients(float* prevGradients, float* weightGradie
         unsigned int z = idx / (prevWidth * prevHeight);
 
         for (int d = 0; d < currentDepth; ++d) {
-            int currentIdx = d * currentWidth * currentHeight + y * currentWidth + x;
-
+            int currentIdx = x + y * currentWidth + d * currentWidth * currentHeight;
             for (int kh = 0; kh < kernelHeight; ++kh) {
                 for (int kw = 0; kw < kernelWidth; ++kw) {
-                    int weightIdx = z * kernelWidth * kernelHeight * currentDepth +
-                                    d * kernelWidth * kernelHeight + kh * kernelWidth + kw;
-
+                    int weightIdx = kw + kh * kernelWidth + d * kernelWidth * kernelHeight +
+                            z * kernelWidth * kernelHeight * currentDepth;
                     // Input Gradients
                     atomicAdd(&prevGradients[idx], currentGradients[currentIdx] * weights[weightIdx]);
                     // Weight Gradients
@@ -127,6 +125,50 @@ __global__ void CUDAConvLayerGradients(float* prevGradients, float* weightGradie
 
         // Bias Gradients
         atomicAdd(&biasGradients[z], currentGradients[idx]);
+    }
+}
+
+__global__ void CUDAPoolingLayerBackward(float* prevGradients, const float* currentGradients, const float* prevLayer,
+                                         int currWidth, int currHeight, int currDepth, int prevWidth, int prevHeight,
+                                         int poolDimX, int poolDimY, int strideDimX, int strideDimY) {
+    unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (idx < currWidth * currHeight * currDepth) {
+        unsigned int x = idx % currWidth;
+        unsigned int y = (idx / currWidth) % currHeight;
+        unsigned int z = idx / (currWidth * currHeight);
+
+        int maxPos = -1;
+        float maxValue = -FLT_MAX;
+
+        for (int poolY = 0; poolY < poolDimY; ++poolY) {
+            for (int poolX = 0; poolX < poolDimX; ++poolX) {
+                int inputX = poolX + x * strideDimX;
+                int inputY = poolY + y * strideDimY;
+
+                int inputIdx = inputX + inputY * prevWidth + z * prevWidth * prevHeight;
+
+                if (prevLayer[inputIdx] > maxValue) {
+                    maxValue = prevLayer[inputIdx];
+                    maxPos = inputIdx;
+                }
+            }
+        }
+
+        atomicAdd(&prevGradients[maxPos], currentGradients[idx]);
+    }
+}
+
+__global__ void CUDAFullyConnectedLayerBackward(float* prevGradients, float* weightGradients, const float* prevLayer,
+                                                const float* weights, const float* currentGradients, int prevSize, int currentSize) {
+    unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (idx < prevSize * currentSize) {
+        unsigned int x = idx % prevSize;
+        unsigned int y = idx / prevSize;
+
+        weightGradients[idx] += currentGradients[y] * prevLayer[x];
+        atomicAdd(&prevGradients[x], currentGradients[y] * weights[idx]);
     }
 }
 
@@ -255,11 +297,11 @@ Gradient* ConvolutionLayerBackward(Layer *currentLayer, Group *weights, Layer *p
     int blockSize = 512;
     int gridSize = (previousGradientSize + blockSize - 1) / blockSize;
 
-    CUDAConvLayerGradients<<<gridSize, blockSize>>>(devicePreviousGradient, deviceWeightGradients, deviceBiasGradients,
-                                                    deviceCurrentGradients, devicePreviousLayer, deviceWeights,
-                                                    previousLayer->width, previousLayer->height, previousLayer->depth,
-                                                    currentLayer->width, currentLayer->height, currentLayer->depth,
-                                                    weights->filters[0].width, weights->filters[0].height);
+    CUDAConvLayerBackward<<<gridSize, blockSize>>>(devicePreviousGradient, deviceWeightGradients, deviceBiasGradients,
+                                                   deviceCurrentGradients, devicePreviousLayer, deviceWeights,
+                                                   previousLayer->width, previousLayer->height, previousLayer->depth,
+                                                   currentLayer->width, currentLayer->height, currentLayer->depth,
+                                                   weights->filters[0].width, weights->filters[0].height);
 
 
     cudaMemcpy(previousGradient->inputGradients.data(), devicePreviousGradient, numBytesPreviousGradientSize, cudaMemcpyDeviceToHost);
@@ -336,39 +378,36 @@ Layer* PoolingLayer(const Layer* currentLayer, const ivec2& poolDim, const ivec2
 
 void MaxPoolingBackward(const Layer* currentLayer, const Layer* previousLayer, std::vector<float>& gradient,
                                       ivec2 poolDim, ivec2 strideDim) {
-    std::vector<float> prevLayerGradient(previousLayer->width * previousLayer->height * previousLayer->depth, 0.0f);
+    int prevLayerSize = previousLayer->width * previousLayer->height * previousLayer->depth;
+    int numBytesPrevLayerSize = prevLayerSize * sizeof(float);
 
-    for (int depth = 0; depth < currentLayer->depth; ++depth) {
-        int currentMapIdx = depth * currentLayer->width * currentLayer->height;
+    float* devicePrevGradients;
+    cudaMalloc((void**)&devicePrevGradients, numBytesPrevLayerSize);
+    cudaMemset(devicePrevGradients, 0, numBytesPrevLayerSize);
 
-        for (int y = 0; y < currentLayer->height; ++y) {
-            for (int x = 0; x < currentLayer->width; ++x) {
-                int currentIdx = currentMapIdx + y * currentLayer->width + x;
+    float* deviceGradients;
+    cudaMalloc((void**)&deviceGradients, gradient.size() * sizeof(float));
+    cudaMemcpy(deviceGradients, gradient.data(), gradient.size() * sizeof(float), cudaMemcpyHostToDevice);
 
-                int maxPos = -1;
-                float maxValue = -std::numeric_limits<float>::infinity();
+    float* devicePrevLayer;
+    cudaMalloc((void**)&devicePrevLayer, numBytesPrevLayerSize);
+    cudaMemcpy(devicePrevLayer, previousLayer->maps, numBytesPrevLayerSize, cudaMemcpyHostToDevice);
 
-                for (int poolY = 0; poolY < poolDim.y; ++poolY) {
-                    for (int poolX = 0; poolX < poolDim.x; ++poolX) {
-                        int inputX = x * strideDim.x + poolX;
-                        int inputY = y * strideDim.y + poolY;
+    int blockSize = 512;
+    int gridSize = (currentLayer->width * currentLayer->height * currentLayer->depth + blockSize - 1) / blockSize;
 
-                        int inputIdx = depth * previousLayer->width * previousLayer->height +
-                                       inputY * previousLayer->width + inputX;
+    CUDAPoolingLayerBackward<<<gridSize, blockSize>>>(devicePrevGradients, deviceGradients, devicePrevLayer,
+                                                      currentLayer->width, currentLayer->height, currentLayer->depth,
+                                                      previousLayer->width, previousLayer->height, poolDim.x, poolDim.y,
+                                                      strideDim.x, strideDim.y);
 
-                        if (previousLayer->maps[inputIdx] > maxValue) {
-                            maxValue = previousLayer->maps[inputIdx];
-                            maxPos = inputIdx;
-                        }
-                    }
-                }
+    gradient.clear();
+    gradient.resize(prevLayerSize, 0.0f);
+    cudaMemcpy(gradient.data(), devicePrevGradients, numBytesPrevLayerSize, cudaMemcpyDeviceToHost);
 
-                prevLayerGradient[maxPos] += gradient[currentIdx];
-            }
-        }
-    }
-
-    gradient = prevLayerGradient;
+    cudaFree(devicePrevGradients);
+    cudaFree(deviceGradients);
+    cudaFree(devicePrevLayer);
 }
 
 Layer* FullyConnectedLayer(const Layer* currentLayer, const float* weights, int currentLayerSize, int nextLayerSize,
@@ -427,12 +466,46 @@ Gradient* FullyConnectedLayerBackward(Layer* currentLayer, Group* weights, Layer
     previousGradient->weightGradients.resize(previousLayerSize * currentLayerSize, 0.0f);
     previousGradient->biasGradients.resize(currentLayerSize, 0.0f);
 
-    for (int i = 0; i < currentLayerSize; ++i) {
-        for (int j = 0; j < previousLayerSize; ++j) {
-            previousGradient->inputGradients[j] += gradient[i] * weights->filters[0].maps[j + i * previousLayerSize];
-            previousGradient->weightGradients[j + i * previousLayerSize] += gradient[i] * previousLayer->maps[j];
-        }
-    }
+    int numBytesWeightGradients = (int)(previousLayerSize * currentLayerSize * sizeof(float));
+    int numBytesPreviousLayer = (int)(previousLayerSize * sizeof(float));
+    int numBytesGradient = (int)(currentLayerSize * sizeof(float));
+
+    float* devicePrevGradients;
+    cudaMalloc((void**)&devicePrevGradients, numBytesPreviousLayer);
+    cudaMemset(devicePrevGradients, 0, numBytesPreviousLayer);
+
+    float* deviceWeightGradients;
+    cudaMalloc((void**)&deviceWeightGradients, numBytesWeightGradients);
+    cudaMemset(deviceWeightGradients, 0, numBytesWeightGradients);
+
+    float* devicePreviousLayer;
+    cudaMalloc((void**)&devicePreviousLayer, numBytesPreviousLayer);
+    cudaMemcpy(devicePreviousLayer, previousLayer->maps, numBytesPreviousLayer, cudaMemcpyHostToDevice);
+
+    float* deviceWeights;
+    cudaMalloc((void**)&deviceWeights, numBytesWeightGradients);
+    cudaMemcpy(deviceWeights, weights->filters[0].maps, numBytesWeightGradients, cudaMemcpyHostToDevice);
+
+    float* deviceGradients;
+    cudaMalloc((void**)&deviceGradients, numBytesGradient);
+    cudaMemcpy(deviceGradients, gradient.data(), numBytesGradient, cudaMemcpyHostToDevice);
+
+    int blockSize = 512;
+    int gridSize = (previousLayerSize * currentLayerSize + blockSize - 1) / blockSize;
+
+    CUDAFullyConnectedLayerBackward<<<gridSize, blockSize>>>(devicePrevGradients, deviceWeightGradients,
+                                                             devicePreviousLayer,
+                                                             deviceWeights, deviceGradients, previousLayerSize,
+                                                             currentLayerSize);
+
+    cudaMemcpy(previousGradient->inputGradients.data(), devicePrevGradients, numBytesPreviousLayer, cudaMemcpyDeviceToHost);
+    cudaMemcpy(previousGradient->weightGradients.data(), deviceWeightGradients, numBytesWeightGradients, cudaMemcpyDeviceToHost);
+
+    cudaFree(devicePrevGradients);
+    cudaFree(deviceWeightGradients);
+    cudaFree(devicePreviousLayer);
+    cudaFree(deviceWeights);
+    cudaFree(deviceGradients);
 
     std::memcpy(previousGradient->biasGradients.data(), gradient.data(), gradient.size() * sizeof(float));
 
@@ -442,7 +515,6 @@ Gradient* FullyConnectedLayerBackward(Layer* currentLayer, Group* weights, Layer
 
     return previousGradient;
 }
-
 
 void DropoutLayer(Layer *currentLayer, float dropoutRate) {
     std::random_device rd;
@@ -489,7 +561,6 @@ void ClipGradient(std::vector<float>& gradient) {
     cudaMemcpy(gradient.data(), deviceData, numBytesDataSize, cudaMemcpyDeviceToHost);
     cudaFree(deviceData);
 }
-
 
 void MiniBatch(const std::vector<std::vector<Gradient*>>& gradients, std::vector<Group*>& weights, std::vector<Layer*>& biases) {
     std::vector<Gradient*> avgGradients;
