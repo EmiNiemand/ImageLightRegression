@@ -41,7 +41,7 @@ private:
     Layer* loadedImage = nullptr;
 
     std::vector<Layer*> layers;
-    std::vector<Layer*> poolingLayers;
+    std::vector<Layer*> pooledLayers;
     std::vector<Group*> weights;
     std::vector<Layer*> biases;
 

@@ -72,7 +72,7 @@ void NeuralNetworkManager::Shutdown() {
 
 void NeuralNetworkManager::InitializeNetwork(NetworkTask task) {
     layers.reserve(16);
-    poolingLayers.reserve(4);
+    pooledLayers.reserve(4);
 
     currentTask = task;
 
@@ -95,7 +95,7 @@ void NeuralNetworkManager::FinalizeNetwork() {
     AdamOptimizer::GetInstance()->Reset();
 
     DELETE_VECTOR_VALUES(layers)
-    DELETE_VECTOR_VALUES(poolingLayers)
+    DELETE_VECTOR_VALUES(pooledLayers)
 
     currentTask = None;
     state = Idle;
@@ -213,7 +213,7 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
             manager->Backward(predictedValues, gradients[j]);
 
             DELETE_VECTOR_VALUES(manager->layers)
-            DELETE_VECTOR_VALUES(manager->poolingLayers)
+            DELETE_VECTOR_VALUES(manager->pooledLayers)
 
             delete manager->loadedImage;
             manager->loadedImage = nullptr;
@@ -245,7 +245,7 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
         }
 
         adamOptimizer->IncrementTimeStep();
-        MiniBatch(gradients, manager->weights, manager->biases);
+        UpdateNetwork(gradients, manager->weights, manager->biases);
 
         for (int g = 0; g < gradients.size(); ++g) {
             DELETE_VECTOR_VALUES(gradients[g])
@@ -298,7 +298,7 @@ void NeuralNetworkManager::FillDataSet(float *dataSet, glm::vec3* cameraPosition
         fclose(stream);
     }
 
-    // Create new values if file does not exist or number of data was changed
+    // Create new values if file does not exist or size of data was changed
     std::filesystem::remove("resources/Resources/NeuralNetworkResources/DataLog.txt");
 
     std::shared_ptr<spdlog::logger> logger = spdlog::basic_logger_mt("logger", "resources/Resources/NeuralNetworkResources/DataLog.txt");
@@ -321,6 +321,7 @@ void NeuralNetworkManager::FillDataSet(float *dataSet, glm::vec3* cameraPosition
         dataSet[i * 2] = phi;
         dataSet[i * 2 + 1] = theta;
 
+        // Log information about Camera, Light and Angles between them to file in human-readable form
         logger->info("Camera: " + STRING_VEC3(cameraPositions[i]) + " Light: " + STRING_VEC3(lightPositions[i]) +
                      " Angles: " + STRING(phi) + ", " + STRING(theta));
 
@@ -330,7 +331,7 @@ void NeuralNetworkManager::FillDataSet(float *dataSet, glm::vec3* cameraPosition
     spdlog::drop("logger");
     logger.reset();
 
-    // Save new generated data to file
+    // Save new generated data to file as bytes
     fopen_s(&stream, "resources/Resources/NeuralNetworkResources/Data.json", "wb");
     if (stream != nullptr) {
         fwrite(&dataSize, sizeof(int), 1, stream);
@@ -364,11 +365,11 @@ void NeuralNetworkManager::Forward(bool drop) {
     // ReLU
     ReLULayer(layers[1]);
     // Max Pooling [0]
-    poolingLayers.emplace_back(MaxPoolingLayer(layers[1], {2, 2}, {2, 2}));
+    pooledLayers.emplace_back(MaxPoolingLayer(layers[1], {2, 2}, {2, 2}));
 
     // Group 2
     // Conv 3
-    layers.emplace_back(ConvolutionLayer(poolingLayers[0], weights[2], {1, 1}, {1, 1}, biases[2]->maps));
+    layers.emplace_back(ConvolutionLayer(pooledLayers[0], weights[2], {1, 1}, {1, 1}, biases[2]->maps));
     // ReLU
     ReLULayer(layers[2]);
 
@@ -377,12 +378,12 @@ void NeuralNetworkManager::Forward(bool drop) {
     // ReLU
     ReLULayer(layers[3]);
     // Max Pooling [1]
-    poolingLayers.emplace_back(MaxPoolingLayer(layers[3], {2, 2}, {2, 2}));
+    pooledLayers.emplace_back(MaxPoolingLayer(layers[3], {2, 2}, {2, 2}));
 
 
     // Group 3
     // Conv 5
-    layers.emplace_back(ConvolutionLayer(poolingLayers[1], weights[4], {1, 1}, {1, 1}, biases[4]->maps));
+    layers.emplace_back(ConvolutionLayer(pooledLayers[1], weights[4], {1, 1}, {1, 1}, biases[4]->maps));
     // ReLU
     ReLULayer(layers[4]);
 
@@ -396,12 +397,12 @@ void NeuralNetworkManager::Forward(bool drop) {
     // ReLU
     ReLULayer(layers[6]);
     // Max Pooling [2]
-    poolingLayers.emplace_back(MaxPoolingLayer(layers[6], {2, 2}, {2, 2}));
+    pooledLayers.emplace_back(MaxPoolingLayer(layers[6], {2, 2}, {2, 2}));
 
 
     // Group 4
     // Conv 8
-    layers.emplace_back(ConvolutionLayer(poolingLayers[2], weights[7], {1, 1}, {1, 1}, biases[7]->maps));
+    layers.emplace_back(ConvolutionLayer(pooledLayers[2], weights[7], {1, 1}, {1, 1}, biases[7]->maps));
     // ReLU
     ReLULayer(layers[7]);
 
@@ -415,12 +416,12 @@ void NeuralNetworkManager::Forward(bool drop) {
     // ReLU
     ReLULayer(layers[9]);
     // Max Pooling [3]
-    poolingLayers.emplace_back(MaxPoolingLayer(layers[9], {2, 2}, {2, 2}));
+    pooledLayers.emplace_back(MaxPoolingLayer(layers[9], {2, 2}, {2, 2}));
 
 
     // Group 5
     // Conv 11
-    layers.emplace_back(ConvolutionLayer(poolingLayers[3], weights[10], {1, 1}, {1, 1}, biases[10]->maps));
+    layers.emplace_back(ConvolutionLayer(pooledLayers[3], weights[10], {1, 1}, {1, 1}, biases[10]->maps));
     // ReLU
     ReLULayer(layers[10]);
 
@@ -434,10 +435,10 @@ void NeuralNetworkManager::Forward(bool drop) {
     // ReLU
     ReLULayer(layers[12]);
     // Max Pooling [4]
-    poolingLayers.emplace_back(MaxPoolingLayer(layers[12], {2, 2}, {2, 2}));
+    pooledLayers.emplace_back(MaxPoolingLayer(layers[12], {2, 2}, {2, 2}));
 
     // Neurons of FCL Layer 1
-    layers.emplace_back(FullyConnectedLayer(poolingLayers[4], weights[13]->filters[0].maps, 25088, 4096, biases[13]->maps));
+    layers.emplace_back(FullyConnectedLayer(pooledLayers[4], weights[13]->filters[0].maps, 25088, 4096, biases[13]->maps));
     ReLULayer(layers[13]);
     // Deactivates neurons during training
     if(drop) DropoutLayer(layers[13], trainingParameters[6]);
@@ -465,45 +466,45 @@ void NeuralNetworkManager::Backward(const float* target, std::vector<Gradient*>&
     outputGradients.clear();
     gradients.push_back(FullyConnectedLayerBackward(layers[14], weights[14], layers[13], gradients[0]->inputGradients));
     gradients[0]->inputGradients.clear();
-    gradients.push_back(FullyConnectedLayerBackward(layers[13], weights[13], poolingLayers[4], gradients[1]->inputGradients));
+    gradients.push_back(FullyConnectedLayerBackward(layers[13], weights[13], pooledLayers[4], gradients[1]->inputGradients));
     gradients[1]->inputGradients.clear();
 
     // Group 5
-    MaxPoolingBackward(poolingLayers[4], layers[12], gradients[2]->inputGradients, ivec2(2, 2), ivec2(2, 2));
+    MaxPoolingBackward(pooledLayers[4], layers[12], gradients[2]->inputGradients, ivec2(2, 2), ivec2(2, 2));
     gradients.push_back(ConvolutionLayerBackward(layers[12], weights[12], layers[11], gradients[2]->inputGradients));
     gradients[2]->inputGradients.clear();
     gradients.push_back(ConvolutionLayerBackward(layers[11], weights[11], layers[10], gradients[3]->inputGradients));
     gradients[3]->inputGradients.clear();
-    gradients.push_back(ConvolutionLayerBackward(layers[10], weights[10], poolingLayers[3], gradients[4]->inputGradients));
+    gradients.push_back(ConvolutionLayerBackward(layers[10], weights[10], pooledLayers[3], gradients[4]->inputGradients));
     gradients[4]->inputGradients.clear();
 
     // Group 4
-    MaxPoolingBackward(poolingLayers[3], layers[9], gradients[5]->inputGradients, ivec2(2, 2), ivec2(2, 2));
+    MaxPoolingBackward(pooledLayers[3], layers[9], gradients[5]->inputGradients, ivec2(2, 2), ivec2(2, 2));
     gradients.push_back(ConvolutionLayerBackward(layers[9], weights[9], layers[8], gradients[5]->inputGradients));
     gradients[5]->inputGradients.clear();
     gradients.push_back(ConvolutionLayerBackward(layers[8], weights[8], layers[7], gradients[6]->inputGradients));
     gradients[6]->inputGradients.clear();
-    gradients.push_back(ConvolutionLayerBackward(layers[7], weights[7], poolingLayers[2], gradients[7]->inputGradients));
+    gradients.push_back(ConvolutionLayerBackward(layers[7], weights[7], pooledLayers[2], gradients[7]->inputGradients));
     gradients[7]->inputGradients.clear();
 
     // Group 3
-    MaxPoolingBackward(poolingLayers[2], layers[6], gradients[8]->inputGradients, ivec2(2, 2), ivec2(2, 2));
+    MaxPoolingBackward(pooledLayers[2], layers[6], gradients[8]->inputGradients, ivec2(2, 2), ivec2(2, 2));
     gradients.push_back(ConvolutionLayerBackward(layers[6], weights[6], layers[5], gradients[8]->inputGradients));
     gradients[8]->inputGradients.clear();
     gradients.push_back(ConvolutionLayerBackward(layers[5], weights[5], layers[4], gradients[9]->inputGradients));
     gradients[9]->inputGradients.clear();
-    gradients.push_back(ConvolutionLayerBackward(layers[4], weights[4], poolingLayers[1], gradients[10]->inputGradients));
+    gradients.push_back(ConvolutionLayerBackward(layers[4], weights[4], pooledLayers[1], gradients[10]->inputGradients));
     gradients[10]->inputGradients.clear();
 
     // Group 2
-    MaxPoolingBackward(poolingLayers[1], layers[3], gradients[11]->inputGradients, ivec2(2, 2), ivec2(2, 2));
+    MaxPoolingBackward(pooledLayers[1], layers[3], gradients[11]->inputGradients, ivec2(2, 2), ivec2(2, 2));
     gradients.push_back(ConvolutionLayerBackward(layers[3], weights[3], layers[2], gradients[11]->inputGradients));
     gradients[11]->inputGradients.clear();
-    gradients.push_back(ConvolutionLayerBackward(layers[2], weights[2], poolingLayers[0], gradients[12]->inputGradients));
+    gradients.push_back(ConvolutionLayerBackward(layers[2], weights[2], pooledLayers[0], gradients[12]->inputGradients));
     gradients[12]->inputGradients.clear();
 
     // Group 1
-    MaxPoolingBackward(poolingLayers[0], layers[1], gradients[13]->inputGradients, ivec2(2, 2), ivec2(2, 2));
+    MaxPoolingBackward(pooledLayers[0], layers[1], gradients[13]->inputGradients, ivec2(2, 2), ivec2(2, 2));
     gradients.push_back(ConvolutionLayerBackward(layers[1], weights[1], layers[0], gradients[13]->inputGradients));
     gradients[13]->inputGradients.clear();
     gradients.push_back(ConvolutionLayerBackward(layers[0], weights[0], loadedImage, gradients[14]->inputGradients));

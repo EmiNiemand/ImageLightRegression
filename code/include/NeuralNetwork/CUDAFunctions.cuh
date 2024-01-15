@@ -64,7 +64,7 @@ struct Group {
 
         filters = new Layer[count];
 
-    // He Initialization
+    // He/Kaiming Initialization
     for (int i = 0; i < count; ++i) {
             filters[i].width = filterDim.x;
             filters[i].height = filterDim.y;
@@ -103,8 +103,8 @@ extern __global__ void CUDAConvLayer(const float* input, float* output, const fl
 
 extern __global__ void CUDAReLULayer(float* input, int size);
 
-extern __global__ void CUDAPoolingLayer(const float* input, float* output, int outputDimX, int outputDimY, int outputDimZ,
-                                        int poolDimX, int poolDimY, int strideDimX, int strideDimY);
+extern __global__ void CUDAMaxPoolingLayer(const float* input, float* output, int outputDimX, int outputDimY, int outputDimZ,
+                                           int poolDimX, int poolDimY, int strideDimX, int strideDimY);
 
 extern __global__ void CUDAFullyConnectedLayer(const float* input, const float* weights, const float* biases,
                                                float* output, int inputSize, int outputSize);
@@ -146,7 +146,7 @@ void DropoutLayer(Layer* currentLayer, float dropoutRate);
 
 float MSELossFunction(const float* input, const float* predictedResult, int size);
 
-void MiniBatch(const std::vector<std::vector<Gradient*>>& gradients, std::vector<Group*>& weights, std::vector<Layer*>& biases);
+void UpdateNetwork(const std::vector<std::vector<Gradient*>>& gradients, std::vector<Group*>& weights, std::vector<Layer*>& biases);
 
 void UpdateWeightsAndBiases(const std::vector<Gradient*>& gradients, std::vector<Group*>& weights, std::vector<Layer*>& biases);
 

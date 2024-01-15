@@ -47,8 +47,8 @@ __global__ void CUDAReLULayer(float* input, int size) {
     }
 }
 
-__global__ void CUDAPoolingLayer(const float* input, float* output, int outputDimX, int outputDimY, int outputDimZ,
-                                 int poolDimX, int poolDimY, int strideDimX, int strideDimY) {
+__global__ void CUDAMaxPoolingLayer(const float* input, float* output, int outputDimX, int outputDimY, int outputDimZ,
+                                    int poolDimX, int poolDimY, int strideDimX, int strideDimY) {
     unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (idx < outputDimX * outputDimY * outputDimZ) {
@@ -365,8 +365,8 @@ Layer* MaxPoolingLayer(const Layer* currentLayer, const ivec2& poolDim, const iv
     float* deviceNextLayer;
     cudaMalloc((void**)&deviceNextLayer, numBytesNextLayerSize);
 
-    CUDAPoolingLayer<<<gridSize, blockSize>>>(deviceCurrentLayer, deviceNextLayer, width, height, nextLayer->depth,
-                                              poolDim.x, poolDim.y, stride.x, stride.y);
+    CUDAMaxPoolingLayer<<<gridSize, blockSize>>>(deviceCurrentLayer, deviceNextLayer, width, height, nextLayer->depth,
+                                                 poolDim.x, poolDim.y, stride.x, stride.y);
 
     cudaMemcpy(nextLayer->maps, deviceNextLayer, numBytesNextLayerSize, cudaMemcpyDeviceToHost);
 
@@ -563,7 +563,7 @@ void ClipGradient(std::vector<float>& gradient) {
     cudaFree(deviceData);
 }
 
-void MiniBatch(const std::vector<std::vector<Gradient*>>& gradients, std::vector<Group*>& weights, std::vector<Layer*>& biases) {
+void UpdateNetwork(const std::vector<std::vector<Gradient*>>& gradients, std::vector<Group*>& weights, std::vector<Layer*>& biases) {
     std::vector<Gradient*> avgGradients;
     avgGradients.reserve(gradients[0].size());
 
@@ -587,7 +587,7 @@ void MiniBatch(const std::vector<std::vector<Gradient*>>& gradients, std::vector
 
     UpdateWeightsAndBiases(avgGradients, weights, biases);
 
-    for (int i = 0; i < avgGradients.size(); ++i) {
+    for(int i = 0; i < avgGradients.size(); ++i) {
         delete avgGradients[i];
     }
 }
