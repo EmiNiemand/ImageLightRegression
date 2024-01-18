@@ -17,9 +17,9 @@ public:
     static unsigned char* RotateImage(const unsigned char* image, int width, int height, int dim);
 
     /// Returns two angles (phi, theta) as array of floats
-    static float* CartesianToSphericalCoordinates(glm::vec3 position);
+    static float* CartesianCoordsToSphericalAngles(glm::vec3 position);
     /// Return position as vec3
-    static glm::vec3 SphericalToCartesianCoordinates(float phi, float theta, float radius = 1);
+    static glm::vec3 SphericalAnglesToCartesianCoordinates(float phi, float theta, float radius = 1);
 
     static void SaveJsonToFile(const std::string& filePath, const nlohmann::json& json);
     static bool LoadJsonFromFile(const std::string& filePath, nlohmann::json& json);

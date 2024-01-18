@@ -110,9 +110,10 @@ void NeuralNetworkManager::ProcessImage() {
     Forward(false);
 
     glm::vec3 cameraPosition = Camera::GetRenderingCamera()->transform->GetGlobalPosition();
-    float* cameraSphericalCoords = CUM::CartesianToSphericalCoordinates(cameraPosition);
-    glm::vec3 lightPosition = CUM::SphericalToCartesianCoordinates(layers[15]->maps[0] + cameraSphericalCoords[0],
-        layers[15]->maps[1] + cameraSphericalCoords[1], glm::length(cameraPosition));
+    float* cameraSphericalCoords = CUM::CartesianCoordsToSphericalAngles(cameraPosition);
+    glm::vec3 lightPosition = CUM::SphericalAnglesToCartesianCoordinates(layers[15]->maps[0] + cameraSphericalCoords[0],
+                                                                         layers[15]->maps[1] + cameraSphericalCoords[1],
+                                                                         glm::length(cameraPosition));
 
     delete[] cameraSphericalCoords;
     delete loadedImage;
@@ -146,16 +147,16 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
     unsigned int prevImage = texture->GetID();
     glm::ivec2 prevImageResolution = texture->GetResolution();
 
+    // Save Camera initial values
+    Transform* renderingCameraTransform = Camera::GetRenderingCamera()->transform;
+    glm::vec3 cPosition = renderingCameraTransform->GetLocalPosition();
+    glm::vec3 cRotation = renderingCameraTransform->GetLocalRotation();
+
     // Set camera texture as new loaded image which is used in network forward method
     int width = Application::viewports[0].resolution.x;
     int height = Application::viewports[0].resolution.y;
     texture->SetID(renderingManager->objectRenderer->renderingCameraTexture);
     texture->SetResolution(glm::ivec2(width, height));
-
-    // Save Camera initial values
-    Transform* renderingCameraTransform = Camera::GetRenderingCamera()->transform;
-    glm::vec3 cPosition = renderingCameraTransform->GetLocalPosition();
-    glm::vec3 cRotation = renderingCameraTransform->GetLocalRotation();
 
     // Generate or read data set
     int dataSetSize = trainingSize * manager->outputSize;
@@ -309,11 +310,11 @@ void NeuralNetworkManager::FillDataSet(float *dataSet, glm::vec3* cameraPosition
         cameraPositions[i] = glm::normalize(glm::vec3(RNG(-1.0f, 1.0f), RNG(0.0f, 1.0f), RNG(-1.0f, 1.0f))) * 10.0f;
         lightPositions[i] = glm::normalize(glm::vec3(RNG(-1.0f, 1.0f), RNG(0.0f, 1.0f), RNG(-1.0f, 1.0f))) * 10.0f;
 
-        float* cameraSphericalCoords = CUM::CartesianToSphericalCoordinates(cameraPositions[i]);
-        float* lightSphericalCoords = CUM::CartesianToSphericalCoordinates(lightPositions[i]);
+        float* cameraSphericalAngles = CUM::CartesianCoordsToSphericalAngles(cameraPositions[i]);
+        float* lightSphericalAngles = CUM::CartesianCoordsToSphericalAngles(lightPositions[i]);
 
-        float phi = lightSphericalCoords[0] - cameraSphericalCoords[0];
-        float theta = lightSphericalCoords[1] - cameraSphericalCoords[1];
+        float phi = lightSphericalAngles[0] - cameraSphericalAngles[0];
+        float theta = lightSphericalAngles[1] - cameraSphericalAngles[1];
 
         if (phi > (float)M_PI) phi = phi - 2.0f * (float)M_PI;
         if (phi < -(float)M_PI) phi = phi + 2.0f * (float)M_PI;
@@ -325,8 +326,8 @@ void NeuralNetworkManager::FillDataSet(float *dataSet, glm::vec3* cameraPosition
         logger->info("Camera: " + STRING_VEC3(cameraPositions[i]) + " Light: " + STRING_VEC3(lightPositions[i]) +
                      " Angles: " + STRING(phi) + ", " + STRING(theta));
 
-        delete[] cameraSphericalCoords;
-        delete[] lightSphericalCoords;
+        delete[] cameraSphericalAngles;
+        delete[] lightSphericalAngles;
     }
     spdlog::drop("logger");
     logger.reset();

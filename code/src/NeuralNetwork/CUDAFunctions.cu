@@ -223,11 +223,11 @@ Layer* ConvolutionLayer(const Layer* currentLayer, const Group* filters, const i
     int numBytesKernelSize = (int)(filters->filters[0].width * filters->filters[0].height * filters->filters[0].depth *
                                    sizeof(float));
 
-    int blockSize = 512;
-    int gridSize = (currentLayer->width * currentLayer->height + blockSize - 1) / blockSize;
-
     float* deviceKernels;
     cudaMalloc((void**)&deviceKernels, numBytesKernelSize);
+
+    int blockSize = 512;
+    int gridSize = (currentLayer->width * currentLayer->height + blockSize - 1) / blockSize;
 
     for (int i = 0; i < filters->count; ++i) {
         cudaMemcpy(deviceKernels, filters->filters[i].maps, numBytesKernelSize, cudaMemcpyHostToDevice);
@@ -326,12 +326,12 @@ void ReLULayer(Layer* currentLayer) {
     int currentLayerSize = currentLayer->width * currentLayer->height * currentLayer->depth;
     int numBytesCurrentLayerSize = (int)(currentLayerSize * sizeof(float));
 
-    int blockSize = 256;
-    int gridSize = (currentLayerSize + blockSize - 1) / blockSize;
-
     float* deviceCurrentLayer;
     cudaMalloc((void**)&deviceCurrentLayer, numBytesCurrentLayerSize);
     cudaMemcpy(deviceCurrentLayer, currentLayer->maps, numBytesCurrentLayerSize, cudaMemcpyHostToDevice);
+
+    int blockSize = 256;
+    int gridSize = (currentLayerSize + blockSize - 1) / blockSize;
 
     CUDAReLULayer<<<gridSize, blockSize>>>(deviceCurrentLayer, currentLayerSize);
 
@@ -352,9 +352,6 @@ Layer* MaxPoolingLayer(const Layer* currentLayer, const ivec2& poolDim, const iv
     nextLayer->height = height;
     nextLayer->maps = new float[nextLayerSize];
 
-    int blockSize = 256;
-    int gridSize = (nextLayerSize + blockSize - 1) / blockSize;
-
     int numBytesCurrentLayerSize = (int)(currentLayerSize * sizeof(float));
     int numBytesNextLayerSize = (int)(nextLayerSize * sizeof(float));
 
@@ -364,6 +361,9 @@ Layer* MaxPoolingLayer(const Layer* currentLayer, const ivec2& poolDim, const iv
 
     float* deviceNextLayer;
     cudaMalloc((void**)&deviceNextLayer, numBytesNextLayerSize);
+
+    int blockSize = 256;
+    int gridSize = (nextLayerSize + blockSize - 1) / blockSize;
 
     CUDAMaxPoolingLayer<<<gridSize, blockSize>>>(deviceCurrentLayer, deviceNextLayer, width, height, nextLayer->depth,
                                                  poolDim.x, poolDim.y, stride.x, stride.y);
@@ -399,8 +399,7 @@ void MaxPoolingBackward(const Layer* currentLayer, const Layer* previousLayer, s
     CUDAMaxPoolingLayerBackward<<<gridSize, blockSize>>>(devicePrevGradients, deviceGradients, devicePrevLayer,
                                                          currentLayer->width, currentLayer->height, currentLayer->depth,
                                                          previousLayer->width, previousLayer->height, poolDim.x,
-                                                         poolDim.y,
-                                                         strideDim.x, strideDim.y);
+                                                         poolDim.y, strideDim.x, strideDim.y);
 
     gradient.clear();
     gradient.resize(prevLayerSize, 0.0f);
@@ -423,14 +422,16 @@ Layer* FullyConnectedLayer(const Layer* currentLayer, const float* weights, int 
     int numBytesNexLayerSize = (int)(nextLayerSize * sizeof(float));
 
     float* deviceCurrentLayerNeurons;
-    float* deviceWeights;
-    float* deviceBiases = nullptr;
-    float* deviceNextLayerNeurons;
     cudaMalloc((void**)&deviceCurrentLayerNeurons, numBytesCurrentLayerSize);
+
+    float* deviceWeights;
     cudaMalloc((void**)&deviceWeights, numBytesCurrentLayerSize * nextLayerSize);
+
+    float* deviceNextLayerNeurons;
     cudaMalloc((void**)&deviceNextLayerNeurons, numBytesNexLayerSize);
     cudaMemset((void**)&deviceNextLayerNeurons, 0, numBytesNexLayerSize);
 
+    float* deviceBiases = nullptr;
     if (biases != nullptr) {
         cudaMalloc((void**)&deviceBiases, numBytesNexLayerSize);
         cudaMemcpy(deviceBiases, biases, numBytesNexLayerSize, cudaMemcpyHostToDevice);
@@ -442,8 +443,8 @@ Layer* FullyConnectedLayer(const Layer* currentLayer, const float* weights, int 
     int blockSize = 512;
     int gridSize = (currentLayerSize * nextLayerSize + blockSize - 1) / blockSize;
 
-    CUDAFullyConnectedLayer<<<gridSize, blockSize>>>(deviceCurrentLayerNeurons, deviceWeights, deviceBiases, deviceNextLayerNeurons,
-                                                     currentLayerSize, nextLayerSize);
+    CUDAFullyConnectedLayer<<<gridSize, blockSize>>>(deviceCurrentLayerNeurons, deviceWeights, deviceBiases,
+                                                     deviceNextLayerNeurons, currentLayerSize, nextLayerSize);
 
     cudaMemcpy(nextLayer->maps, deviceNextLayerNeurons, numBytesNexLayerSize, cudaMemcpyDeviceToHost);
 
@@ -495,9 +496,8 @@ Gradient* FullyConnectedLayerBackward(Layer* currentLayer, Group* weights, Layer
     int gridSize = (previousLayerSize * currentLayerSize + blockSize - 1) / blockSize;
 
     CUDAFullyConnectedLayerBackward<<<gridSize, blockSize>>>(devicePrevGradients, deviceWeightGradients,
-                                                             devicePreviousLayer,
-                                                             deviceWeights, deviceGradients, previousLayerSize,
-                                                             currentLayerSize);
+                                                             devicePreviousLayer,deviceWeights, deviceGradients,
+                                                             previousLayerSize, currentLayerSize);
 
     cudaMemcpy(previousGradient->inputGradients.data(), devicePrevGradients, numBytesPreviousLayer, cudaMemcpyDeviceToHost);
     cudaMemcpy(previousGradient->weightGradients.data(), deviceWeightGradients, numBytesWeightGradients, cudaMemcpyDeviceToHost);
@@ -550,12 +550,12 @@ void ClipGradient(std::vector<float>& gradient) {
     int dataSize = (int)gradient.size();
     int numBytesDataSize = (int)(dataSize * sizeof(float));
 
-    int blockSize = 256;
-    int gridSize = (dataSize + blockSize - 1) / blockSize;
-
     float* deviceData;
     cudaMalloc((void**)&deviceData, numBytesDataSize);
     cudaMemcpy(deviceData, gradient.data(), numBytesDataSize, cudaMemcpyHostToDevice);
+
+    int blockSize = 256;
+    int gridSize = (dataSize + blockSize - 1) / blockSize;
 
     CUDAClipGradient<<<gridSize, blockSize>>>(deviceData, dataSize);
 

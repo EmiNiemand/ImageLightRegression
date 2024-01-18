@@ -60,7 +60,7 @@ unsigned char* CUM::RotateImage(const unsigned char *image, int width, int heigh
     return flippedData;
 }
 
-float *CUM::CartesianToSphericalCoordinates(glm::vec3 position) {
+float *CUM::CartesianCoordsToSphericalAngles(glm::vec3 position) {
     float* output = new float[2];
 
     position = glm::normalize(position);
@@ -71,7 +71,7 @@ float *CUM::CartesianToSphericalCoordinates(glm::vec3 position) {
     return output;
 }
 
-glm::vec3 CUM::SphericalToCartesianCoordinates(float phi, float theta, float radius) {
+glm::vec3 CUM::SphericalAnglesToCartesianCoordinates(float phi, float theta, float radius) {
     glm::vec3 position;
 
     position.x = std::cos(phi) * std::sin(theta);
