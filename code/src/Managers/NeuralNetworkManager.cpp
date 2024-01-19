@@ -134,6 +134,7 @@ void NeuralNetworkManager::Train() {
 
 void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSize, int patience, float learningRate,
                                                                                             float minLearningRate) {
+    // Get neuralNetworkManager(as manager) and renderingManager
     NeuralNetworkManager* manager = NeuralNetworkManager::GetInstance();
     manager->state = NetworkState::Training;
 
@@ -182,15 +183,16 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
         for (int j = 0; j < batchSize; ++j) {
             int idx = RNG(0, trainingSize - 1);
 
+            // Set light position
+            renderingManager->objectRenderer->pointLights[0]->parent->transform->SetLocalPosition(lightPositions[idx]);
+            // Set camera position
+            Camera::GetRenderingCamera()->transform->SetLocalPosition(cameraPositions[idx]);
+
             // Calculate camera looking direction and rotate it to look at point(0,0,0)
             glm::vec3 direction = glm::normalize(glm::vec3(0, 0, 0) - cameraPositions[idx]);
-
-            renderingManager->objectRenderer->pointLights[0]->parent->transform->SetLocalPosition(lightPositions[idx]);
-
             float angleX = (float)(asin(direction.y) * 180.0f / M_PI);
             float angleY = (float)(-atan2(direction.x, -direction.z) * 180.0f / M_PI);
             Camera::GetRenderingCamera()->transform->SetLocalRotation(glm::vec3(angleX, angleY, 0));
-            Camera::GetRenderingCamera()->transform->SetLocalPosition(cameraPositions[idx]);
 
             // Wait until new frame is drawn and updated
             manager->waitForUpdate = true;
@@ -213,6 +215,7 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
 
             manager->Backward(predictedValues, gradients[j]);
 
+            // Clear network layers and loaded image
             DELETE_VECTOR_VALUES(manager->layers)
             DELETE_VECTOR_VALUES(manager->pooledLayers)
 
@@ -248,6 +251,7 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
         adamOptimizer->IncrementTimeStep();
         UpdateNetwork(gradients, manager->weights, manager->biases);
 
+        // Clear gradients
         for (int g = 0; g < gradients.size(); ++g) {
             DELETE_VECTOR_VALUES(gradients[g])
         }
@@ -268,7 +272,7 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
     renderingCameraTransform->SetLocalPosition(cPosition);
     renderingCameraTransform->SetLocalRotation(cRotation);
 
-
+    // Set network finalization to true
     if (Application::GetInstance()->isStarted) {
         Application::GetInstance()->isStarted = false;
         manager->finalize = true;
