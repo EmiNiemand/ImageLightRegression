@@ -88,6 +88,8 @@ private:
     // Saves weights and biases to file
     void Save();
     static void ThreadSave();
+    void Test();
+    static void ThreadTest();
 };
 
 

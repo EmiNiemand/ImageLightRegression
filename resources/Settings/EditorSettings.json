@@ -19,13 +19,13 @@
             "CallOnStart": true,
             "Enabled": true,
             "Position": [
-                0.0,
-                1.0,
-                10.0
+                9.023195266723633,
+                9.54785442352295,
+                14.845832824707031
             ],
             "Rotation": [
-                0.0,
-                0.0,
+                -24.0,
+                36.0,
                 0.0
             ],
             "Scale": [
@@ -45,7 +45,7 @@
             1.0,
             1.0
         ],
-        "Texture": "resources/Outputs/TESTTEST.png"
+        "Texture": "resources/Outputs/Test11.png"
     },
-    "LastOpenedScene": "resources\\Scenes\\TestScene1.scn"
+    "LastOpenedScene": "resources\\Scenes\\TrainingScene4.scn"
 }

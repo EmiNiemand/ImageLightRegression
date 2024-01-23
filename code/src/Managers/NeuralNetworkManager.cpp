@@ -77,7 +77,8 @@ void NeuralNetworkManager::InitializeNetwork(NetworkTask task) {
     currentTask = task;
 
     if (task == NetworkTask::TrainNetwork) {
-        Train();
+//        Train();
+        Test();
     }
     else if (task == NetworkTask::ProcessImage) {
         ProcessImage();
@@ -693,5 +694,158 @@ void NeuralNetworkManager::ThreadSave() {
     }
     manager->state = Idle;
 }
-
 #pragma endregion
+
+void NeuralNetworkManager::Test() {
+    if (thread != nullptr) {
+        if (thread->joinable()) thread->join();
+        delete thread;
+    }
+
+    thread = new std::thread(&NeuralNetworkManager::ThreadTest);
+}
+
+void NeuralNetworkManager::ThreadTest() {
+    // Get neuralNetworkManager(as manager) and renderingManager
+    NeuralNetworkManager* manager = NeuralNetworkManager::GetInstance();
+    manager->state = NetworkState::Training;
+
+    RenderingManager* renderingManager = RenderingManager::GetInstance();
+
+    // Save texture values
+    Texture* texture = EditorManager::GetInstance()->loadedImage->GetComponentByClass<Image>()->GetTexture();
+    unsigned int prevImage = texture->GetID();
+    glm::ivec2 prevImageResolution = texture->GetResolution();
+
+    // Save Camera initial values
+    Transform* renderingCameraTransform = Camera::GetRenderingCamera()->transform;
+    glm::vec3 cPosition = renderingCameraTransform->GetLocalPosition();
+    glm::vec3 cRotation = renderingCameraTransform->GetLocalRotation();
+
+    // Set camera texture as new loaded image which is used in network forward method
+    int width = Application::viewports[0].resolution.x;
+    int height = Application::viewports[0].resolution.y;
+    texture->SetID(renderingManager->objectRenderer->renderingCameraTexture);
+    texture->SetResolution(glm::ivec2(width, height));
+
+    // Generate or read data set
+    glm::vec2* dataSet = new glm::vec2[72 * 121];
+    glm::vec3* cameraPositions = new glm::vec3[72];
+    glm::vec3* lightPositions = new glm::vec3[121];
+
+    float radOfDeg15 = 15 * M_PI / 180;
+
+    float cTheta = M_PI / 2 - radOfDeg15;
+    for (int i = 0; i < 3; ++i) {
+        if (i > 0) {
+            cTheta -= (radOfDeg15 * 2);
+        }
+        for (int j = 0; j < 24; ++j) {
+            float cPhi = M_PI * 2 - radOfDeg15 * (j + 1);
+
+            cameraPositions[j + i * 24] = CUM::SphericalAnglesToCartesianCoordinates(cPhi, cTheta) * 10.0f;
+
+            for (int k = 0; k < 6; ++k) {
+                float lTheta = M_PI / 2 - radOfDeg15 * (k + 1);
+                if (k < 5) {
+                    for (int l = 0; l < 24; ++l) {
+                        float lPhi = M_PI * 2 - radOfDeg15 * (l + 1);
+
+                        lightPositions[l + k * 24] = CUM::SphericalAnglesToCartesianCoordinates(lPhi, lTheta) * 10.0f;
+
+                        float phi = lPhi - cPhi;
+                        float theta = lTheta - cTheta;
+
+                        if (phi > (float)M_PI) phi = phi - 2.0f * (float)M_PI;
+                        if (phi < -(float)M_PI) phi = phi + 2.0f * (float)M_PI;
+
+                        dataSet[l + k * 24 + (j + i * 24) * 121] = glm::vec2(phi, theta);
+                    }
+                }
+                else {
+                    float lPhi = 0;
+
+                    lightPositions[121] = CUM::SphericalAnglesToCartesianCoordinates(lPhi, lTheta) * 10.0f;
+
+                    float phi = lPhi - cPhi;
+                    float theta = lTheta - cTheta;
+
+                    if (phi > (float)M_PI) phi = phi - 2.0f * (float)M_PI;
+                    if (phi < -(float)M_PI) phi = phi + 2.0f * (float)M_PI;
+
+                    dataSet[121 + (j + i * 24) * 121] = glm::vec2(phi, theta);
+                }
+
+            }
+        }
+    }
+
+    float loss = 0;
+    glm::vec2 accuracy = {0, 0};
+
+    for (int i = 0; i < 72; ++i) {
+        for (int j = 0; j < 121; ++j) {
+            // Set light position
+            renderingManager->objectRenderer->pointLights[0]->parent->transform->SetLocalPosition(lightPositions[j]);
+            // Set camera position
+            Camera::GetRenderingCamera()->transform->SetLocalPosition(cameraPositions[i]);
+
+            // Calculate camera looking direction and rotate it to look at point(0,0,0)
+            glm::vec3 direction = glm::normalize(glm::vec3(0, 0, 0) - cameraPositions[i]);
+            float angleX = (float)(asin(direction.y) * 180.0f / M_PI);
+            float angleY = (float)(-atan2(direction.x, -direction.z) * 180.0f / M_PI);
+            Camera::GetRenderingCamera()->transform->SetLocalRotation(glm::vec3(angleX, angleY, 0));
+
+            // Wait until new frame is drawn and updated
+            manager->waitForUpdate = true;
+            manager->waitForRender = true;
+            while(true) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                if (!manager->waitForUpdate && !manager->waitForRender) {
+                    break;
+                }
+            }
+
+            manager->Forward(false);
+
+            ILR_INFO_MSG("Output: " + STRING(manager->layers[15]->maps[0]) + ", " + STRING(manager->layers[15]->maps[1]) +
+                         ", Target: " + STRING(dataSet[j + i * 121].x) + ", " + STRING(dataSet[j + i * 121].y));
+
+            float target[2] = {dataSet[j + i * 120].x, dataSet[j + i * 120].y};
+            loss += MSELossFunction(manager->layers[15]->maps, target, manager->outputSize);
+            accuracy.x += abs(dataSet[j + i * 121].x - manager->layers[15]->maps[0]);
+            accuracy.y += abs(dataSet[j + i * 121].y - manager->layers[15]->maps[1]);
+
+            // Clear network layers and loaded image
+            DELETE_VECTOR_VALUES(manager->layers)
+            DELETE_VECTOR_VALUES(manager->pooledLayers)
+
+            delete manager->loadedImage;
+            manager->loadedImage = nullptr;
+            if (!Application::GetInstance()->isStarted) {
+                break;
+            }
+        }
+
+        if (!Application::GetInstance()->isStarted) {
+            break;
+        }
+    }
+
+    ILR_WARN_MSG("**********************************");
+    ILR_WARN_MSG("Loss: " + STRING((loss / 8712)) + ", Accuracy: " + STRING_VEC2((accuracy / 8712.0f)));
+    ILR_WARN_MSG("**********************************");
+
+    delete[] cameraPositions;
+    delete[] lightPositions;
+    delete[] dataSet;
+
+    // Set old values for texture and camera
+    texture->SetID(prevImage);
+    texture->SetResolution(prevImageResolution);
+    renderingCameraTransform->SetLocalPosition(cPosition);
+    renderingCameraTransform->SetLocalRotation(cRotation);
+
+    manager->currentTask = None;
+    manager->state = Idle;
+}

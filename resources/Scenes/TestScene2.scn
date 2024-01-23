@@ -2,251 +2,6 @@
     {
         "Children": [
             {
-                "Children": [],
-                "Components": [
-                    {
-                        "CallOnAwake": true,
-                        "CallOnStart": true,
-                        "ComponentType": "Camera",
-                        "Enabled": true,
-                        "FOV": 45.0,
-                        "zFar": 100.0,
-                        "zNear": 0.10000000149011612
-                    },
-                    {
-                        "CallOnAwake": true,
-                        "CallOnStart": true,
-                        "ComponentType": "Renderer",
-                        "DrawShadows": false,
-                        "Enabled": true,
-                        "Material": [
-                            1.0,
-                            1.0,
-                            1.0,
-                            32.0,
-                            0.0,
-                            0.0
-                        ],
-                        "Model": "resources/models/Camera/Camera.obj",
-                        "TextureScale": [
-                            1.0,
-                            1.0
-                        ]
-                    }
-                ],
-                "Enabled": true,
-                "Name": "Camera",
-                "Transform": {
-                    "CallOnAwake": true,
-                    "CallOnStart": true,
-                    "Enabled": true,
-                    "Position": [
-                        -10.0,
-                        5.0,
-                        15.0
-                    ],
-                    "Rotation": [
-                        -15.0,
-                        -33.0,
-                        0.0
-                    ],
-                    "Scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                },
-                "VisibleInEditor": true
-            },
-            {
-                "Children": [],
-                "Components": [
-                    {
-                        "CallOnAwake": true,
-                        "CallOnStart": true,
-                        "ComponentType": "Skybox",
-                        "CubeMap": "resources/Resources/CubeMap.json",
-                        "Enabled": true
-                    }
-                ],
-                "Enabled": true,
-                "Name": "Skybox",
-                "Transform": {
-                    "CallOnAwake": true,
-                    "CallOnStart": true,
-                    "Enabled": true,
-                    "Position": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "Rotation": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "Scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                },
-                "VisibleInEditor": true
-            },
-            {
-                "Children": [],
-                "Components": [
-                    {
-                        "CallOnAwake": true,
-                        "CallOnStart": true,
-                        "ComponentType": "Renderer",
-                        "DrawShadows": true,
-                        "Enabled": true,
-                        "Material": [
-                            1.0,
-                            1.0,
-                            1.0,
-                            32.0,
-                            0.0,
-                            0.0
-                        ],
-                        "Model": "resources/Models/Table/stol.obj",
-                        "TextureScale": [
-                            1.0,
-                            1.0
-                        ]
-                    }
-                ],
-                "Enabled": true,
-                "Name": "Table\u0000",
-                "Transform": {
-                    "CallOnAwake": true,
-                    "CallOnStart": true,
-                    "Enabled": true,
-                    "Position": [
-                        0.0,
-                        -1.0,
-                        3.5
-                    ],
-                    "Rotation": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "Scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                },
-                "VisibleInEditor": true
-            },
-            {
-                "Children": [],
-                "Components": [
-                    {
-                        "CallOnAwake": true,
-                        "CallOnStart": true,
-                        "ComponentType": "Renderer",
-                        "DrawShadows": true,
-                        "Enabled": true,
-                        "Material": [
-                            1.0,
-                            1.0,
-                            1.0,
-                            32.0,
-                            0.0,
-                            0.0
-                        ],
-                        "Model": "resources/Models/Chair/krzeslo.obj",
-                        "TextureScale": [
-                            1.0,
-                            1.0
-                        ]
-                    }
-                ],
-                "Enabled": true,
-                "Name": "Chair\u0000ing",
-                "Transform": {
-                    "CallOnAwake": true,
-                    "CallOnStart": true,
-                    "Enabled": true,
-                    "Position": [
-                        0.0,
-                        0.44999998807907104,
-                        0.0
-                    ],
-                    "Rotation": [
-                        0.0,
-                        -90.0,
-                        0.0
-                    ],
-                    "Scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                },
-                "VisibleInEditor": true
-            },
-            {
-                "Children": [],
-                "Components": [
-                    {
-                        "Ambient": [
-                            1.0,
-                            1.0,
-                            1.0
-                        ],
-                        "CallOnAwake": true,
-                        "CallOnStart": true,
-                        "Color": [
-                            1.0,
-                            1.0,
-                            1.0
-                        ],
-                        "ComponentType": "PointLight",
-                        "Constant": 1.0,
-                        "Diffuse": [
-                            0.6899999976158142,
-                            0.6899999976158142,
-                            0.6899999976158142
-                        ],
-                        "Enabled": true,
-                        "Linear": 0.007000000216066837,
-                        "Quadratic": 0.00019999999494757503,
-                        "Specular": [
-                            1.0,
-                            1.0,
-                            1.0
-                        ]
-                    }
-                ],
-                "Enabled": true,
-                "Name": "Light",
-                "Transform": {
-                    "CallOnAwake": true,
-                    "CallOnStart": true,
-                    "Enabled": true,
-                    "Position": [
-                        3.9000000953674316,
-                        4.999999523162842,
-                        -1.7999999523162842
-                    ],
-                    "Rotation": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "Scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                },
-                "VisibleInEditor": true
-            },
-            {
                 "Children": [
                     {
                         "Children": [],
@@ -520,6 +275,251 @@
                     {
                         "CallOnAwake": true,
                         "CallOnStart": true,
+                        "ComponentType": "Camera",
+                        "Enabled": true,
+                        "FOV": 45.0,
+                        "zFar": 100.0,
+                        "zNear": 0.10000000149011612
+                    },
+                    {
+                        "CallOnAwake": true,
+                        "CallOnStart": true,
+                        "ComponentType": "Renderer",
+                        "DrawShadows": false,
+                        "Enabled": true,
+                        "Material": [
+                            1.0,
+                            1.0,
+                            1.0,
+                            32.0,
+                            0.0,
+                            0.0
+                        ],
+                        "Model": "resources/models/Camera/Camera.obj",
+                        "TextureScale": [
+                            1.0,
+                            1.0
+                        ]
+                    }
+                ],
+                "Enabled": true,
+                "Name": "Camera",
+                "Transform": {
+                    "CallOnAwake": true,
+                    "CallOnStart": true,
+                    "Enabled": true,
+                    "Position": [
+                        -10.0,
+                        5.0,
+                        15.0
+                    ],
+                    "Rotation": [
+                        -15.0,
+                        -33.0,
+                        0.0
+                    ],
+                    "Scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "VisibleInEditor": true
+            },
+            {
+                "Children": [],
+                "Components": [
+                    {
+                        "CallOnAwake": true,
+                        "CallOnStart": true,
+                        "ComponentType": "Skybox",
+                        "CubeMap": "resources/Resources/CubeMap.json",
+                        "Enabled": true
+                    }
+                ],
+                "Enabled": true,
+                "Name": "Skybox",
+                "Transform": {
+                    "CallOnAwake": true,
+                    "CallOnStart": true,
+                    "Enabled": true,
+                    "Position": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "Rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "Scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "VisibleInEditor": true
+            },
+            {
+                "Children": [],
+                "Components": [
+                    {
+                        "CallOnAwake": true,
+                        "CallOnStart": true,
+                        "ComponentType": "Renderer",
+                        "DrawShadows": true,
+                        "Enabled": true,
+                        "Material": [
+                            1.0,
+                            1.0,
+                            1.0,
+                            32.0,
+                            0.0,
+                            0.0
+                        ],
+                        "Model": "resources/Models/Table/stol.obj",
+                        "TextureScale": [
+                            1.0,
+                            1.0
+                        ]
+                    }
+                ],
+                "Enabled": true,
+                "Name": "Table\u0000",
+                "Transform": {
+                    "CallOnAwake": true,
+                    "CallOnStart": true,
+                    "Enabled": true,
+                    "Position": [
+                        0.0,
+                        -1.0,
+                        0.0
+                    ],
+                    "Rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "Scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "VisibleInEditor": true
+            },
+            {
+                "Children": [],
+                "Components": [
+                    {
+                        "CallOnAwake": true,
+                        "CallOnStart": true,
+                        "ComponentType": "Renderer",
+                        "DrawShadows": true,
+                        "Enabled": true,
+                        "Material": [
+                            1.0,
+                            1.0,
+                            1.0,
+                            32.0,
+                            0.0,
+                            0.0
+                        ],
+                        "Model": "resources/Models/Chair/krzeslo.obj",
+                        "TextureScale": [
+                            1.0,
+                            1.0
+                        ]
+                    }
+                ],
+                "Enabled": true,
+                "Name": "Chair\u0000ing",
+                "Transform": {
+                    "CallOnAwake": true,
+                    "CallOnStart": true,
+                    "Enabled": true,
+                    "Position": [
+                        0.0,
+                        0.44999998807907104,
+                        -3.5
+                    ],
+                    "Rotation": [
+                        0.0,
+                        -90.0,
+                        0.0
+                    ],
+                    "Scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "VisibleInEditor": true
+            },
+            {
+                "Children": [],
+                "Components": [
+                    {
+                        "Ambient": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "CallOnAwake": true,
+                        "CallOnStart": true,
+                        "Color": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "ComponentType": "PointLight",
+                        "Constant": 1.0,
+                        "Diffuse": [
+                            0.6899999976158142,
+                            0.6899999976158142,
+                            0.6899999976158142
+                        ],
+                        "Enabled": true,
+                        "Linear": 0.007000000216066837,
+                        "Quadratic": 0.00019999999494757503,
+                        "Specular": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ]
+                    }
+                ],
+                "Enabled": true,
+                "Name": "Light",
+                "Transform": {
+                    "CallOnAwake": true,
+                    "CallOnStart": true,
+                    "Enabled": true,
+                    "Position": [
+                        3.9000000953674316,
+                        4.999999523162842,
+                        -1.7999999523162842
+                    ],
+                    "Rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "Scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                },
+                "VisibleInEditor": true
+            },
+            {
+                "Children": [],
+                "Components": [
+                    {
+                        "CallOnAwake": true,
+                        "CallOnStart": true,
                         "ComponentType": "Renderer",
                         "DrawShadows": true,
                         "Enabled": true,
@@ -547,7 +547,7 @@
                     "Position": [
                         3.25,
                         0.44999998807907104,
-                        2.0
+                        -2.0
                     ],
                     "Rotation": [
                         0.0,
