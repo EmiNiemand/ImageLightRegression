@@ -77,8 +77,8 @@ void NeuralNetworkManager::InitializeNetwork(NetworkTask task) {
     currentTask = task;
 
     if (task == NetworkTask::TrainNetwork) {
-//        Train();
-        Test();
+        Train();
+//        Test();
     }
     else if (task == NetworkTask::ProcessImage) {
         ProcessImage();
