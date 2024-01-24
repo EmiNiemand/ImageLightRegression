@@ -751,7 +751,7 @@ void NeuralNetworkManager::ThreadTest() {
                     for (int l = 0; l < 24; ++l) {
                         float lPhi = M_PI * 2 - radOfDeg15 * (l + 1);
 
-                        lightPositions[l + k * 24] = CUM::SphericalAnglesToCartesianCoordinates(lPhi, lTheta) * 10.0f;
+                        if (i == 0) lightPositions[l + k * 24] = CUM::SphericalAnglesToCartesianCoordinates(lPhi, lTheta) * 10.0f;
 
                         float phi = lPhi - cPhi;
                         float theta = lTheta - cTheta;
@@ -765,7 +765,7 @@ void NeuralNetworkManager::ThreadTest() {
                 else {
                     float lPhi = 0;
 
-                    lightPositions[121] = CUM::SphericalAnglesToCartesianCoordinates(lPhi, lTheta) * 10.0f;
+                    if (i == 0) lightPositions[120] = CUM::SphericalAnglesToCartesianCoordinates(lPhi, lTheta) * 10.0f;
 
                     float phi = lPhi - cPhi;
                     float theta = lTheta - cTheta;
@@ -773,7 +773,7 @@ void NeuralNetworkManager::ThreadTest() {
                     if (phi > (float)M_PI) phi = phi - 2.0f * (float)M_PI;
                     if (phi < -(float)M_PI) phi = phi + 2.0f * (float)M_PI;
 
-                    dataSet[121 + (j + i * 24) * 121] = glm::vec2(phi, theta);
+                    dataSet[120 + (j + i * 24) * 121] = glm::vec2(phi, theta);
                 }
 
             }
@@ -811,8 +811,8 @@ void NeuralNetworkManager::ThreadTest() {
             ILR_INFO_MSG("Output: " + STRING(manager->layers[15]->maps[0]) + ", " + STRING(manager->layers[15]->maps[1]) +
                          ", Target: " + STRING(dataSet[j + i * 121].x) + ", " + STRING(dataSet[j + i * 121].y));
 
-            float target[2] = {dataSet[j + i * 120].x, dataSet[j + i * 120].y};
-            loss += MSELossFunction(manager->layers[15]->maps, target, manager->outputSize);
+            float target[2] = {dataSet[j + i * 121].x, dataSet[j + i * 121].y};
+            loss += (MSELossFunction(manager->layers[15]->maps, target, manager->outputSize));
             accuracy.x += abs(dataSet[j + i * 121].x - manager->layers[15]->maps[0]);
             accuracy.y += abs(dataSet[j + i * 121].y - manager->layers[15]->maps[1]);
 
