@@ -539,12 +539,10 @@ Layer* NeuralNetworkManager::GetLoadedImageWithSize(int outWidth, int outHeight)
 
     output->maps = new float[outWidth * outHeight * 3];
 
-    int counter = 0;
     for (int i = 0; i < outWidth * outHeight * 3; i+=3) {
-        output->maps[counter] = (float)image[i] / 255;
-        output->maps[counter + outWidth * outHeight] = (float)image[i + 1] / 255;
-        output->maps[counter + 2 * outWidth * outHeight] = (float)image[i + 2] / 255;
-        ++counter;
+        output->maps[i] = (float)image[i] / 255;
+        output->maps[i + 1] = (float)image[i + 1] / 255;
+        output->maps[i + 2] = (float)image[i + 2] / 255;
     }
 
     delete[] image;

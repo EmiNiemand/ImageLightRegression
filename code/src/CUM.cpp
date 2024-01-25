@@ -19,29 +19,27 @@ bool CUM::IsInViewport(glm::ivec2 position, Viewport* viewport) {
 unsigned char* CUM::ResizeImage(const unsigned char *image, int width, int height, int newWidth, int newHeight) {
     unsigned char* resizedImage = new unsigned char[newWidth * newHeight * 3];
 
-    float widthRatio = (float)(width - 1) / (float)(newWidth - 1);
-    float heightRatio = (float)(height - 1) / (float)(newHeight - 1);
+    for (int y = 0; y < newHeight; ++y) {
+        for (int x = 0; x < newWidth; ++x) {
+            float imageX = (float)x / newWidth * width;
+            float imageY = (float)y / newHeight * height;
 
-    // Bilinear interpolation
-    for (int y = 0; y < newHeight; y++) {
-        for (int x = 0; x < newWidth; x++) {
-            float xFloor = floor(widthRatio * (float)x);
-            float yFloor = floor(heightRatio * (float)y);
-            float xCeil = ceil(widthRatio * (float)x);
-            float yCeil = ceil(heightRatio * (float)y);
+            int x1 = (int)std::floor(imageX);
+            int y1 = (int)std::floor(imageY);
+            int x2 = x1 + 1;
+            int y2 = y1 + 1;
 
-            float xWeight = (widthRatio * (float)x) - xFloor;
-            float yWeight = (heightRatio * (float)y) - yFloor;
+            // Bilinear interpolation
+            float u = imageX - x1;
+            float v = imageY - y1;
 
-            float a = image[(int)yFloor * width + (int)xFloor];
-            float b = image[(int)yFloor * width + (int)xCeil];
-            float c = image[(int)yCeil * width + (int)xFloor];
-            float d = image[(int)yCeil * width + (int)xCeil];
-
-            resizedImage[y * newWidth + x] = a * (1.0 - xWeight) * (1.0 - yWeight) +
-                                             b * xWeight * (1.0 - yWeight) +
-                                             c * yWeight * (1.0 - xWeight) +
-                                             d * xWeight * yWeight;
+            for (int channel = 0; channel < 3; ++channel) {
+                resizedImage[(y * newWidth + x) * 3 + channel] =
+                        (unsigned char)((1 - u) * (1 - v) * image[(y1 * width + x1) * 3 + channel] +
+                        u * (1 - v) * image[(y1 * width + x2) * 3 + channel] +
+                        (1 - u) * v * image[(y2 * width + x1) * 3 + channel] +
+                        u * v * image[(y2 * width + x2) * 3 + channel]);
+            }
         }
     }
 
