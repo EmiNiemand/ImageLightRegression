@@ -28,10 +28,7 @@ enum NetworkTask {
 
 class NeuralNetworkManager {
 public:
-    float trainingParameters[7] = {2000, 100000, 20, 25, 0.0001, 0.00000001, 0.25};
-
-    bool waitForUpdate = false;
-    bool waitForRender = false;
+    float trainingParameters[7] = {2000, 100000, 20, 25, 0.0001, 0.00000001, 0.5};
 
 private:
     inline static NeuralNetworkManager* neuralNetworkManager;

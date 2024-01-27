@@ -222,7 +222,6 @@ void RenderingManager::DrawPostProcesses() {
 
 void RenderingManager::DrawOtherViewports() {
     EditorManager* editorManager = EditorManager::GetInstance();
-    NeuralNetworkManager::GetInstance()->waitForRender = false;
 
     glViewport(Application::viewports[1].position.x, Application::viewports[1].position.y,
                Application::viewports[1].resolution.x, Application::viewports[1].resolution.y);

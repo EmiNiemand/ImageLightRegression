@@ -52,6 +52,9 @@ void Application::Run() {
     while(!shouldRun) {
         frameTime = (float)glfwGetTime();
 
+        mutex.lock();
+        frameSwitch = true;
+
         glfwPollEvents();
         InputManager* inputManager = InputManager::GetInstance();
         inputManager->PollInput();
@@ -96,8 +99,7 @@ void Application::Run() {
 
         glfwSwapBuffers(window);
 
-        NeuralNetworkManager::GetInstance()->waitForUpdate = false;
-
+        mutex.unlock();
         shouldRun = glfwWindowShouldClose(window);
     }
 }

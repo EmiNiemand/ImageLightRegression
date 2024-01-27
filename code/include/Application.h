@@ -6,6 +6,7 @@
 
 #include <GLFW/glfw3.h> // Include glfw3.h after our OpenGL definitions
 #include <unordered_map>
+#include <mutex>
 
 class Object;
 class Component;
@@ -21,7 +22,8 @@ public:
     float frameTime = 0;
 
     bool isStarted = false;
-
+    std::mutex mutex;
+    bool frameSwitch = true;
 private:
     bool shouldRun = false;
     

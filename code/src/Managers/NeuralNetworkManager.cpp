@@ -86,9 +86,6 @@ void NeuralNetworkManager::InitializeNetwork(NetworkTask task) {
 }
 
 void NeuralNetworkManager::FinalizeNetwork() {
-    waitForUpdate = false;
-    waitForRender = false;
-
     if (currentTask == NetworkTask::TrainNetwork) {
         Save();
     }
@@ -140,6 +137,7 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
     manager->state = NetworkState::Training;
 
     RenderingManager* renderingManager = RenderingManager::GetInstance();
+    Application* application = Application::GetInstance();
 
     AdamOptimizer* adamOptimizer = AdamOptimizer::GetInstance();
     adamOptimizer->learningRate = learningRate;
@@ -195,14 +193,20 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
             float angleY = (float)(-atan2(direction.x, -direction.z) * 180.0f / M_PI);
             Camera::GetRenderingCamera()->transform->SetLocalRotation(glm::vec3(angleX, angleY, 0));
 
-            // Wait until new frame is drawn and updated
-            manager->waitForUpdate = true;
-            manager->waitForRender = true;
-            while(true) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(5));
-                if (!manager->waitForUpdate && !manager->waitForRender) {
+            bool frameValue;
+
+            application->mutex.lock();
+            application->frameSwitch = false;
+            application->mutex.unlock();
+
+            while (true) {
+                application->mutex.lock();
+                if (application->frameSwitch) {
+                    application->mutex.unlock();
                     break;
                 }
+                application->mutex.unlock();
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
 
             manager->Forward(true);
@@ -709,6 +713,7 @@ void NeuralNetworkManager::ThreadTest() {
     manager->state = NetworkState::Training;
 
     RenderingManager* renderingManager = RenderingManager::GetInstance();
+    Application* application = Application::GetInstance();
 
     // Save texture values
     Texture* texture = EditorManager::GetInstance()->loadedImage->GetComponentByClass<Image>()->GetTexture();
@@ -794,14 +799,20 @@ void NeuralNetworkManager::ThreadTest() {
             float angleY = (float)(-atan2(direction.x, -direction.z) * 180.0f / M_PI);
             Camera::GetRenderingCamera()->transform->SetLocalRotation(glm::vec3(angleX, angleY, 0));
 
-            // Wait until new frame is drawn and updated
-            manager->waitForUpdate = true;
-            manager->waitForRender = true;
-            while(true) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(5));
-                if (!manager->waitForUpdate && !manager->waitForRender) {
+            bool frameValue;
+
+            application->mutex.lock();
+            application->frameSwitch = false;
+            application->mutex.unlock();
+
+            while (true) {
+                application->mutex.lock();
+                if (application->frameSwitch) {
+                    application->mutex.unlock();
                     break;
                 }
+                application->mutex.unlock();
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
 
             manager->Forward(false);
