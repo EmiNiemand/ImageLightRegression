@@ -6,7 +6,7 @@
 #include <random>
 
 #define M_PI 3.14159265358979323846
-#define CLIP_VALUE 5
+#define CLIP_VALUE 1
 
 #pragma region Structs
 struct Gradient {

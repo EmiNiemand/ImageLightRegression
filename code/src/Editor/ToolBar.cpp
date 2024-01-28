@@ -91,7 +91,6 @@ void ToolBar::ShowToolBar() {
         }
         if (application->isStarted) {
             application->isStarted = false;
-            neuralNetworkManager->FinalizeNetwork();
         }
     }
     if (ImGui::BeginPopupModal("TrainPopup", 0, ImGuiWindowFlags_Popup | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize)) {

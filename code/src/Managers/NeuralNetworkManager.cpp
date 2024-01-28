@@ -199,6 +199,8 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
             application->frameSwitch = false;
             application->mutex.unlock();
 
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
             while (true) {
                 application->mutex.lock();
                 if (application->frameSwitch) {
@@ -206,7 +208,7 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
                     break;
                 }
                 application->mutex.unlock();
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                std::this_thread::sleep_for(std::chrono::milliseconds(2));
             }
 
             manager->Forward(true);
@@ -280,8 +282,8 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
     // Set network finalization to true
     if (Application::GetInstance()->isStarted) {
         Application::GetInstance()->isStarted = false;
-        manager->finalize = true;
     }
+    manager->finalize = true;
 }
 
 void NeuralNetworkManager::FillDataSet(float *dataSet, glm::vec3* cameraPositions, glm::vec3* lightPositions, int dataSize,
@@ -325,8 +327,8 @@ void NeuralNetworkManager::FillDataSet(float *dataSet, glm::vec3* cameraPosition
         float phi = lightSphericalAngles[0] - cameraSphericalAngles[0];
         float theta = lightSphericalAngles[1] - cameraSphericalAngles[1];
 
-        if (phi > (float)M_PI) phi = phi - 2.0f * (float)M_PI;
-        if (phi < -(float)M_PI) phi = phi + 2.0f * (float)M_PI;
+        if (phi < 0) phi = phi + 2.0f * (float)M_PI;
+        if (theta < 0) theta = theta + 2.0f * (float)M_PI;
 
         dataSet[i * 2] = phi;
         dataSet[i * 2 + 1] = theta;
@@ -543,10 +545,10 @@ Layer* NeuralNetworkManager::GetLoadedImageWithSize(int outWidth, int outHeight)
 
     output->maps = new float[outWidth * outHeight * 3];
 
-    for (int i = 0; i < outWidth * outHeight * 3; i+=3) {
-        output->maps[i] = (float)image[i] / 255;
-        output->maps[i + 1] = (float)image[i + 1] / 255;
-        output->maps[i + 2] = (float)image[i + 2] / 255;
+    for (int i = 0; i < outWidth * outHeight; ++i) {
+        output->maps[i] = (float)image[i * 3] / 255;
+        output->maps[i + outWidth * outHeight] = (float)image[i * 3 + 1] / 255;
+        output->maps[i + outWidth * outHeight * 2] = (float)image[i * 3 + 2] / 255;
     }
 
     delete[] image;
@@ -759,8 +761,8 @@ void NeuralNetworkManager::ThreadTest() {
                         float phi = lPhi - cPhi;
                         float theta = lTheta - cTheta;
 
-                        if (phi > (float)M_PI) phi = phi - 2.0f * (float)M_PI;
-                        if (phi < -(float)M_PI) phi = phi + 2.0f * (float)M_PI;
+                        if (phi < 0) phi = phi + 2.0f * (float)M_PI;
+                        if (theta < 0) theta = theta + 2.0f * (float)M_PI;
 
                         dataSet[l + k * 24 + (j + i * 24) * 121] = glm::vec2(phi, theta);
                     }
@@ -773,8 +775,8 @@ void NeuralNetworkManager::ThreadTest() {
                     float phi = lPhi - cPhi;
                     float theta = lTheta - cTheta;
 
-                    if (phi > (float)M_PI) phi = phi - 2.0f * (float)M_PI;
-                    if (phi < -(float)M_PI) phi = phi + 2.0f * (float)M_PI;
+                    if (phi < 0) phi = phi + 2.0f * (float)M_PI;
+                    if (theta < 0) theta = theta + 2.0f * (float)M_PI;
 
                     dataSet[120 + (j + i * 24) * 121] = glm::vec2(phi, theta);
                 }
@@ -805,6 +807,8 @@ void NeuralNetworkManager::ThreadTest() {
             application->frameSwitch = false;
             application->mutex.unlock();
 
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
             while (true) {
                 application->mutex.lock();
                 if (application->frameSwitch) {
@@ -812,7 +816,7 @@ void NeuralNetworkManager::ThreadTest() {
                     break;
                 }
                 application->mutex.unlock();
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                std::this_thread::sleep_for(std::chrono::milliseconds(2));
             }
 
             manager->Forward(false);

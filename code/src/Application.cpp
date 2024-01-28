@@ -98,8 +98,9 @@ void Application::Run() {
         NeuralNetworkManager::GetInstance()->Run();
 
         glfwSwapBuffers(window);
-
         mutex.unlock();
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
         shouldRun = glfwWindowShouldClose(window);
     }
 }
