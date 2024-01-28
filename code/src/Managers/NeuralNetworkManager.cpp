@@ -326,9 +326,10 @@ void NeuralNetworkManager::FillDataSet(float *dataSet, glm::vec3* cameraPosition
 
         float phi = lightSphericalAngles[0] - cameraSphericalAngles[0];
         float theta = lightSphericalAngles[1] - cameraSphericalAngles[1];
-
-        if (phi < 0) phi = phi + 2.0f * (float)M_PI;
-        if (theta < 0) theta = theta + 2.0f * (float)M_PI;
+        
+        // Change range from (-2PI, 2PI) to (-PI, PI)
+        if (phi > (float)M_PI) phi = phi - 2.0f * (float)M_PI;
+        if (phi < -(float)M_PI) phi = phi + 2.0f * (float)M_PI;
 
         dataSet[i * 2] = phi;
         dataSet[i * 2 + 1] = theta;
@@ -761,8 +762,8 @@ void NeuralNetworkManager::ThreadTest() {
                         float phi = lPhi - cPhi;
                         float theta = lTheta - cTheta;
 
-                        if (phi < 0) phi = phi + 2.0f * (float)M_PI;
-                        if (theta < 0) theta = theta + 2.0f * (float)M_PI;
+                        if (phi > (float)M_PI) phi = phi - 2.0f * (float)M_PI;
+                        if (phi < -(float)M_PI) phi = phi + 2.0f * (float)M_PI;
 
                         dataSet[l + k * 24 + (j + i * 24) * 121] = glm::vec2(phi, theta);
                     }
@@ -775,8 +776,8 @@ void NeuralNetworkManager::ThreadTest() {
                     float phi = lPhi - cPhi;
                     float theta = lTheta - cTheta;
 
-                    if (phi < 0) phi = phi + 2.0f * (float)M_PI;
-                    if (theta < 0) theta = theta + 2.0f * (float)M_PI;
+                    if (phi > (float)M_PI) phi = phi - 2.0f * (float)M_PI;
+                    if (phi < -(float)M_PI) phi = phi + 2.0f * (float)M_PI;
 
                     dataSet[120 + (j + i * 24) * 121] = glm::vec2(phi, theta);
                 }
