@@ -24,6 +24,7 @@ public:
     bool isStarted = false;
     std::mutex mutex;
     bool frameSwitch = true;
+    bool drawNewRenderedImage = false;
 private:
     bool shouldRun = false;
     

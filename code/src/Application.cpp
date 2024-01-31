@@ -53,6 +53,7 @@ void Application::Run() {
         frameTime = (float)glfwGetTime();
 
         mutex.lock();
+        if (!frameSwitch) drawNewRenderedImage = true;
         frameSwitch = true;
 
         glfwPollEvents();

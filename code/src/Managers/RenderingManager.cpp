@@ -227,13 +227,17 @@ void RenderingManager::DrawOtherViewports() {
                Application::viewports[1].resolution.x, Application::viewports[1].resolution.y);
     editorManager->loadedImage->GetComponentByClass<Image>()->Draw(uiRenderer->imageShader);
 
-    glm::ivec2 imageResolution = editorManager->loadedImage->GetComponentByClass<Image>()->GetTexture()->GetResolution();
-    currentlyRenderedImage.resize(imageResolution.x * imageResolution.y * 3);
+    if (Application::GetInstance()->drawNewRenderedImage) {
+        currentlyRenderedImage.clear();
+        glm::ivec2 imageResolution = editorManager->loadedImage->GetComponentByClass<Image>()->GetTexture()->GetResolution();
+        currentlyRenderedImage.resize(imageResolution.x * imageResolution.y * 3);
 
-    // Get texture image
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, editorManager->loadedImage->GetComponentByClass<Image>()->GetTexture()->GetID());
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, &currentlyRenderedImage[0]);
+        // Get texture image
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, editorManager->loadedImage->GetComponentByClass<Image>()->GetTexture()->GetID());
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, &currentlyRenderedImage[0]);
+        Application::GetInstance()->drawNewRenderedImage = false;
+    }
 
     Camera::SetActiveCamera(Camera::GetRenderingCamera());
     shadowRenderer->PrepareShadowMap();
