@@ -9,30 +9,30 @@ __global__ void CUDAConvLayer(const float* input, float* output, const float* ke
                               int paddingDimY, int kernelNumber) {
     unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (idx < outputDimX * outputDimY) {
+    if (idx < outputDimX * outputDimY * kernelDimX * kernelDimY) {
         unsigned int x = idx % outputDimX;
-        unsigned int y = idx / outputDimX;
+        unsigned int y = ((idx - x) / outputDimX) % outputDimY;
+        unsigned int kx = ((idx - y * outputDimX - x) / (outputDimX * outputDimY)) % kernelDimX;
+        unsigned int ky = ((idx - kx * outputDimX * outputDimY - y * outputDimX - x) /
+                           (outputDimX * outputDimY * kernelDimX)) % kernelDimY;
 
-        unsigned int outputIdx = idx + kernelNumber * outputDimX * outputDimY;
+        unsigned int outputIdx = x + y * outputDimX + kernelNumber * outputDimX * outputDimY;
 
         for (int kz = 0; kz < kernelDimZ; ++kz) {
-            for (int ky = 0; ky < kernelDimY; ++ky) {
-                for (int kx = 0; kx < kernelDimX; ++kx) {
-                    int inputX = kx + x * strideDimX - paddingDimX;
-                    int inputY = ky + y * strideDimY - paddingDimY;
+            int inputX = kx + x * strideDimX - paddingDimX;
+            int inputY = ky + y * strideDimY - paddingDimY;
 
-                    if (inputX >= 0 && inputX < inputDimX && inputY >= 0 && inputY < inputDimY) {
-                        int inputIdx = inputX + inputY * inputDimX + kz * inputDimX * inputDimY;
-                        int kernelIdx = kx + ky * kernelDimX + kz * kernelDimX * kernelDimY;
+            if (inputX >= 0 && inputX < inputDimX && inputY >= 0 && inputY < inputDimY) {
+                int inputIdx = inputX + inputY * inputDimX + kz * inputDimX * inputDimY;
+                int kernelIdx = kx + ky * kernelDimX + kz * kernelDimX * kernelDimY;
 
-                        output[outputIdx] += input[inputIdx] * kernel[kernelIdx];
-                    }
-                }
+                atomicAdd(&output[outputIdx], input[inputIdx] * kernel[kernelIdx]);
             }
         }
-
-        if (biases != nullptr) {
-            output[outputIdx] += biases[kernelNumber];
+        if (idx < outputDimX * outputDimY) {
+            if (biases != nullptr) {
+                atomicAdd(&output[outputIdx], biases[kernelNumber]);
+            }
         }
     }
 }
@@ -227,7 +227,7 @@ Layer* ConvolutionLayer(const Layer* currentLayer, const Group* filters, const i
     cudaMalloc((void**)&deviceKernels, numBytesKernelSize);
 
     int blockSize = 512;
-    int gridSize = (currentLayer->width * currentLayer->height + blockSize - 1) / blockSize;
+    int gridSize = (currentLayer->width * currentLayer->height * filters->filters[0].width * filters->filters[0].height + blockSize - 1) / blockSize;
 
     for (int i = 0; i < filters->count; ++i) {
         cudaMemcpy(deviceKernels, filters->filters[i].maps, numBytesKernelSize, cudaMemcpyHostToDevice);

@@ -107,7 +107,11 @@ void ToolBar::ShowToolBar() {
 
             ShowParameter("Epoch", &neuralNetworkManager->trainingParameters[0]);
             ShowParameter("Data Training Size", &neuralNetworkManager->trainingParameters[1]);
-            ShowParameter("Batch Size", &neuralNetworkManager->trainingParameters[2], 1.0f, 1, 32);
+            float max = neuralNetworkManager->trainingParameters[1];
+            if (max > 32) {
+                max = 32;
+            }
+            ShowParameter("Batch Size", &neuralNetworkManager->trainingParameters[2], 1.0f, 1, max);
             ShowParameter("Patience", &neuralNetworkManager->trainingParameters[3]);
             ShowParameter("Learning Rate", &neuralNetworkManager->trainingParameters[4], 0.000000001f, 0, 1);
             ShowParameter("Min Learning Rate", &neuralNetworkManager->trainingParameters[5], 0.000000001f, 0,
