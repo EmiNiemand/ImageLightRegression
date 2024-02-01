@@ -158,6 +158,8 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
     texture->SetID(renderingManager->objectRenderer->renderingCameraTexture);
     texture->SetResolution(glm::ivec2(width, height));
 
+    int batchesNumber = trainingSize / batchSize;
+
     // Generate or read data set
     int dataSetSize = trainingSize * manager->outputSize;
     float* dataSet = new float[dataSetSize];
@@ -178,63 +180,80 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
     for (int i = 0; i < epoch; ++i) {
         epochLoss = 0;
 
-        gradients.resize(batchSize);
-        for (int j = 0; j < batchSize; ++j) {
-            int idx = RNG(0, trainingSize - 1);
+        adamOptimizer->IncrementTimeStep();
 
-            // Set light position
-            renderingManager->objectRenderer->pointLights[0]->parent->transform->SetLocalPosition(lightPositions[idx]);
-            // Set camera position
-            Camera::GetRenderingCamera()->transform->SetLocalPosition(cameraPositions[idx]);
+        for (int j = 0; j < batchesNumber; ++j) {
+            gradients.resize(batchSize);
+            for (int k = 0; k < batchSize; ++k) {
+                int idx = k + j * batchSize;
 
-            // Calculate camera looking direction and rotate it to look at point(0,0,0)
-            glm::vec3 direction = glm::normalize(glm::vec3(0, 0, 0) - cameraPositions[idx]);
-            float angleX = (float)(asin(direction.y) * 180.0f / M_PI);
-            float angleY = (float)(-atan2(direction.x, -direction.z) * 180.0f / M_PI);
-            Camera::GetRenderingCamera()->transform->SetLocalRotation(glm::vec3(angleX, angleY, 0));
+                // Set light position
+                renderingManager->objectRenderer->pointLights[0]->parent->transform->SetLocalPosition(lightPositions[idx]);
+                // Set camera position
+                Camera::GetRenderingCamera()->transform->SetLocalPosition(cameraPositions[idx]);
 
-            bool frameValue;
+                // Calculate camera looking direction and rotate it to look at point(0,0,0)
+                glm::vec3 direction = glm::normalize(glm::vec3(0, 0, 0) - cameraPositions[idx]);
+                float angleX = (float)(asin(direction.y) * 180.0f / M_PI);
+                float angleY = (float)(-atan2(direction.x, -direction.z) * 180.0f / M_PI);
+                Camera::GetRenderingCamera()->transform->SetLocalRotation(glm::vec3(angleX, angleY, 0));
 
-            application->mutex.lock();
-            application->frameSwitch = false;
-            application->mutex.unlock();
+                bool frameValue;
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
-            while (true) {
                 application->mutex.lock();
-                if (application->frameSwitch) {
+                application->frameSwitch = false;
+                application->mutex.unlock();
+
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+                while (true) {
+                    application->mutex.lock();
+                    if (application->frameSwitch) {
+                        application->mutex.unlock();
+                        break;
+                    }
                     application->mutex.unlock();
+                    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+                }
+
+                manager->Forward(true);
+
+                float predictedValues[2] = {dataSet[idx * 2], dataSet[idx * 2 + 1]};
+                ILR_INFO_MSG("Output: " + STRING(manager->layers[15]->maps[0]) + ", " + STRING(manager->layers[15]->maps[1]) +
+                             ", Target: " + STRING(predictedValues[0]) + ", " + STRING(predictedValues[1]));
+
+                float loss = MSELossFunction(manager->layers[15]->maps, predictedValues, manager->outputSize);
+                epochLoss += loss;
+
+                manager->Backward(predictedValues, gradients[k]);
+
+                // Clear network layers and loaded image
+                DELETE_VECTOR_VALUES(manager->layers)
+                DELETE_VECTOR_VALUES(manager->pooledLayers)
+
+                delete manager->loadedImage;
+                manager->loadedImage = nullptr;
+
+                if (!Application::GetInstance()->isStarted) {
                     break;
                 }
-                application->mutex.unlock();
-                std::this_thread::sleep_for(std::chrono::milliseconds(2));
             }
 
-            manager->Forward(true);
+            UpdateNetwork(gradients, manager->weights, manager->biases);
 
-            float predictedValues[2] = {dataSet[idx * 2], dataSet[idx * 2 + 1]};
-            ILR_INFO_MSG("Output: " + STRING(manager->layers[15]->maps[0]) + ", " + STRING(manager->layers[15]->maps[1]) +
-                         ", Target: " + STRING(predictedValues[0]) + ", " + STRING(predictedValues[1]));
-
-            float loss = MSELossFunction(manager->layers[15]->maps, predictedValues, manager->outputSize);
-            epochLoss += loss;
-
-            manager->Backward(predictedValues, gradients[j]);
-
-            // Clear network layers and loaded image
-            DELETE_VECTOR_VALUES(manager->layers)
-            DELETE_VECTOR_VALUES(manager->pooledLayers)
-
-            delete manager->loadedImage;
-            manager->loadedImage = nullptr;
+            // Clear gradients
+            for (int g = 0; g < gradients.size(); ++g) {
+                DELETE_VECTOR_VALUES(gradients[g])
+            }
+            gradients.clear();
 
             if (!Application::GetInstance()->isStarted) {
                 break;
             }
         }
 
-        float averageEpochLoss = epochLoss / (float)batchSize;
+
+        float averageEpochLoss = epochLoss / (float)batchesNumber;
 
         ILR_WARN_MSG("**********************************");
         ILR_WARN_MSG("Epoch: " + STRING(i) + ", Loss: " + STRING(averageEpochLoss) + ", Rate: " + STRING(learningRate));
@@ -254,15 +273,6 @@ void NeuralNetworkManager::ThreadTrain(int epoch, int trainingSize, int batchSiz
             patienceCounter = 0;
             bestEpochLoss = averageEpochLoss;
         }
-
-        adamOptimizer->IncrementTimeStep();
-        UpdateNetwork(gradients, manager->weights, manager->biases);
-
-        // Clear gradients
-        for (int g = 0; g < gradients.size(); ++g) {
-            DELETE_VECTOR_VALUES(gradients[g])
-        }
-        gradients.clear();
 
         if (!Application::GetInstance()->isStarted) {
             break;
