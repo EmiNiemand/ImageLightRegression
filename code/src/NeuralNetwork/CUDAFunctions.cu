@@ -11,10 +11,9 @@ __global__ void CUDAConvLayer(const float* input, float* output, const float* ke
 
     if (idx < outputDimX * outputDimY * kernelDimX * kernelDimY) {
         unsigned int x = idx % outputDimX;
-        unsigned int y = ((idx - x) / outputDimX) % outputDimY;
-        unsigned int kx = ((idx - y * outputDimX - x) / (outputDimX * outputDimY)) % kernelDimX;
-        unsigned int ky = ((idx - kx * outputDimX * outputDimY - y * outputDimX - x) /
-                           (outputDimX * outputDimY * kernelDimX)) % kernelDimY;
+        unsigned int y = (idx / outputDimX) % outputDimY;
+        unsigned int kx = (idx / (outputDimX * outputDimY)) % kernelDimX;
+        unsigned int ky = idx / (outputDimX * outputDimY * kernelDimX);
 
         unsigned int outputIdx = x + y * outputDimX + kernelNumber * outputDimX * outputDimY;
 
@@ -109,9 +108,9 @@ __global__ void CUDAConvLayerBackward(float* prevGradients, float* weightGradien
         unsigned int y = (idx / prevWidth) % prevHeight;
         unsigned int z = idx / (prevWidth * prevHeight);
 
-        for (int kh = 0; kh < kernelHeight; ++kh) {
-            for (int kw = 0; kw < kernelWidth; ++kw) {
-                for (int d = 0; d < currentDepth; ++d) {
+        for (int d = 0; d < currentDepth; ++d) {
+            for (int kh = 0; kh < kernelHeight; ++kh) {
+                for (int kw = 0; kw < kernelWidth; ++kw) {
                     int currentIdx = x + y * currentWidth + d * currentWidth * currentHeight;
                     int weightIdx = kw + kh * kernelWidth + d * kernelWidth * kernelHeight +
                             z * kernelWidth * kernelHeight * currentDepth;
