@@ -8,14 +8,16 @@ uniform sampler2D screenTexture;
 
 void main()
 {
-    vec3 loadedImagePixelColor = texture(loadedImageTexture, uv).xyz;
-    vec3 screenPixelColor = texture(screenTexture, uv).xyz;
 
-    float differenceR = abs(loadedImagePixelColor.x - screenPixelColor.x) / ((loadedImagePixelColor.x + screenPixelColor.x) / 2);
-    float differenceG = abs(loadedImagePixelColor.y - screenPixelColor.y) / ((loadedImagePixelColor.y + screenPixelColor.y) / 2);
-    float differenceB = abs(loadedImagePixelColor.z - screenPixelColor.z) / ((loadedImagePixelColor.z + screenPixelColor.z) / 2);
 
-    float averageDifference = (differenceR + differenceG + differenceB) / 3.0f;
+    vec3 loadedImagePixelColor = texture(loadedImageTexture, uv).rgb;
+    vec3 screenPixelColor = texture(screenTexture, uv).rgb;
 
-    fragColor = vec4(averageDifference, 1.0f - averageDifference, 0.0f, 1.0f);
+    vec3 colorDiff = abs(loadedImagePixelColor.rgb - screenPixelColor.rgb);
+
+    float averageDifference = (colorDiff.r + colorDiff.g + colorDiff.b) / 3.0f;
+    float smoothDiff = smoothstep(0.0, 0.1, averageDifference);
+    vec3 color = mix(vec3(0.0, 1.0, 0.0), vec3(1.0, 0.0, 0.0), smoothDiff);
+
+    fragColor = vec4(color, 1.0f);
 }

@@ -102,8 +102,13 @@ void NeuralNetworkManager::FinalizeNetwork() {
 void NeuralNetworkManager::ProcessImage() {
     state = Processing;
     RenderingManager* renderingManager = RenderingManager::GetInstance();
-
     if (renderingManager->objectRenderer->pointLights[0] == nullptr) FinalizeNetwork();
+
+    Application* application = Application::GetInstance();
+    bool frameValue;
+
+    application->drawNewRenderedImage = true;
+    RenderingManager::GetInstance()->DrawFrame();
 
     Forward(false);
 

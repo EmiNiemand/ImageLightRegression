@@ -45,7 +45,7 @@
             1.0,
             1.0
         ],
-        "Texture": "resources/Outputs/Test.png"
+        "Texture": "resources/Outputs/Test3_3.png"
     },
-    "LastOpenedScene": "resources\\Scenes\\TrainingScene.scn"
+    "LastOpenedScene": "resources\\Scenes\\TestScene3.scn"
 }
