@@ -101,7 +101,7 @@ extern __global__ void CUDAConvLayer(const float* input, float* output, const fl
                               int kernelDimY, int kernelDimZ, int strideDimX, int strideDimY, int paddingDimX,
                               int paddingDimY, int kernelNumber);
 
-extern __global__ void CUDAReLULayer(float* input, int size);
+extern __global__ void CUDAReLU(float* input, int size);
 
 extern __global__ void CUDAMaxPoolingLayer(const float* input, float* output, int outputDimX, int outputDimY, int outputDimZ,
                                            int poolDimX, int poolDimY, int strideDimX, int strideDimY);
@@ -130,7 +130,7 @@ Layer* ConvolutionLayer(const Layer* currentLayer, const Group* filters, const i
 
 Gradient* ConvolutionLayerBackward(Layer* currentLayer, Group* weights, Layer* previousLayer, std::vector<float>& gradient);
 
-void ReLULayer(Layer* currentLayer);
+void ReLU(Layer* currentLayer);
 
 Layer* MaxPoolingLayer(const Layer* currentLayer, const ivec2& poolDim, const ivec2& stride);
 

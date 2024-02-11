@@ -386,12 +386,12 @@ void NeuralNetworkManager::Forward(bool drop) {
     // Conv 1
     layers.emplace_back(ConvolutionLayer(loadedImage, weights[0], {1, 1}, {1, 1}, biases[0]->maps));
     //ReLU
-    ReLULayer(layers[0]);
+    ReLU(layers[0]);
 
     //Conv 2
     layers.emplace_back(ConvolutionLayer(layers[0], weights[1], {1, 1}, {1, 1}, biases[1]->maps));
     // ReLU
-    ReLULayer(layers[1]);
+    ReLU(layers[1]);
     // Max Pooling [0]
     pooledLayers.emplace_back(MaxPoolingLayer(layers[1], {2, 2}, {2, 2}));
 
@@ -399,12 +399,12 @@ void NeuralNetworkManager::Forward(bool drop) {
     // Conv 3
     layers.emplace_back(ConvolutionLayer(pooledLayers[0], weights[2], {1, 1}, {1, 1}, biases[2]->maps));
     // ReLU
-    ReLULayer(layers[2]);
+    ReLU(layers[2]);
 
     // Conv 4
     layers.emplace_back(ConvolutionLayer(layers[2], weights[3], {1, 1}, {1, 1}, biases[3]->maps));
     // ReLU
-    ReLULayer(layers[3]);
+    ReLU(layers[3]);
     // Max Pooling [1]
     pooledLayers.emplace_back(MaxPoolingLayer(layers[3], {2, 2}, {2, 2}));
 
@@ -413,17 +413,17 @@ void NeuralNetworkManager::Forward(bool drop) {
     // Conv 5
     layers.emplace_back(ConvolutionLayer(pooledLayers[1], weights[4], {1, 1}, {1, 1}, biases[4]->maps));
     // ReLU
-    ReLULayer(layers[4]);
+    ReLU(layers[4]);
 
     // Conv 6
     layers.emplace_back(ConvolutionLayer(layers[4], weights[5], {1, 1}, {1, 1}, biases[5]->maps));
     // ReLU
-    ReLULayer(layers[5]);
+    ReLU(layers[5]);
 
     // Conv 7
     layers.emplace_back(ConvolutionLayer(layers[5], weights[6], {1, 1}, {1, 1}, biases[6]->maps));
     // ReLU
-    ReLULayer(layers[6]);
+    ReLU(layers[6]);
     // Max Pooling [2]
     pooledLayers.emplace_back(MaxPoolingLayer(layers[6], {2, 2}, {2, 2}));
 
@@ -432,17 +432,17 @@ void NeuralNetworkManager::Forward(bool drop) {
     // Conv 8
     layers.emplace_back(ConvolutionLayer(pooledLayers[2], weights[7], {1, 1}, {1, 1}, biases[7]->maps));
     // ReLU
-    ReLULayer(layers[7]);
+    ReLU(layers[7]);
 
     // Conv 9
     layers.emplace_back(ConvolutionLayer(layers[7], weights[8], {1, 1}, {1, 1}, biases[8]->maps));
     // ReLU
-    ReLULayer(layers[8]);
+    ReLU(layers[8]);
 
     // Conv 10
     layers.emplace_back(ConvolutionLayer(layers[8], weights[9], {1, 1}, {1, 1}, biases[9]->maps));
     // ReLU
-    ReLULayer(layers[9]);
+    ReLU(layers[9]);
     // Max Pooling [3]
     pooledLayers.emplace_back(MaxPoolingLayer(layers[9], {2, 2}, {2, 2}));
 
@@ -451,29 +451,29 @@ void NeuralNetworkManager::Forward(bool drop) {
     // Conv 11
     layers.emplace_back(ConvolutionLayer(pooledLayers[3], weights[10], {1, 1}, {1, 1}, biases[10]->maps));
     // ReLU
-    ReLULayer(layers[10]);
+    ReLU(layers[10]);
 
     // Conv 12
     layers.emplace_back(ConvolutionLayer(layers[10], weights[11], {1, 1}, {1, 1}, biases[11]->maps));
     // ReLU
-    ReLULayer(layers[11]);
+    ReLU(layers[11]);
 
     // Conv 13
     layers.emplace_back(ConvolutionLayer(layers[11], weights[12], {1, 1}, {1, 1}, biases[12]->maps));
     // ReLU
-    ReLULayer(layers[12]);
+    ReLU(layers[12]);
     // Max Pooling [4]
     pooledLayers.emplace_back(MaxPoolingLayer(layers[12], {2, 2}, {2, 2}));
 
     // Neurons of FCL Layer 1
     layers.emplace_back(FullyConnectedLayer(pooledLayers[4], weights[13]->filters[0].maps, 25088, 4096, biases[13]->maps));
-    ReLULayer(layers[13]);
+    ReLU(layers[13]);
     // Deactivates neurons during training
     if(drop) DropoutLayer(layers[13], trainingParameters[6]);
 
     // Neurons of FCL Layer 2
     layers.emplace_back(FullyConnectedLayer(layers[13], weights[14]->filters[0].maps, 4096, 4096, biases[14]->maps));
-    ReLULayer(layers[14]);
+    ReLU(layers[14]);
     // Deactivates neurons during training
     if(drop) DropoutLayer(layers[14], trainingParameters[6]);
 

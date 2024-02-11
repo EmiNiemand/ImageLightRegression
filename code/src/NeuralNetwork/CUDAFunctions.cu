@@ -36,7 +36,7 @@ __global__ void CUDAConvLayer(const float* input, float* output, const float* ke
     }
 }
 
-__global__ void CUDAReLULayer(float* input, int size) {
+__global__ void CUDAReLU(float* input, int size) {
     unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (idx < size) {
@@ -321,7 +321,7 @@ Gradient* ConvolutionLayerBackward(Layer *currentLayer, Group *weights, Layer *p
     return previousGradient;
 }
 
-void ReLULayer(Layer* currentLayer) {
+void ReLU(Layer* currentLayer) {
     int currentLayerSize = currentLayer->width * currentLayer->height * currentLayer->depth;
     int numBytesCurrentLayerSize = (int)(currentLayerSize * sizeof(float));
 
@@ -332,7 +332,7 @@ void ReLULayer(Layer* currentLayer) {
     int blockSize = 256;
     int gridSize = (currentLayerSize + blockSize - 1) / blockSize;
 
-    CUDAReLULayer<<<gridSize, blockSize>>>(deviceCurrentLayer, currentLayerSize);
+    CUDAReLU<<<gridSize, blockSize>>>(deviceCurrentLayer, currentLayerSize);
 
     cudaMemcpy(currentLayer->maps, deviceCurrentLayer, numBytesCurrentLayerSize, cudaMemcpyDeviceToHost);
     cudaFree(deviceCurrentLayer);
